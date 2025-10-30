@@ -6,7 +6,7 @@
 2. Clone repo and install dependencies:
 
 ```cmd
-git clone https://github.com/optimalcharb/dokumen.git
+git clone https://github.com/optimalcharb/pdf-entity-labeling.git
 npm install
 ```
 
@@ -112,7 +112,7 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 
 - EmbedPDF: [GitHub](https://github.com/embedpdf/embed-pdf-viewer), [docs for @embedpdf/pdfium](https://www.embedpdf.com/docs/pdfium/introduction) the JS library to wrap the C++ engine, [docs for @embedpdf/core](https://www.embedpdf.com/docs/react/introduction) which I have modified
 - Currently PDFs are rendered by URL only, later I want to fix the BufferStrategy in plugin-loader to load PDFs from local storage
-- Plugins are built in Redux style and must have commented sections following plugin-template/
+- Plugins are built in consitent style defined by core (not using standard Redux style) and must have commented sections following plugin-template/
 - Refer to GitHub Issues for ideas
 
 ### Forms
