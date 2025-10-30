@@ -1,0 +1,44 @@
+# dependencies
+node_modules/
+.npm/
+
+# dependency locks besides npm
+pnpm-lock.yaml
+yarn.lock
+bun.lockb
+
+# next.js
+.next/
+out/
+build/
+
+# misc
+.DS_Store
+*.pem
+.npm-only-allow
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# local env files
+.env
+storybook-static/
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# typescript
+*.tsbuildinfo
+
+# coding LLMs
+.claude/
+CLAUDE.md
+
+# amplify
+.amplify
+amplify_outputs*
+amplifyconfiguration*

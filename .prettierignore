@@ -1,0 +1,6 @@
+.next/
+node_modules/
+storybook-static/
+components/shadcn-ui/
+hooks/shadcn-ui
+lib/shadcn-ui

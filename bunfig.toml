@@ -1,0 +1,29 @@
+[package]
+name = "dokumen"
+
+[env]
+NODE_ENV = "test"
+
+[test]
+timout = 10000 # 10 seconds (default is 5000ms)
+invalidOption = true
+
+preload = ["./bun-test-setup.ts"]
+
+coverage = true
+cpverageReporter = ["text"]
+coverageDir = "./coverage"
+coverageSkipTestFiles = true
+coveragePathIgnorePatterns = [
+  "**/*.d.ts",
+  "env.mjs",
+  "*.config.*",
+  "**/shadcn-ui/*",
+  ".next/",
+  ".storybook/",
+  "amplify/",
+  "e2e/",
+  "**/*.e2e.ts",
+  "node_modules/",
+  "storybook-static/"
+]
