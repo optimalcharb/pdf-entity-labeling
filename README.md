@@ -10,7 +10,7 @@ git clone https://github.com/optimalcharb/dokumen.git
 npm install
 ```
 
-3. Install the recommended VS Code Extensions. Then setup .env according to .env.local.example.
+3. Install the recommended VS Code Extensions
 4. To setup playwright:
 
 ```cmd
@@ -40,7 +40,7 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 ### Backend for Frontend (BFF)
 
 - Storage: must get PDF from local storage or URL
-- Database and API: avoid creating database tables or API routes. Try to do everything with React and in-memory. Do not add authentication, authorization, Lambda functions, HTTP, caching, observability, security, etc.
+- Database and API: avoid creating database tables or API routes, except for plugin-annotation. don't rely heavily on some db or api framework, keep it simple. Try to do everything else with React and in-memory or possibly Zustand. Do not add authentication, authorization, Lambda functions, HTTP, caching, observability, security, etc.
 
 ### Core Backend
 
@@ -53,6 +53,7 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 | dev | run site locally |
 | build | build for prod |
 | start | start prod server |
+| tsc | compile types without generating files |
 | lint | check for linting errors |
 | lint:fix | fix some linting errors automatically |
 | prettier | check format |
@@ -60,7 +61,6 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 | prepare | automatically called by install |
 | postinstall | automatically called by install |
 | depcheck | check for unused dependencies |
-| analyze | analyze the bundle sizes for Client, Server, and Edge environments |
 | storybook | view storybook workshop |
 | test | run tests using Bun Test Runner |
 | e2e | run playwright end-to-end tests |

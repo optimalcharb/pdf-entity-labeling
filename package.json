@@ -10,6 +10,7 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
+    "tsc": "npx tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "prettier": "prettier --check \"**/*.{js,jsx,ts,tsx}\"",
