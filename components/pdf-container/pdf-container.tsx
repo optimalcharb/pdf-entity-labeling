@@ -23,6 +23,7 @@ import { Scroller, ScrollPluginPackage, ScrollStrategy } from "./plugin-scroll"
 import { SelectionLayer, SelectionPluginPackage } from "./plugin-selection"
 import { TilingLayer, TilingPluginPackage } from "./plugin-tiling"
 import { Viewport, ViewportPluginPackage } from "./plugin-viewport"
+import { PinchWrapper, ZoomMode, ZoomPluginPackage } from "./plugin-zoom"
 
 // const logger = new ConsoleLogger()
 
@@ -52,6 +53,7 @@ export default function PDFContainer({ url }: PDFContainerProps) {
           // logger={logger}
           engine={engine}
           plugins={[
+            // register Loader first
             createPluginRegistration(LoaderPluginPackage, {
               loadingOptions: {
                 type: "url",
@@ -83,6 +85,10 @@ export default function PDFContainer({ url }: PDFContainerProps) {
             createPluginRegistration(AnnotationPluginPackage, {
               annotationAuthor: "name",
             }),
+            // register Zoom after InteractionManager, Viewport, Scroll
+            createPluginRegistration(ZoomPluginPackage, {
+              defaultZoomLevel: ZoomMode.Automatic,
+            }),
             // createPluginRegistration(SearchPluginPackage),
           ]}
         >
@@ -90,40 +96,47 @@ export default function PDFContainer({ url }: PDFContainerProps) {
             <GlobalPointerProvider>
               <AnnotationToolbar />
               <Viewport className="h-full w-full flex-1 overflow-auto bg-gray-100 select-none">
-                {pluginsReady ? (
-                  <Scroller
-                    renderPage={({ pageIndex, scale, width, height }) => (
-                      <PagePointerProvider
-                        pageIndex={pageIndex}
-                        scale={scale}
-                        pageWidth={width}
-                        pageHeight={height}
-                        rotation={0}
-                      >
-                        <RenderLayer pageIndex={pageIndex} className="pointer-events-none" />
-                        <TilingLayer
-                          pageIndex={pageIndex}
-                          scale={scale}
-                          className="pointer-events-none"
-                        />
-                        <AnnotationLayer
+                {!pluginsReady && (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <Spinner />
+                  </div>
+                )}
+                {pluginsReady && (
+                  <PinchWrapper>
+                    <Scroller
+                      renderPage={({ pageIndex, scale, width, height }) => (
+                        <PagePointerProvider
                           pageIndex={pageIndex}
                           scale={scale}
                           pageWidth={width}
                           pageHeight={height}
-                        />
-                        {/* <SearchLayer
-                          pageIndex={pageIndex}
-                          scale={scale}
-                          highlightColor={"#FFFF00"}
-                          activeHighlightColor={"#FFFF00"}
-                        /> */}
-                        <SelectionLayer pageIndex={pageIndex} scale={scale} />
-                      </PagePointerProvider>
-                    )}
-                  />
-                ) : (
-                  <Spinner />
+                          rotation={0}
+                        >
+                          {/* RednerLayer must go first */}
+                          <RenderLayer pageIndex={pageIndex} className="pointer-events-none" />
+                          <TilingLayer
+                            pageIndex={pageIndex}
+                            scale={scale}
+                            className="pointer-events-none"
+                          />
+                          <AnnotationLayer
+                            pageIndex={pageIndex}
+                            scale={scale}
+                            pageWidth={width}
+                            pageHeight={height}
+                          />
+                          {/* <SearchLayer
+                            pageIndex={pageIndex}
+                            scale={scale}
+                            highlightColor={"#FFFF00"}
+                            activeHighlightColor={"#FFFF00"}
+                          /> */}
+                          {/* SelectionLayer must go last */}
+                          <SelectionLayer pageIndex={pageIndex} scale={scale} />
+                        </PagePointerProvider>
+                      )}
+                    />
+                  </PinchWrapper>
                 )}
               </Viewport>
             </GlobalPointerProvider>

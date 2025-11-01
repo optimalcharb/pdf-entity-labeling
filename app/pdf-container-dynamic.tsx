@@ -10,7 +10,6 @@ export const PDFContainer = dynamic(() => import("@/components/pdf-container/pdf
     <div className="flex h-[80vh] items-center justify-center">
       <div className="text-center">
         <Spinner />
-        <p className="mt-4 text-gray-600">Loading PDF viewer...</p>
       </div>
     </div>
   ),
