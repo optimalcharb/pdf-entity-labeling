@@ -1,6 +1,8 @@
+/// <reference types="hammerjs" />
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react"
 import { useEffect, useRef, useState } from "react"
 import { jsx } from "react/jsx-runtime"
+import "../../../lib/hammer/hammer.js"
 import {
   Action,
   BasePlugin,
@@ -32,7 +34,6 @@ import {
 } from "../plugin-interaction-manager"
 import { SCROLL_PLUGIN_ID, ScrollCapability } from "../plugin-scroll"
 import { VIEWPORT_PLUGIN_ID, ViewportCapability, ViewportMetrics } from "../plugin-viewport"
-import "./hammer.js"
 
 // *****CUSTOM TYPES******
 // ***EVENTS***
@@ -51,33 +52,8 @@ export interface ZoomChangeEvent {
   viewport: ViewportMetrics
 }
 
-export interface MarqueeZoomCallback {
-  onPreview?: (rect: Rect | null) => void
-  onCommit?: (rect: Rect) => void
-  onSmallDrag?: () => void
-}
-
-export interface RegisterMarqueeOnPageOptions {
-  pageIndex: number
-  scale: number
-  callback: MarqueeZoomCallback
-}
-
-// ***HAMMER.JS***
-interface HammerInput {
-  center: { x: number; y: number }
-  scale: number
-  srcEvent?: { cancelable?: boolean; preventDefault?: () => void; stopPropagation?: () => void }
-}
-
-interface HammerManagerInstance {
-  get(name: string): { set: (options: any) => void }
-  on(event: string, callback: (e: HammerInput) => void): void
-  destroy(): void
-}
-
 // ***OTHER CUSTOM TYPES***
-export declare enum ZoomMode {
+export enum ZoomMode {
   Automatic = "automatic",
   FitPage = "fit-page",
   FitWidth = "fit-width",
@@ -102,7 +78,7 @@ export interface ZoomPreset {
   icon?: string
 }
 
-export declare enum VerticalZoomFocus {
+export enum VerticalZoomFocus {
   Center = 0,
   Top = 1,
 }
@@ -116,18 +92,6 @@ export interface ZoomRequest {
    *  ▸ `"keep"`   (default) at the same viewport coords
    *  ▸ `"center"` centred in the viewport  */
   align?: "keep" | "center"
-}
-
-interface MarqueeZoomProps {
-  /** Index of the page this layer lives on */
-  pageIndex: number
-  /** Scale of the page */
-  scale: number
-  /** Optional CSS class applied to the marquee rectangle */
-  className?: string
-  /** Stroke / fill colours (defaults below) */
-  stroke?: string
-  fill?: string
 }
 
 type PinchWrapperProps = Omit<HTMLAttributes<HTMLDivElement>, "style"> & {
@@ -228,13 +192,6 @@ export interface ZoomCapability {
   zoomIn(): void
   zoomOut(): void
   zoomToArea(pageIndex: number, rect: Rect): void
-  /** zoom in on an area -------------------------------------------------- */
-  enableMarqueeZoom(): void
-  disableMarqueeZoom(): void
-  toggleMarqueeZoom(): void
-  isMarqueeZoomActive(): boolean
-  /** register a marquee handler on a page -------------------------------- */
-  registerMarqueeOnPage: (opts: RegisterMarqueeOnPageOptions) => () => void
   getState(): ZoomState
   getPresets(): ZoomPreset[]
 }
@@ -287,14 +244,6 @@ export class ZoomPlugin extends BasePlugin<
     this.viewport.onViewportResize(() => this.recalcAuto(VerticalZoomFocus.Top))
     this.coreStore.onAction(SET_ROTATION, () => this.recalcAuto(VerticalZoomFocus.Top))
     this.coreStore.onAction(SET_PAGES, () => this.recalcAuto(VerticalZoomFocus.Top))
-    this.coreStore.onAction(SET_DOCUMENT, () => this.recalcAuto(VerticalZoomFocus.Top))
-    this.interactionManager?.registerMode({
-      id: "marqueeZoom",
-      scope: "page",
-      exclusive: true,
-      cursor: "zoom-in",
-    })
-    this.resetReady()
   }
 
   protected buildCapability(): ZoomCapability {
@@ -310,23 +259,6 @@ export class ZoomPlugin extends BasePlugin<
         const target = this.toZoom(cur + d)
         return this.handleRequest({ level: target, center: c })
       },
-      enableMarqueeZoom: () => {
-        this.interactionManager?.activate("marqueeZoom")
-      },
-      disableMarqueeZoom: () => {
-        this.interactionManager?.activateDefaultMode()
-      },
-      toggleMarqueeZoom: () => {
-        if (this.interactionManager?.getActiveMode() === "marqueeZoom") {
-          this.interactionManager?.activateDefaultMode()
-        } else {
-          this.interactionManager?.activate("marqueeZoom")
-        }
-      },
-      isMarqueeZoomActive: () => {
-        return this.interactionManager?.getActiveMode() === "marqueeZoom"
-      },
-      registerMarqueeOnPage: (opts) => this.registerMarqueeOnPage(opts),
       getState: () => this.state,
       getPresets: () => this.presets,
     }
@@ -549,46 +481,6 @@ export class ZoomPlugin extends BasePlugin<
   onStoreUpdated(_prevState: ZoomState, newState: ZoomState): void {
     this.state$.emit(newState)
   }
-
-  registerMarqueeOnPage(opts: RegisterMarqueeOnPageOptions): () => void {
-    if (!this.interactionManager) {
-      this.logger.warn(
-        "ZoomPlugin",
-        "MissingDependency",
-        "Interaction manager plugin not loaded, marquee zoom disabled",
-      )
-      return () => {}
-    }
-    const document = this.coreState.core.document
-    if (!document) {
-      this.logger.warn("ZoomPlugin", "DocumentNotFound", "Document not found")
-      return () => {}
-    }
-    const page = document.pages[opts.pageIndex]
-    if (!page) {
-      this.logger.warn("ZoomPlugin", "PageNotFound", `Page ${opts.pageIndex} not found`)
-      return () => {}
-    }
-    const handlers = createMarqueeHandler({
-      pageSize: page.size,
-      scale: opts.scale,
-      onPreview: opts.callback.onPreview,
-      onCommit: (rect) => {
-        this.zoomToArea(opts.pageIndex, rect)
-        opts.callback.onCommit?.(rect)
-      },
-      onSmallDrag: () => {
-        this.zoomIn()
-        opts.callback.onSmallDrag?.()
-      },
-    })
-    const off = this.interactionManager.registerHandlers({
-      modeId: "marqueeZoom",
-      handlers,
-      pageIndex: opts.pageIndex,
-    })
-    return off
-  }
 }
 
 // ***MANIFEST***
@@ -645,100 +537,6 @@ export const ZoomPluginPackage: PluginPackage<ZoomPlugin, ZoomPluginConfig, Zoom
 // ***PLUGIN HOOKS***
 export const useZoomPlugin = () => usePlugin(ZOOM_PLUGIN_ID)
 export const useZoomCapability = () => useCapability(ZOOM_PLUGIN_ID)
-
-// *****HELPER FUNCTIONS*****
-export function createMarqueeHandler(opts: {
-  pageSize: Size
-  scale: number
-  minDragPx?: number
-  onPreview?: (rect: Rect | null) => void
-  onCommit?: (rect: Rect) => void
-  onSmallDrag?: () => void
-}): PointerEventHandlersWithLifecycle<PdfPointerEvent> {
-  const { pageSize, scale, minDragPx = 5, onPreview, onCommit, onSmallDrag } = opts
-  let start: any = null
-  let last: any = null
-  return {
-    onPointerDown: (pos, evt) => {
-      start = pos
-      last = { origin: { x: pos.x, y: pos.y }, size: { width: 0, height: 0 } }
-      onPreview?.(last)
-      evt.setPointerCapture?.()
-    },
-    onPointerMove: (pos) => {
-      if (!start) return
-      const x = clamp(pos.x, 0, pageSize.width)
-      const y = clamp(pos.y, 0, pageSize.height)
-      last = {
-        origin: { x: Math.min(start.x, x), y: Math.min(start.y, y) },
-        size: { width: Math.abs(x - start.x), height: Math.abs(y - start.y) },
-      }
-      onPreview?.(last)
-    },
-    onPointerUp: (_pos, evt) => {
-      if (last) {
-        const dragPx = Math.max(last.size.width, last.size.height) * scale
-        if (dragPx > minDragPx) {
-          onCommit?.(last)
-        } else {
-          onSmallDrag?.()
-        }
-      }
-      start = null
-      last = null
-      onPreview?.(null)
-      evt.releasePointerCapture?.()
-    },
-    onPointerCancel: (_pos, evt) => {
-      start = null
-      last = null
-      onPreview?.(null)
-      evt.releasePointerCapture?.()
-    },
-  }
-}
-
-// *****COMPONENTS******
-export function MarqueeZoom({
-  pageIndex,
-  scale,
-  className,
-  stroke = "rgba(33,150,243,0.8)",
-  fill = "rgba(33,150,243,0.15)",
-}: MarqueeZoomProps) {
-  const { provides: zoomPlugin } = useZoomCapability() as {
-    provides: Readonly<ZoomCapability> | null
-  }
-  const [rect, setRect] = useState<Rect | null>(null)
-
-  useEffect(() => {
-    if (!zoomPlugin) return
-    return zoomPlugin.registerMarqueeOnPage({
-      pageIndex,
-      scale,
-      callback: {
-        onPreview: setRect,
-      },
-    })
-  }, [zoomPlugin, pageIndex, scale])
-
-  if (!rect) return null
-
-  return /* @__PURE__ */ jsx("div", {
-    style: {
-      position: "absolute",
-      pointerEvents: "none",
-      left: rect.origin.x * scale,
-      top: rect.origin.y * scale,
-      width: rect.size.width * scale,
-      height: rect.size.height * scale,
-      border: `1px solid ${stroke}`,
-      background: fill,
-      boxSizing: "border-box",
-    },
-    className,
-  })
-}
 
 export function PinchWrapper({ children, style, ...props }: PinchWrapperProps) {
   const { elementRef } = usePinch()
@@ -802,7 +600,7 @@ export function usePinch(): {
 }
 
 function setupPinchZoom({ element, viewportProvides, zoomProvides }: PinchZoomDeps): () => void {
-  let hammerInstance: HammerManagerInstance | null = null
+  let hammerInstance: HammerManager | null = null
   if (typeof window === "undefined") {
     return () => {}
   }
@@ -845,7 +643,7 @@ function setupPinchZoom({ element, viewportProvides, zoomProvides }: PinchZoomDe
   }
   const setupHammer = async () => {
     try {
-      const Hammer = (window as any).Hammer
+      const Hammer = window.Hammer
       const inputClass = (() => {
         const MOBILE_REGEX = /mobile|tablet|ip(ad|hone|od)|android/i
         const SUPPORT_TOUCH = "ontouchstart" in window || navigator.maxTouchPoints > 0
