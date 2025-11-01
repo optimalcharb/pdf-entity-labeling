@@ -7,6 +7,9 @@
 
 ```cmd
 git clone https://github.com/optimalcharb/pdf-entity-labeling.git
+```
+
+```cmd
 npm install
 ```
 
@@ -70,7 +73,7 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 ### Version Control
 
 - DevOps CI/CD: [GitHub Actions](https://github.com/features/actions) with workflows for check and bundle analyzer - currently disabled
-- Changelog generation: [Semantic Release](https://github.com/semantic-release/semantic-release) config by .releaserc and ran by .github/workflows/semantic-release.yml, [Conventional Commits](https://www.conventionalcommits.org/) enforced by [husky](https://github.com/typicode/husky) config by .commitlintrc.json, commit messages must start with one of these for pull requests or push to master
+- Changelog generation: [Semantic Release](https://github.com/semantic-release/semantic-release) config by .releaserc and ran by .github/workflows/semantic-release.yml, [Conventional Commits](https://www.conventionalcommits.org/) enforced by [husky](https://github.com/typicode/husky) config by .commitlintrc.json, commit messages must start with a prefix in the table below, the workflow edits CHANGELOG.md on any version bump
 
 | commit prefix | version bump | definition |
 |---------------|--------------|------------|
