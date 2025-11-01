@@ -108,7 +108,7 @@ const manifest: PluginManifest<TemplatePluginConfig> = {
   defaultConfig: {},
 }
 
-// **PLUGIN PACAKGE***
+// ***PLUGIN PACKAGE***
 export const TemplatePluginPackage: PluginPackage<
   TemplatePlugin,
   TemplatePluginConfig,

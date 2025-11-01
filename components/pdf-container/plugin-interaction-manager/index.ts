@@ -315,42 +315,42 @@ export type InteractionManagerAction =
   | SetDefaultModeAction
 
 // ***ACTION CREATORS***
-export const setExclusionRules = (rules: InteractionExclusionRules): SetExclusionRulesAction => ({
+const setExclusionRules = (rules: InteractionExclusionRules): SetExclusionRulesAction => ({
   type: SET_EXCLUSION_RULES,
   payload: { rules },
 })
-export const addExclusionClass = (className: string): AddExclusionClassAction => ({
+const addExclusionClass = (className: string): AddExclusionClassAction => ({
   type: ADD_EXCLUSION_CLASS,
   payload: { className },
 })
-export const removeExclusionClass = (className: string): RemoveExclusionClassAction => ({
+const removeExclusionClass = (className: string): RemoveExclusionClassAction => ({
   type: REMOVE_EXCLUSION_CLASS,
   payload: { className },
 })
-export const addExclusionAttribute = (attribute: string): AddExclusionAttributeAction => ({
+const addExclusionAttribute = (attribute: string): AddExclusionAttributeAction => ({
   type: ADD_EXCLUSION_ATTRIBUTE,
   payload: { attribute },
 })
-export const removeExclusionAttribute = (attribute: string): RemoveExclusionAttributeAction => ({
+const removeExclusionAttribute = (attribute: string): RemoveExclusionAttributeAction => ({
   type: REMOVE_EXCLUSION_ATTRIBUTE,
   payload: { attribute },
 })
-export const activateMode = (mode: string): ActivateModeAction => ({
+const activateMode = (mode: string): ActivateModeAction => ({
   type: ACTIVATE_MODE,
   payload: { mode },
 })
-export const setCursor = (cursor: string): SetCursorAction => ({
+const setCursor = (cursor: string): SetCursorAction => ({
   type: SET_CURSOR,
   payload: { cursor },
 })
-export const setDefaultMode = (mode: string): SetDefaultModeAction => ({
+const setDefaultMode = (mode: string): SetDefaultModeAction => ({
   type: SET_DEFAULT_MODE,
   payload: { mode },
 })
-export const pauseInteraction = (): PauseInteractionAction => ({
+const pauseInteraction = (): PauseInteractionAction => ({
   type: PAUSE_INTERACTION,
 })
-export const resumeInteraction = (): ResumeInteractionAction => ({
+const resumeInteraction = (): ResumeInteractionAction => ({
   type: RESUME_INTERACTION,
 })
 
@@ -449,7 +449,7 @@ export class InteractionManagerPlugin extends BasePlugin<
   InteractionManagerState,
   InteractionManagerAction
 > {
-  static readonly id = "interaction-manager"
+  static readonly id: string = INTERACTION_MANAGER_PLUGIN_ID
 
   private modes: Map<string, InteractionMode> = new Map()
   private cursorClaims: Map<string, { cursor: string; priority: number }> = new Map()
@@ -746,7 +746,7 @@ const manifest: PluginManifest<InteractionManagerPluginConfig> = {
   },
 }
 
-// **PLUGIN PACAKGE***
+// ***PLUGIN PACKAGE***
 export const InteractionManagerPluginPackage: PluginPackage<
   InteractionManagerPlugin,
   InteractionManagerPluginConfig,

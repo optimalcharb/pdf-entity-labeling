@@ -327,7 +327,7 @@ const manifest: PluginManifest<TilingPluginConfig> = {
   },
 }
 
-// **PLUGIN PACKAGE***
+// ***PLUGIN PACKAGE***
 export const TilingPluginPackage: PluginPackage<
   TilingPlugin,
   TilingPluginConfig,

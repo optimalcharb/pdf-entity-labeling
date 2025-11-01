@@ -518,7 +518,7 @@ const manifest: PluginManifest<BasePluginConfig> = {
   },
 }
 
-// **PLUGIN PACAKGE***
+// ***PLUGIN PACKAGE***
 export const SelectionPluginPackage: PluginPackage<
   SelectionPlugin,
   BasePluginConfig,

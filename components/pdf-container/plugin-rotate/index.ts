@@ -119,7 +119,7 @@ const manifest: PluginManifest<RotatePluginConfig> = {
   },
 }
 
-// **PLUGIN PACKAGE***
+// ***PLUGIN PACKAGE***
 export const RotatePluginPackage: PluginPackage<RotatePlugin, RotatePluginConfig, RotateState> = {
   manifest,
   create: (registry: PluginRegistry, config: RotatePluginConfig) =>

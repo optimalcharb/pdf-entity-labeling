@@ -511,7 +511,7 @@ const manifest: PluginManifest<SearchPluginConfig> = {
   },
 }
 
-// **PLUGIN PACKAGE***
+// ***PLUGIN PACKAGE***
 export const SearchPluginPackage: PluginPackage<
   SearchPlugin,
   SearchPluginConfig,

@@ -286,7 +286,7 @@ const manifest: PluginManifest<LoaderPluginConfig> = {
   },
 }
 
-// **PLUGIN PACKAGE***
+// ***PLUGIN PACKAGE***
 const LoaderPluginPackageV1: PluginPackage<LoaderPlugin, LoaderPluginConfig> = {
   manifest,
   create: (registry: PluginRegistry) => new LoaderPlugin(LOADER_PLUGIN_ID, registry),

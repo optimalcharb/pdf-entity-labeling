@@ -134,7 +134,7 @@ export class HistoryPlugin extends BasePlugin<
   HistoryState,
   HistoryAction
 > {
-  static readonly id = "history"
+  static readonly id: string = HISTORY_PLUGIN_ID
 
   private readonly topicHistories: Map<string, { commands: Command[]; currentIndex: number }>
   private globalTimeline: HistoryEntry[]
@@ -263,7 +263,7 @@ const manifest: PluginManifest<BasePluginConfig> = {
   },
 }
 
-// **PLUGIN PACAKGE***
+// ***PLUGIN PACKAGE***
 export const HistoryPluginPackage: PluginPackage<
   HistoryPlugin,
   BasePluginConfig,

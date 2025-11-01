@@ -110,7 +110,7 @@ const manifest: PluginManifest<BasePluginConfig> = {
   },
 }
 
-// **PLUGIN PACKAGE***
+// ***PLUGIN PACKAGE***
 export const RenderPluginPackage: PluginPackage<RenderPlugin, BasePluginConfig> = {
   manifest,
   create: (registry: PluginRegistry) => new RenderPlugin(RENDER_PLUGIN_ID, registry),

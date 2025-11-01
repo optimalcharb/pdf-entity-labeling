@@ -158,7 +158,7 @@ const setSmoothScrollActivity = (isSmoothScrolling: boolean): SetSmoothScrollAct
 })
 
 // ***ACTION REDUCER***
-export const viewportReducer: Reducer<ViewportState, ViewportAction> = (
+const viewportReducer: Reducer<ViewportState, ViewportAction> = (
   state: ViewportState = initialState,
   action: ViewportAction,
 ): ViewportState => {
@@ -381,7 +381,7 @@ const manifest: PluginManifest<ViewportPluginConfig> = {
   },
 }
 
-// **PLUGIN PACKAGE***
+// ***PLUGIN PACKAGE***
 export const ViewportPluginPackage: PluginPackage<
   ViewportPlugin,
   ViewportPluginConfig,

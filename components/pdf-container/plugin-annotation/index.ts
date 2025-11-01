@@ -843,7 +843,7 @@ const manifest: PluginManifest<AnnotationPluginConfig> = {
   },
 }
 
-// **PLUGIN PACAKGE***
+// ***PLUGIN PACKAGE***
 export const AnnotationPluginPackage: PluginPackage<
   AnnotationPlugin,
   AnnotationPluginConfig,

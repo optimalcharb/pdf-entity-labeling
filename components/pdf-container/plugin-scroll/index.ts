@@ -887,7 +887,7 @@ const manifest = {
   },
 }
 
-// **PLUGIN PACKAGE***
+// ***PLUGIN PACKAGE***
 export const ScrollPluginPackage = {
   manifest,
   create: (registry: any, config: ScrollPluginConfig) =>
