@@ -4,11 +4,7 @@ import { usePdfiumEngine } from "@embedpdf/engines/react"
 import { useRef } from "react"
 import { Spinner } from "../shadcn-ui/spinner"
 import { AnnotationToolbar } from "./annotation-toolbar"
-import {
-  // ConsoleLogger,
-  createPluginRegistration,
-  EmbedPDF,
-} from "./core"
+import { ConsoleLogger, createPluginRegistration, EmbedPDF } from "./core"
 import { AnnotationLayer, AnnotationPluginPackage } from "./plugin-annotation"
 import { HistoryPluginPackage } from "./plugin-history"
 import {
@@ -25,7 +21,7 @@ import { TilingLayer, TilingPluginPackage } from "./plugin-tiling"
 import { Viewport, ViewportPluginPackage } from "./plugin-viewport"
 import { PinchWrapper, ZoomMode, ZoomPluginPackage } from "./plugin-zoom"
 
-// const logger = new ConsoleLogger()
+const logger = new ConsoleLogger()
 
 interface PDFContainerProps {
   url: string
@@ -35,7 +31,7 @@ export default function PDFContainer({ url }: PDFContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const { engine, isLoading, error } = usePdfiumEngine({
     worker: true,
-    // logger: logger,
+    logger: logger,
   })
 
   if (error) {
@@ -50,7 +46,7 @@ export default function PDFContainer({ url }: PDFContainerProps) {
     <div className="flex h-screen flex-1 flex-col overflow-hidden" ref={containerRef}>
       <div className="flex flex-1 overflow-hidden">
         <EmbedPDF
-          // logger={logger}
+          logger={logger}
           engine={engine}
           plugins={[
             // register Loader first
