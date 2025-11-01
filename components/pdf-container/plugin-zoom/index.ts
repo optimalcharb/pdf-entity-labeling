@@ -18,19 +18,15 @@ import {
   Rect,
   type Reducer,
   rotateRect,
-  SET_DOCUMENT,
   SET_PAGES,
   SET_ROTATION,
   setScale,
-  Size,
   useCapability,
   usePlugin,
 } from "../core"
 import {
   INTERACTION_MANAGER_PLUGIN_ID,
   InteractionManagerCapability,
-  PdfPointerEvent,
-  PointerEventHandlersWithLifecycle,
 } from "../plugin-interaction-manager"
 import { SCROLL_PLUGIN_ID, ScrollCapability } from "../plugin-scroll"
 import { VIEWPORT_PLUGIN_ID, ViewportCapability, ViewportMetrics } from "../plugin-viewport"
