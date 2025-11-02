@@ -1,8 +1,3 @@
-/**
- * logger for logging
- *
- * @public
- */
 export interface Logger {
   /**
    * Check if a log level is enabled
@@ -23,7 +18,7 @@ export interface Logger {
    */
   debug: (source: string, category: string, ...args: any) => void
   /**
-   * Log infor message
+   * Log info message
    * @param source - source of log
    * @param category - category of log
    * @param args - parameters of log
@@ -71,41 +66,96 @@ export interface Logger {
     ...args: any
   ) => void
 }
-/**
- * Logger that log nothing, it will ignore all the logs
- *
- * @public
- */
-export declare class NoopLogger implements Logger {
+
+export class NoopLogger implements Logger {
   /** {@inheritDoc Logger.isEnabled} */
-  isEnabled(): boolean
+  isEnabled(): boolean {
+    return false
+  }
   /** {@inheritDoc Logger.debug} */
-  debug(): void
+  debug(): void {}
   /** {@inheritDoc Logger.info} */
-  info(): void
+  info(): void {}
   /** {@inheritDoc Logger.warn} */
-  warn(): void
+  warn(): void {}
   /** {@inheritDoc Logger.error} */
-  error(): void
+  error(): void {}
   /** {@inheritDoc Logger.perf} */
-  perf(): void
+  perf(): void {}
 }
+
+export class ConsoleLogger implements Logger {
+  /** {@inheritDoc Logger.isEnabled} */
+  isEnabled(): boolean {
+    return true
+  }
+  /** {@inheritDoc Logger.debug} */
+  debug(source: string, category: string, ...args: any): void {
+    console.debug(`${source}.${category}`, ...args)
+  }
+  /** {@inheritDoc Logger.info} */
+  info(source: string, category: string, ...args: any): void {
+    console.info(`${source}.${category}`, ...args)
+  }
+  /** {@inheritDoc Logger.warn} */
+  warn(source: string, category: string, ...args: any): void {
+    console.warn(`${source}.${category}`, ...args)
+  }
+  /** {@inheritDoc Logger.error} */
+  error(source: string, category: string, ...args: any): void {
+    console.error(`${source}.${category}`, ...args)
+  }
+  /** {@inheritDoc Logger.perf} */
+  perf(
+    source: string,
+    category: string,
+    event: string,
+    phase: "Begin" | "End",
+    ...args: any
+  ): void {
+    console.info(`${source}.${category}.${event}.${phase}`, ...args)
+  }
+}
+
+export type SerializedLogger = {
+  type: "noop" | "console"
+  config?: {
+    level?: LogLevel
+    logger?: SerializedLogger
+    loggers?: SerializedLogger[]
+  }
+}
+
+export type LogLevel = "debug" | "info" | "warn" | "error"
+
 /**
- * Logger that use console as the output
+ * Convert a Logger instance to a serializable JSON object
+ * @param logger - The logger instance to serialize
+ * @returns Serialized logger object
  *
  * @public
  */
-export declare class ConsoleLogger implements Logger {
-  /** {@inheritDoc Logger.isEnabled} */
-  isEnabled(): boolean
-  /** {@inheritDoc Logger.debug} */
-  debug(source: string, category: string, ...args: any): void
-  /** {@inheritDoc Logger.info} */
-  info(source: string, category: string, ...args: any): void
-  /** {@inheritDoc Logger.warn} */
-  warn(source: string, category: string, ...args: any): void
-  /** {@inheritDoc Logger.error} */
-  error(source: string, category: string, ...args: any): void
-  /** {@inheritDoc Logger.perf} */
-  perf(source: string, category: string, event: string, phase: "Begin" | "End", ...args: any): void
+export function serializeLogger(logger: Logger): SerializedLogger {
+  if (logger instanceof ConsoleLogger) {
+    return { type: "console" }
+  }
+  return { type: "noop" }
+}
+
+/**
+ * Convert a serialized logger object back to a Logger instance
+ * @param serialized - The serialized logger object
+ * @returns Logger instance
+ *
+ * @public
+ */
+export function deserializeLogger(serialized: SerializedLogger): Logger {
+  switch (serialized.type) {
+    case "noop":
+      return new NoopLogger()
+    case "console":
+      return new ConsoleLogger()
+    default:
+      return new NoopLogger()
+  }
 }

@@ -1,5 +1,59 @@
-import { Position, Rect, Rotation, Size } from "./geometry"
-import { Task, TaskError } from "./task"
+import { Rect, Rotation, Size } from "./geometry"
+import { TaskError } from "./task"
+
+// Enums must match pdf.ts
+declare enum PdfTrappedStatus {
+  NotSet = 0,
+  True = 1,
+  False = 2,
+  Unknown = 3,
+}
+declare enum PdfEngineFeature {
+  RenderPage = 0,
+  RenderPageRect = 1,
+  Thumbnails = 2,
+  Bookmarks = 3,
+  Annotations = 4,
+}
+declare enum PdfEngineOperation {
+  Create = 0,
+  Read = 1,
+  Update = 2,
+  Delete = 3,
+}
+declare enum PdfErrorCode {
+  Ok = 0, //  #define FPDF_ERR_SUCCESS 0    // No error.
+  Unknown = 1, // #define FPDF_ERR_UNKNOWN 1    // Unknown error.
+  NotFound = 2, // #define FPDF_ERR_FILE 2       // File not found or could not be opened.
+  WrongFormat = 3, // #define FPDF_ERR_FORMAT 3     // File not in PDF format or corrupted.
+  Password = 4, // #define FPDF_ERR_PASSWORD 4   // Password required or incorrect password.
+  Security = 5, // #define FPDF_ERR_SECURITY 5   // Unsupported security scheme.
+  PageError = 6, // #define FPDF_ERR_PAGE 6       // Page not found or content error.
+  XFALoad = 7, // #ifdef PDF_ENABLE_XFA
+  XFALayout = 8, //
+  Cancelled = 9,
+  Initialization = 10,
+  NotReady = 11,
+  NotSupport = 12,
+  LoadDoc = 13,
+  DocNotOpen = 14,
+  CantCloseDoc = 15,
+  CantCreateNewDoc = 16,
+  CantImportPages = 17,
+  CantCreateAnnot = 18,
+  CantSetAnnotRect = 19,
+  CantSetAnnotContent = 20,
+  CantRemoveInkList = 21,
+  CantAddInkStoke = 22,
+  CantReadAttachmentSize = 23,
+  CantReadAttachmentContent = 24,
+  CantFocusAnnot = 25,
+  CantSelectText = 26,
+  CantSelectOption = 27,
+  CantCheckField = 28,
+  CantSetAnnotString = 29,
+}
+
 export interface PdfPageObject {
   index: number
   size: Size
@@ -19,12 +73,7 @@ export interface PdfMetadataObject {
   creationDate: Date | null
   trapped: PdfTrappedStatus | null
 }
-export declare enum PdfTrappedStatus {
-  NotSet = 0,
-  True = 1,
-  False = 2,
-  Unknown = 3,
-}
+
 export interface PdfAlphaColor {
   red: number
   green: number
@@ -53,19 +102,6 @@ export interface PdfTransformMatrix {
   d: number
   e: number
   f: number
-}
-export declare enum PdfEngineFeature {
-  RenderPage = 0,
-  RenderPageRect = 1,
-  Thumbnails = 2,
-  Bookmarks = 3,
-  Annotations = 4,
-}
-export declare enum PdfEngineOperation {
-  Create = 0,
-  Read = 1,
-  Update = 2,
-  Delete = 3,
 }
 export type ImageConversionTypes = "image/webp" | "image/png" | "image/jpeg"
 
@@ -127,50 +163,11 @@ export interface PdfFile extends PdfFileWithoutContent {
 export interface PdfFileUrl extends PdfFileWithoutContent {
   url: string
 }
-export declare enum PdfErrorCode {
-  Ok = 0, //  #define FPDF_ERR_SUCCESS 0    // No error.
-  Unknown = 1, // #define FPDF_ERR_UNKNOWN 1    // Unknown error.
-  NotFound = 2, // #define FPDF_ERR_FILE 2       // File not found or could not be opened.
-  WrongFormat = 3, // #define FPDF_ERR_FORMAT 3     // File not in PDF format or corrupted.
-  Password = 4, // #define FPDF_ERR_PASSWORD 4   // Password required or incorrect password.
-  Security = 5, // #define FPDF_ERR_SECURITY 5   // Unsupported security scheme.
-  PageError = 6, // #define FPDF_ERR_PAGE 6       // Page not found or content error.
-  XFALoad = 7, // #ifdef PDF_ENABLE_XFA
-  XFALayout = 8, //
-  Cancelled = 9,
-  Initialization = 10,
-  NotReady = 11,
-  NotSupport = 12,
-  LoadDoc = 13,
-  DocNotOpen = 14,
-  CantCloseDoc = 15,
-  CantCreateNewDoc = 16,
-  CantImportPages = 17,
-  CantCreateAnnot = 18,
-  CantSetAnnotRect = 19,
-  CantSetAnnotContent = 20,
-  CantRemoveInkList = 21,
-  CantAddInkStoke = 22,
-  CantReadAttachmentSize = 23,
-  CantReadAttachmentContent = 24,
-  CantFocusAnnot = 25,
-  CantSelectText = 26,
-  CantSelectOption = 27,
-  CantCheckField = 28,
-  CantSetAnnotString = 29,
-}
 export interface PdfErrorReason {
   code: PdfErrorCode
   message: string
 }
 export type PdfEngineError = TaskError<PdfErrorReason>
-export type PdfTask<R, P = unknown> = Task<R, PdfErrorReason, P>
-export declare class PdfTaskHelper {
-  static create<R, P = unknown>(): Task<R, PdfErrorReason, P>
-  static resolve<R, P = unknown>(result: R): Task<R, PdfErrorReason, P>
-  static reject<T = any, P = unknown>(reason: PdfErrorReason): Task<T, PdfErrorReason, P>
-  static abort<T = any, P = unknown>(reason: PdfErrorReason): Task<T, PdfErrorReason, P>
-}
 export interface PdfOpenDocumentBufferOptions {
   password?: string
 }
@@ -193,6 +190,134 @@ export interface ConvertToBlobOptions {
 }
 export interface PdfRenderPageOptions extends PdfRenderOptions {
   withAnnotations?: boolean
+}
+declare enum PdfZoomMode {
+  Unknown = 0,
+  /**
+   * Zoom level with specified offset.
+   */
+  XYZ = 1,
+  /**
+   * Fit both the width and height of the page (whichever smaller).
+   */
+  FitPage = 2,
+  /**
+   * Fit the entire page width to the window.
+   */
+  FitHorizontal = 3,
+  /**
+   * Fit the entire page height to the window.
+   */
+  FitVertical = 4,
+  /**
+   * Fit a specific rectangle area within the window.
+   */
+  FitRectangle = 5,
+  /**
+   * Fit bounding box of the entire page (including annotations).
+   */
+  FitBoundingBox = 6,
+  /**
+   * Fit the bounding box width of the page.
+   */
+  FitBoundingBoxHorizontal = 7,
+  /**
+   * Fit the bounding box height of the page.
+   */
+  FitBoundingBoxVertical = 8,
+}
+export interface PdfDestinationObject {
+  pageIndex: number
+  zoom:
+    | {
+        mode: PdfZoomMode.Unknown
+      }
+    | {
+        mode: PdfZoomMode.XYZ
+        params: {
+          x: number
+          y: number
+          zoom: number
+        }
+      }
+    | {
+        mode: PdfZoomMode.FitPage
+      }
+    | {
+        mode: PdfZoomMode.FitHorizontal
+      }
+    | {
+        mode: PdfZoomMode.FitVertical
+      }
+    | {
+        mode: PdfZoomMode.FitRectangle
+      }
+    | {
+        mode: PdfZoomMode.FitBoundingBox
+      }
+    | {
+        mode: PdfZoomMode.FitBoundingBoxHorizontal
+      }
+    | {
+        mode: PdfZoomMode.FitBoundingBoxVertical
+      }
+  view: number[]
+}
+export declare enum PdfActionType {
+  Unsupported = 0,
+  /**
+   * Goto specified position in this document
+   */
+  Goto = 1,
+  /**
+   * Goto specified position in another document
+   */
+  RemoteGoto = 2,
+  /**
+   * Goto specified URI
+   */
+  URI = 3,
+  /**
+   * Launch specifed application
+   */
+  LaunchAppOrOpenFile = 4,
+}
+export type PdfActionObject =
+  | {
+      type: PdfActionType.Unsupported
+    }
+  | {
+      type: PdfActionType.Goto
+      destination: PdfDestinationObject
+    }
+  | {
+      type: PdfActionType.RemoteGoto
+      destination: PdfDestinationObject
+    }
+  | {
+      type: PdfActionType.URI
+      uri: string
+    }
+  | {
+      type: PdfActionType.LaunchAppOrOpenFile
+      path: string
+    }
+export type PdfLinkTarget =
+  | {
+      type: "action"
+      action: PdfActionObject
+    }
+  | {
+      type: "destination"
+      destination: PdfDestinationObject
+    }
+export interface PdfBookmarkObject {
+  title: string
+  target?: PdfLinkTarget | undefined
+  children?: PdfBookmarkObject[]
+}
+export interface PdfBookmarksObject {
+  bookmarks: PdfBookmarkObject[]
 }
 export interface PdfEngine<T = Blob> {
   /**
@@ -256,12 +381,6 @@ export interface PdfEngine<T = Blob> {
    * @returns task that contains a 32-bit integer indicating permission flags
    */
   getDocUserPermissions: (doc: PdfDocumentObject) => PdfTask<number>
-  /**
-   * Get the signatures of the file
-   * @param doc - pdf document
-   * @returns task that contains the signatures or error
-   */
-  getSignatures: (doc: PdfDocumentObject) => PdfTask<PdfSignatureObject[]>
   /**
    * Get the bookmarks of the file
    * @param doc - pdf document

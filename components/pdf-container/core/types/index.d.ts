@@ -1,6 +1,5 @@
 export * from "./base-plugin"
 export * from "./builder"
 export * from "./context"
-export * from "./errors"
-export * from "./plugin-registry"
 export * from "./plugin"
+export * from "./plugin-registry"
