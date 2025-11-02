@@ -1,5 +1,9 @@
 # PDF Entity Labeling
 
+## Idea
+
+In-browser PDF labeling to enable NER (named entity recognition) model training. The page will display a PDF on the left and a two-column table of entities on the right. The list of entity types are defined by the user on a previous page (so for now, assume the entity type list is hardcoded). The values for the entities are dynamically filled based on what the user highlights. The user can choose the color and whether highlight/underline/squiggly for each entity type. In the previous page or settings sidebar, the user can decide whether each entity type is required (each PDF must have that entity), unique (each PDF has at most one of that entity), and single-word (whether the entity value can have spaces). Later, I also want an option for highlighting to only select full words. I want undo and redo buttons using plugin-history, a search button and input field using plugin-search, zoom-in and zoom-out buttons using plugin-zoom, and an export button using plugin-export. The current "export annotations to json" and "delete annotation" buttons are temporary for testing. A key upcoming enhancement is better storage import/export of annotations so that they can be easily passed to the table and later preloaded with annotations from a previous session.
+
 ## Quickstart
 
 1. Install [Node.js v22](https://nodejs.org/en/download/), [Git](https://git-scm.com/downloads), and [VS Code](https://code.visualstudio.com/download)
