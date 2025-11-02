@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/optimalcharb/pdf-entity-labeling/compare/v1.0.0...v1.0.1) (2025-11-02)
+
+
+### Performance Improvements
+
+* start core rebuild ([20549b5](https://github.com/optimalcharb/pdf-entity-labeling/commit/20549b516282118546b5cfdfadf05d3d830ea69a))
+
 # 1.0.0 (2025-11-01)
 
 
