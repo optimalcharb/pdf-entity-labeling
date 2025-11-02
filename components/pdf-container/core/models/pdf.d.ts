@@ -19,11 +19,162 @@ export interface PdfMetadataObject {
   creationDate: Date | null
   trapped: PdfTrappedStatus | null
 }
+export declare enum PdfBlendMode {
+  Normal = 0,
+  Multiply = 1,
+  Screen = 2,
+  Overlay = 3,
+  Darken = 4,
+  Lighten = 5,
+  ColorDodge = 6,
+  ColorBurn = 7,
+  HardLight = 8,
+  SoftLight = 9,
+  Difference = 10,
+  Exclusion = 11,
+  Hue = 12,
+  Saturation = 13,
+  Color = 14,
+  Luminosity = 15,
+}
+export declare enum PdfZoomMode {
+  Unknown = 0,
+  /**
+   * Zoom level with specified offset.
+   */
+  XYZ = 1,
+  /**
+   * Fit both the width and height of the page (whichever smaller).
+   */
+  FitPage = 2,
+  /**
+   * Fit the entire page width to the window.
+   */
+  FitHorizontal = 3,
+  /**
+   * Fit the entire page height to the window.
+   */
+  FitVertical = 4,
+  /**
+   * Fit a specific rectangle area within the window.
+   */
+  FitRectangle = 5,
+  /**
+   * Fit bounding box of the entire page (including annotations).
+   */
+  FitBoundingBox = 6,
+  /**
+   * Fit the bounding box width of the page.
+   */
+  FitBoundingBoxHorizontal = 7,
+  /**
+   * Fit the bounding box height of the page.
+   */
+  FitBoundingBoxVertical = 8,
+}
 export declare enum PdfTrappedStatus {
   NotSet = 0,
   True = 1,
   False = 2,
   Unknown = 3,
+}
+export interface PdfDestinationObject {
+  pageIndex: number
+  zoom:
+    | {
+        mode: PdfZoomMode.Unknown
+      }
+    | {
+        mode: PdfZoomMode.XYZ
+        params: {
+          x: number
+          y: number
+          zoom: number
+        }
+      }
+    | {
+        mode: PdfZoomMode.FitPage
+      }
+    | {
+        mode: PdfZoomMode.FitHorizontal
+      }
+    | {
+        mode: PdfZoomMode.FitVertical
+      }
+    | {
+        mode: PdfZoomMode.FitRectangle
+      }
+    | {
+        mode: PdfZoomMode.FitBoundingBox
+      }
+    | {
+        mode: PdfZoomMode.FitBoundingBoxHorizontal
+      }
+    | {
+        mode: PdfZoomMode.FitBoundingBoxVertical
+      }
+  view: number[]
+}
+export declare enum PdfActionType {
+  Unsupported = 0,
+  /**
+   * Goto specified position in this document
+   */
+  Goto = 1,
+  /**
+   * Goto specified position in another document
+   */
+  RemoteGoto = 2,
+  /**
+   * Goto specified URI
+   */
+  URI = 3,
+  /**
+   * Launch specifed application
+   */
+  LaunchAppOrOpenFile = 4,
+}
+export type PdfImage = {
+  data: Uint8ClampedArray<ArrayBuffer>
+  width: number
+  height: number
+}
+export type PdfActionObject =
+  | {
+      type: PdfActionType.Unsupported
+    }
+  | {
+      type: PdfActionType.Goto
+      destination: PdfDestinationObject
+    }
+  | {
+      type: PdfActionType.RemoteGoto
+      destination: PdfDestinationObject
+    }
+  | {
+      type: PdfActionType.URI
+      uri: string
+    }
+  | {
+      type: PdfActionType.LaunchAppOrOpenFile
+      path: string
+    }
+export type PdfLinkTarget =
+  | {
+      type: "action"
+      action: PdfActionObject
+    }
+  | {
+      type: "destination"
+      destination: PdfDestinationObject
+    }
+export interface PdfBookmarkObject {
+  title: string
+  target?: PdfLinkTarget | undefined
+  children?: PdfBookmarkObject[]
+}
+export interface PdfBookmarksObject {
+  bookmarks: PdfBookmarkObject[]
 }
 export interface PdfAlphaColor {
   red: number
@@ -35,6 +186,14 @@ export interface PdfColor {
   red: number
   green: number
   blue: number
+}
+export declare enum PdfPageObjectType {
+  UNKNOWN = 0,
+  TEXT = 1,
+  PATH = 2,
+  IMAGE = 3,
+  SHADING = 4,
+  FORM = 5,
 }
 /**
  * Matrix for transformation, in the form [a b c d e f], equivalent to:
@@ -54,6 +213,28 @@ export interface PdfTransformMatrix {
   e: number
   f: number
 }
+export declare enum PdfSegmentObjectType {
+  UNKNOWN = -1,
+  LINETO = 0,
+  BEZIERTO = 1,
+  MOVETO = 2,
+}
+export interface PdfSegmentObject {
+  type: PdfSegmentObjectType
+  point: Position
+  isClosed: boolean
+}
+export interface PdfPathObject {
+  type: PdfPageObjectType.PATH
+  bounds: {
+    left: number
+    bottom: number
+    right: number
+    top: number
+  }
+  segments: PdfSegmentObject[]
+  matrix: PdfTransformMatrix
+}
 export declare enum PdfEngineFeature {
   RenderPage = 0,
   RenderPageRect = 1,
@@ -68,6 +249,20 @@ export declare enum PdfEngineOperation {
   Delete = 3,
 }
 export type ImageConversionTypes = "image/webp" | "image/png" | "image/jpeg"
+
+export interface SearchTarget {
+  keyword: string
+  flags: MatchFlag[]
+}
+/**
+ * compare 2 search target
+ * @param targetA - first target for search
+ * @param targetB - second target for search
+ * @returns whether 2 search target are the same
+ *
+ * @public
+ */
+export declare function compareSearchTarget(targetA: SearchTarget, targetB: SearchTarget): boolean
 
 export interface PageTextSlice {
   pageIndex: number

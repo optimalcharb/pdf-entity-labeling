@@ -1,1 +1,6 @@
+export * from "./dependency-resolver"
+export * from "./event-control"
+export * from "./eventing"
+export * from "./math"
 export * from "./plugin-helpers"
+export * from "./typed-object"

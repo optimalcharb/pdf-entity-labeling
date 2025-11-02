@@ -1,10 +1,106 @@
 import { createContext, Fragment, useContext, useEffect, useMemo, useRef, useState } from "react"
 import { jsx, jsxs } from "react/jsx-runtime"
 
-// import/export from side files
-import { DependencyResolver } from "./dependency-resolver.ts"
-import { arePropsEqual } from "./math.ts"
-
+export class DependencyResolver {
+  constructor() {
+    this.dependencyGraph = /* @__PURE__ */ new Map()
+  }
+  addNode(id, dependencies = []) {
+    this.dependencyGraph.set(id, new Set(dependencies))
+  }
+  hasCircularDependencies() {
+    const visited = /* @__PURE__ */ new Set()
+    const recursionStack = /* @__PURE__ */ new Set()
+    const dfs = (id) => {
+      visited.add(id)
+      recursionStack.add(id)
+      const dependencies = this.dependencyGraph.get(id) || /* @__PURE__ */ new Set()
+      for (const dep of dependencies) {
+        if (!visited.has(dep)) {
+          if (dfs(dep)) return true
+        } else if (recursionStack.has(dep)) {
+          return true
+        }
+      }
+      recursionStack.delete(id)
+      return false
+    }
+    for (const id of this.dependencyGraph.keys()) {
+      if (!visited.has(id)) {
+        if (dfs(id)) return true
+      }
+    }
+    return false
+  }
+  resolveLoadOrder() {
+    if (this.hasCircularDependencies()) {
+      throw new Error("Circular dependencies detected")
+    }
+    const result = []
+    const visited = /* @__PURE__ */ new Set()
+    const temp = /* @__PURE__ */ new Set()
+    const visit = (id) => {
+      if (temp.has(id)) throw new Error("Circular dependency")
+      if (visited.has(id)) return
+      temp.add(id)
+      const dependencies = this.dependencyGraph.get(id) || /* @__PURE__ */ new Set()
+      for (const dep of dependencies) {
+        visit(dep)
+      }
+      temp.delete(id)
+      visited.add(id)
+      result.push(id)
+    }
+    for (const id of this.dependencyGraph.keys()) {
+      if (!visited.has(id)) {
+        visit(id)
+      }
+    }
+    return result
+  }
+}
+export class PluginRegistrationError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = "PluginRegistrationError"
+  }
+}
+export class PluginNotFoundError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = "PluginNotFoundError"
+  }
+}
+export class CircularDependencyError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = "CircularDependencyError"
+  }
+}
+export class CapabilityNotFoundError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = "CapabilityNotFoundError"
+  }
+}
+export class CapabilityConflictError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = "CapabilityConflictError"
+  }
+}
+export class PluginInitializationError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = "PluginInitializationError"
+  }
+}
+export class PluginConfigurationError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = "PluginConfigurationError"
+  }
+}
 export class PluginStore {
   /**
    * Initializes the PluginStore with the main store and plugin ID.
@@ -965,6 +1061,213 @@ export class BasePlugin {
     })
   }
 }
+export class EventControl {
+  constructor(handler, options) {
+    this.handler = handler
+    this.options = options
+    this.lastRun = 0
+    this.handle = (data) => {
+      if (this.options.mode === "debounce") {
+        this.debounce(data)
+      } else {
+        this.throttle(data)
+      }
+    }
+  }
+  debounce(data) {
+    if (this.timeoutId) {
+      window.clearTimeout(this.timeoutId)
+    }
+    this.timeoutId = window.setTimeout(() => {
+      this.handler(data)
+      this.timeoutId = void 0
+    }, this.options.wait)
+  }
+  throttle(data) {
+    if (this.options.mode === "debounce") return
+    const now = Date.now()
+    const throttleMode = this.options.throttleMode || "leading-trailing"
+    if (now - this.lastRun >= this.options.wait) {
+      if (throttleMode === "leading-trailing") {
+        this.handler(data)
+      }
+      this.lastRun = now
+    }
+    if (this.timeoutId) {
+      window.clearTimeout(this.timeoutId)
+    }
+    this.timeoutId = window.setTimeout(
+      () => {
+        this.handler(data)
+        this.lastRun = Date.now()
+        this.timeoutId = void 0
+      },
+      this.options.wait - (now - this.lastRun),
+    )
+  }
+  destroy() {
+    if (this.timeoutId) {
+      window.clearTimeout(this.timeoutId)
+    }
+  }
+}
+export function clamp(value, min, max) {
+  return value < min ? min : value > max ? max : value
+}
+export function arePropsEqual(a, b, visited) {
+  if (a === b) {
+    return true
+  }
+  if (a == null || b == null) {
+    return a === b
+  }
+  const aType = typeof a
+  const bType = typeof b
+  if (aType !== bType) return false
+  if (aType === "object") {
+    if (!visited) visited = /* @__PURE__ */ new Set()
+    const pairId = getPairId(a, b)
+    if (visited.has(pairId)) {
+      return true
+    }
+    visited.add(pairId)
+    const aIsArray = Array.isArray(a)
+    const bIsArray = Array.isArray(b)
+    if (aIsArray && bIsArray) {
+      return arraysEqualUnordered(a, b, visited)
+    } else if (!aIsArray && !bIsArray) {
+      return objectsEqual(a, b, visited)
+    } else {
+      return false
+    }
+  }
+  return false
+}
+function getPairId(a, b) {
+  return `${objectId(a)}__${objectId(b)}`
+}
+let objectIdCounter = 0
+const objectIds = /* @__PURE__ */ new WeakMap()
+function objectId(obj) {
+  if (!objectIds.has(obj)) {
+    objectIds.set(obj, ++objectIdCounter)
+  }
+  return objectIds.get(obj)
+}
+function arraysEqualUnordered(a, b, visited) {
+  if (a.length !== b.length) return false
+  const used = new Array(b.length).fill(false)
+  outer: for (let i = 0; i < a.length; i++) {
+    const elemA = a[i]
+    for (let j = 0; j < b.length; j++) {
+      if (used[j]) continue
+      if (arePropsEqual(elemA, b[j], visited)) {
+        used[j] = true
+        continue outer
+      }
+    }
+    return false
+  }
+  return true
+}
+function objectsEqual(a, b, visited) {
+  const aKeys = Object.keys(a).sort()
+  const bKeys = Object.keys(b).sort()
+  if (aKeys.length !== bKeys.length) return false
+  for (let i = 0; i < aKeys.length; i++) {
+    if (aKeys[i] !== bKeys[i]) return false
+  }
+  for (const key of aKeys) {
+    const valA = a[key]
+    const valB = b[key]
+    if (!arePropsEqual(valA, valB, visited)) {
+      return false
+    }
+  }
+  return true
+}
+export function createEmitter() {
+  const listeners = /* @__PURE__ */ new Set()
+  const on = (l) => {
+    listeners.add(l)
+    return () => listeners.delete(l)
+  }
+  return {
+    emit: (v = void 0) => listeners.forEach((l) => l(v)),
+    on,
+    off: (l) => listeners.delete(l),
+    clear: () => listeners.clear(),
+  }
+}
+export function createBehaviorEmitter(initial, equality = arePropsEqual) {
+  const listeners = /* @__PURE__ */ new Set()
+  const proxyMap = /* @__PURE__ */ new Map()
+  let _value = initial
+  const notify = (v) => listeners.forEach((l) => l(v))
+  const baseOn = (listener, options) => {
+    let realListener = listener
+    let destroy = () => {}
+    if (options) {
+      const ctl = new EventControl(listener, options)
+      realListener = ctl.handle
+      destroy = () => ctl.destroy()
+      proxyMap.set(listener, { wrapped: realListener, destroy })
+    }
+    if (_value !== void 0) realListener(_value)
+    listeners.add(realListener)
+    return () => {
+      listeners.delete(realListener)
+      destroy()
+      proxyMap.delete(listener)
+    }
+  }
+  return {
+    /* emitter behaviour ---------------------------------------- */
+    get value() {
+      return _value
+    },
+    emit(v = void 0) {
+      if (_value === void 0 || !equality(_value, v)) {
+        _value = v
+        notify(v)
+      }
+    },
+    on: baseOn,
+    off(listener) {
+      const proxy = proxyMap.get(listener)
+      if (proxy) {
+        listeners.delete(proxy.wrapped)
+        proxy.destroy()
+        proxyMap.delete(listener)
+      } else {
+        listeners.delete(listener)
+      }
+    },
+    clear() {
+      listeners.clear()
+      proxyMap.forEach((p) => p.destroy())
+      proxyMap.clear()
+    },
+    /* derived hook --------------------------------------------- */
+    select(selector, eq = arePropsEqual) {
+      return (listener, options) => {
+        let prev
+        if (_value !== void 0) {
+          const mapped = selector(_value)
+          prev = mapped
+          listener(mapped)
+        }
+        return baseOn((next) => {
+          const mapped = selector(next)
+          if (prev === void 0 || !eq(prev, mapped)) {
+            prev = mapped
+            listener(mapped)
+          }
+        }, options)
+      }
+    },
+  }
+}
 export class PluginPackageBuilder {
   constructor(basePackage) {
     this.autoMountElements = []
@@ -1163,6 +1466,802 @@ export function useCoreState() {
   return coreState
 }
 
+export var Rotation = /* @__PURE__ */ ((Rotation2) => {
+  Rotation2[(Rotation2["Degree0"] = 0)] = "Degree0"
+  Rotation2[(Rotation2["Degree90"] = 1)] = "Degree90"
+  Rotation2[(Rotation2["Degree180"] = 2)] = "Degree180"
+  Rotation2[(Rotation2["Degree270"] = 3)] = "Degree270"
+  return Rotation2
+})(Rotation || {})
+
+export function toIntPos(p) {
+  return { x: Math.floor(p.x), y: Math.floor(p.y) }
+}
+export function toIntSize(s) {
+  return { width: Math.ceil(s.width), height: Math.ceil(s.height) }
+}
+export function toIntRect(r) {
+  return {
+    origin: toIntPos(r.origin),
+    size: toIntSize(r.size),
+  }
+}
+
+export function calculateDegree(rotation) {
+  switch (rotation) {
+    case 0:
+      return 0
+    case 1:
+      return 90
+    case 2:
+      return 180
+    case 3:
+      return 270
+  }
+}
+export function calculateAngle(rotation) {
+  return (calculateDegree(rotation) * Math.PI) / 180
+}
+
+export function swap(size) {
+  const { width, height } = size
+  return {
+    width: height,
+    height: width,
+  }
+}
+export function transformSize(size, rotation, scaleFactor) {
+  size = rotation % 2 === 0 ? size : swap(size)
+  return {
+    width: size.width * scaleFactor,
+    height: size.height * scaleFactor,
+  }
+}
+export function quadToRect(q) {
+  const xs = [q.p1.x, q.p2.x, q.p3.x, q.p4.x]
+  const ys = [q.p1.y, q.p2.y, q.p3.y, q.p4.y]
+  return {
+    origin: { x: Math.min(...xs), y: Math.min(...ys) },
+    size: {
+      width: Math.max(...xs) - Math.min(...xs),
+      height: Math.max(...ys) - Math.min(...ys),
+    },
+  }
+}
+export function rectToQuad(r) {
+  return {
+    p1: { x: r.origin.x, y: r.origin.y },
+    p2: { x: r.origin.x + r.size.width, y: r.origin.y },
+    p3: { x: r.origin.x + r.size.width, y: r.origin.y + r.size.height },
+    p4: { x: r.origin.x, y: r.origin.y + r.size.height },
+  }
+}
+export function rotatePosition(containerSize, position, rotation) {
+  let x = position.x
+  let y = position.y
+  switch (rotation) {
+    case 0:
+      x = position.x
+      y = position.y
+      break
+    case 1:
+      x = containerSize.height - position.y
+      y = position.x
+      break
+    case 2:
+      x = containerSize.width - position.x
+      y = containerSize.height - position.y
+      break
+    case 3:
+      x = position.y
+      y = containerSize.width - position.x
+      break
+  }
+  return {
+    x,
+    y,
+  }
+}
+export function scalePosition(position, scaleFactor) {
+  return {
+    x: position.x * scaleFactor,
+    y: position.y * scaleFactor,
+  }
+}
+export function transformPosition(containerSize, position, rotation, scaleFactor) {
+  return scalePosition(rotatePosition(containerSize, position, rotation), scaleFactor)
+}
+export function restorePosition(containerSize, position, rotation, scaleFactor) {
+  return scalePosition(rotatePosition(containerSize, position, (4 - rotation) % 4), 1 / scaleFactor)
+}
+export function rectEquals(a, b) {
+  return (
+    a.origin.x === b.origin.x &&
+    a.origin.y === b.origin.y &&
+    a.size.width === b.size.width &&
+    a.size.height === b.size.height
+  )
+}
+// deleted rectFromPoints and rotateAndTranslatePoint in plugin-annotation
+export function rectFromPoints(positions) {
+  if (positions.length === 0) {
+    return { origin: { x: 0, y: 0 }, size: { width: 0, height: 0 } }
+  }
+  const xs = positions.map((p) => p.x)
+  const ys = positions.map((p) => p.y)
+  const minX = Math.min(...xs)
+  const minY = Math.min(...ys)
+  return {
+    origin: { x: minX, y: minY },
+    size: {
+      width: Math.max(...xs) - minX,
+      height: Math.max(...ys) - minY,
+    },
+  }
+}
+export function rotateAndTranslatePoint(pos, angleRad, translate) {
+  const cos = Math.cos(angleRad)
+  const sin = Math.sin(angleRad)
+  const newX = pos.x * cos - pos.y * sin
+  const newY = pos.x * sin + pos.y * cos
+  return {
+    x: newX + translate.x,
+    y: newY + translate.y,
+  }
+}
+export function expandRect(rect, padding) {
+  return {
+    origin: { x: rect.origin.x - padding, y: rect.origin.y - padding },
+    size: {
+      width: rect.size.width + padding * 2,
+      height: rect.size.height + padding * 2,
+    },
+  }
+}
+export function rotateRect(containerSize, rect, rotation) {
+  let x = rect.origin.x
+  let y = rect.origin.y
+  let size = rect.size
+  switch (rotation) {
+    case 0:
+      break
+    case 1:
+      x = containerSize.height - rect.origin.y - rect.size.height
+      y = rect.origin.x
+      size = swap(rect.size)
+      break
+    case 2:
+      x = containerSize.width - rect.origin.x - rect.size.width
+      y = containerSize.height - rect.origin.y - rect.size.height
+      break
+    case 3:
+      x = rect.origin.y
+      y = containerSize.width - rect.origin.x - rect.size.width
+      size = swap(rect.size)
+      break
+  }
+  return {
+    origin: {
+      x,
+      y,
+    },
+    size: {
+      width: size.width,
+      height: size.height,
+    },
+  }
+}
+export function scaleRect(rect, scaleFactor) {
+  return {
+    origin: {
+      x: rect.origin.x * scaleFactor,
+      y: rect.origin.y * scaleFactor,
+    },
+    size: {
+      width: rect.size.width * scaleFactor,
+      height: rect.size.height * scaleFactor,
+    },
+  }
+}
+export function transformRect(containerSize, rect, rotation, scaleFactor) {
+  return scaleRect(rotateRect(containerSize, rect, rotation), scaleFactor)
+}
+export function restoreRect(containerSize, rect, rotation, scaleFactor) {
+  return scaleRect(rotateRect(containerSize, rect, (4 - rotation) % 4), 1 / scaleFactor)
+}
+export function restoreOffset(offset, rotation, scaleFactor) {
+  let offsetX = offset.x
+  let offsetY = offset.y
+  switch (rotation) {
+    case 0:
+      offsetX = offset.x / scaleFactor
+      offsetY = offset.y / scaleFactor
+      break
+    case 1:
+      offsetX = offset.y / scaleFactor
+      offsetY = -offset.x / scaleFactor
+      break
+    case 2:
+      offsetX = -offset.x / scaleFactor
+      offsetY = -offset.y / scaleFactor
+      break
+    case 3:
+      offsetX = -offset.y / scaleFactor
+      offsetY = offset.x / scaleFactor
+      break
+  }
+  return {
+    x: offsetX,
+    y: offsetY,
+  }
+}
+export function boundingRect(rects) {
+  if (rects.length === 0) return null
+  let minX = rects[0].origin.x,
+    minY = rects[0].origin.y,
+    maxX = rects[0].origin.x + rects[0].size.width,
+    maxY = rects[0].origin.y + rects[0].size.height
+  for (const r of rects) {
+    minX = Math.min(minX, r.origin.x)
+    minY = Math.min(minY, r.origin.y)
+    maxX = Math.max(maxX, r.origin.x + r.size.width)
+    maxY = Math.max(maxY, r.origin.y + r.size.height)
+  }
+  return {
+    origin: {
+      x: minX,
+      y: minY,
+    },
+    size: {
+      width: maxX - minX,
+      height: maxY - minY,
+    },
+  }
+}
+
+export function buildUserToDeviceMatrix(rect, rotation, outW, outH) {
+  const L = rect.origin.x
+  const B = rect.origin.y
+  const W = rect.size.width
+  const H = rect.size.height
+  const sx0 = outW / W
+  const sy0 = outH / H
+  const sx90 = outW / H
+  const sy90 = outH / W
+  switch (rotation) {
+    case 0:
+      return { a: sx0, b: 0, c: 0, d: sy0, e: -sx0 * L, f: -sy0 * B }
+    case 3:
+      return { a: 0, b: -sy90, c: sx90, d: 0, e: -sx90 * B, f: sy90 * (L + W) }
+    case 2:
+      return {
+        a: -sx0,
+        b: 0,
+        c: 0,
+        d: -sy0,
+        e: sx0 * (L + W),
+        f: sy0 * (B + H),
+      }
+    case 1:
+      return { a: 0, b: sy90, c: -sx90, d: 0, e: sx90 * (B + H), f: -sy90 * L }
+  }
+}
+
+export class NoopLogger {
+  /** {@inheritDoc Logger.isEnabled} */
+  isEnabled() {
+    return false
+  }
+  /** {@inheritDoc Logger.debug} */
+  debug() {}
+  /** {@inheritDoc Logger.info} */
+  info() {}
+  /** {@inheritDoc Logger.warn} */
+  warn() {}
+  /** {@inheritDoc Logger.error} */
+  error() {}
+  /** {@inheritDoc Logger.perf} */
+  perf() {}
+}
+export class ConsoleLogger {
+  /** {@inheritDoc Logger.isEnabled} */
+  isEnabled() {
+    return true
+  }
+  /** {@inheritDoc Logger.debug} */
+  debug(source, category, ...args) {
+    console.debug(`${source}.${category}`, ...args)
+  }
+  /** {@inheritDoc Logger.info} */
+  info(source, category, ...args) {
+    console.info(`${source}.${category}`, ...args)
+  }
+  /** {@inheritDoc Logger.warn} */
+  warn(source, category, ...args) {
+    console.warn(`${source}.${category}`, ...args)
+  }
+  /** {@inheritDoc Logger.error} */
+  error(source, category, ...args) {
+    console.error(`${source}.${category}`, ...args)
+  }
+  /** {@inheritDoc Logger.perf} */
+  perf(source, category, event, phase, ...args) {
+    console.info(`${source}.${category}.${event}.${phase}`, ...args)
+  }
+}
+
+export var TaskStage = /* @__PURE__ */ ((TaskStage2) => {
+  TaskStage2[(TaskStage2["Pending"] = 0)] = "Pending"
+  TaskStage2[(TaskStage2["Resolved"] = 1)] = "Resolved"
+  TaskStage2[(TaskStage2["Rejected"] = 2)] = "Rejected"
+  TaskStage2[(TaskStage2["Aborted"] = 3)] = "Aborted"
+  return TaskStage2
+})(TaskStage || {})
+export class TaskAbortedError extends Error {
+  constructor(reason) {
+    super(`Task aborted: ${JSON.stringify(reason)}`)
+    this.name = "TaskAbortedError"
+    this.reason = reason
+  }
+}
+export class TaskRejectedError extends Error {
+  constructor(reason) {
+    super(`Task rejected: ${JSON.stringify(reason)}`)
+    this.name = "TaskRejectedError"
+    this.reason = reason
+  }
+}
+export class Task {
+  constructor() {
+    this.state = {
+      stage: 0,
+      /* Pending */
+    }
+    this.resolvedCallbacks = []
+    this.rejectedCallbacks = []
+    this._promise = null
+    this.progressCbs = []
+  }
+  /**
+   * Convert task to promise
+   * @returns promise that will be resolved when task is settled
+   */
+  toPromise() {
+    if (!this._promise) {
+      this._promise = new Promise((resolve, reject) => {
+        this.wait(
+          (result) => resolve(result),
+          (error) => {
+            if (error.type === "abort") {
+              reject(new TaskAbortedError(error.reason))
+            } else {
+              reject(new TaskRejectedError(error.reason))
+            }
+          },
+        )
+      })
+    }
+    return this._promise
+  }
+  /**
+   * wait for task to be settled
+   * @param resolvedCallback - callback for resolved value
+   * @param rejectedCallback - callback for rejected value
+   */
+  wait(resolvedCallback, rejectedCallback) {
+    switch (this.state.stage) {
+      case 0:
+        this.resolvedCallbacks.push(resolvedCallback)
+        this.rejectedCallbacks.push(rejectedCallback)
+        break
+      case 1:
+        resolvedCallback(this.state.result)
+        break
+      case 2:
+        rejectedCallback({
+          type: "reject",
+          reason: this.state.reason,
+        })
+        break
+      case 3:
+        rejectedCallback({
+          type: "abort",
+          reason: this.state.reason,
+        })
+        break
+    }
+  }
+  /**
+   * resolve task with specific result
+   * @param result - result value
+   */
+  resolve(result) {
+    if (this.state.stage === 0) {
+      this.state = {
+        stage: 1,
+        result,
+      }
+      for (const resolvedCallback of this.resolvedCallbacks) {
+        try {
+          resolvedCallback(result)
+        } catch (e) {}
+      }
+      this.resolvedCallbacks = []
+      this.rejectedCallbacks = []
+    }
+  }
+  /**
+   * reject task with specific reason
+   * @param reason - abort reason
+   *
+   */
+  reject(reason) {
+    if (this.state.stage === 0) {
+      this.state = {
+        stage: 2,
+        reason,
+      }
+      for (const rejectedCallback of this.rejectedCallbacks) {
+        try {
+          rejectedCallback({
+            type: "reject",
+            reason,
+          })
+        } catch (e) {}
+      }
+      this.resolvedCallbacks = []
+      this.rejectedCallbacks = []
+    }
+  }
+  /**
+   * abort task with specific reason
+   * @param reason - abort reason
+   */
+  abort(reason) {
+    if (this.state.stage === 0) {
+      this.state = {
+        stage: 3,
+        reason,
+      }
+      for (const rejectedCallback of this.rejectedCallbacks) {
+        try {
+          rejectedCallback({
+            type: "abort",
+            reason,
+          })
+        } catch (e) {}
+      }
+      this.resolvedCallbacks = []
+      this.rejectedCallbacks = []
+    }
+  }
+  /**
+   * fail task with a TaskError from another task
+   * This is a convenience method for error propagation between tasks
+   * @param error - TaskError from another task
+   */
+  fail(error) {
+    if (error.type === "abort") {
+      this.abort(error.reason)
+    } else {
+      this.reject(error.reason)
+    }
+  }
+  /**
+   * add a progress callback
+   * @param cb - progress callback
+   */
+  onProgress(cb) {
+    this.progressCbs.push(cb)
+  }
+  /**
+   * call progress callback
+   * @param p - progress value
+   */
+  progress(p) {
+    for (const cb of this.progressCbs) cb(p)
+  }
+  /**
+   * Static method to wait for all tasks to resolve
+   * Returns a new task that resolves with an array of all results
+   * Rejects immediately if any task fails
+   *
+   * @param tasks - array of tasks to wait for
+   * @returns new task that resolves when all input tasks resolve
+   * @public
+   */
+  static all(tasks) {
+    const combinedTask = new Task()
+    if (tasks.length === 0) {
+      combinedTask.resolve([])
+      return combinedTask
+    }
+    const results = new Array(tasks.length)
+    let resolvedCount = 0
+    let isSettled = false
+    tasks.forEach((task, index) => {
+      task.wait(
+        (result) => {
+          if (isSettled) return
+          results[index] = result
+          resolvedCount++
+          if (resolvedCount === tasks.length) {
+            isSettled = true
+            combinedTask.resolve(results)
+          }
+        },
+        (error) => {
+          if (isSettled) return
+          isSettled = true
+          if (error.type === "abort") {
+            combinedTask.abort(error.reason)
+          } else {
+            combinedTask.reject(error.reason)
+          }
+        },
+      )
+    })
+    return combinedTask
+  }
+  /**
+   * Static method to wait for all tasks to settle (resolve, reject, or abort)
+   * Always resolves with an array of settlement results
+   *
+   * @param tasks - array of tasks to wait for
+   * @returns new task that resolves when all input tasks settle
+   * @public
+   */
+  static allSettled(tasks) {
+    const combinedTask = new Task()
+    if (tasks.length === 0) {
+      combinedTask.resolve([])
+      return combinedTask
+    }
+    const results = new Array(tasks.length)
+    let settledCount = 0
+    tasks.forEach((task, index) => {
+      task.wait(
+        (result) => {
+          results[index] = { status: "resolved", value: result }
+          settledCount++
+          if (settledCount === tasks.length) {
+            combinedTask.resolve(results)
+          }
+        },
+        (error) => {
+          results[index] = {
+            status: error.type === "abort" ? "aborted" : "rejected",
+            reason: error.reason,
+          }
+          settledCount++
+          if (settledCount === tasks.length) {
+            combinedTask.resolve(results)
+          }
+        },
+      )
+    })
+    return combinedTask
+  }
+  /**
+   * Static method that resolves/rejects with the first task that settles
+   *
+   * @param tasks - array of tasks to race
+   * @returns new task that settles with the first input task that settles
+   * @public
+   */
+  static race(tasks) {
+    const combinedTask = new Task()
+    if (tasks.length === 0) {
+      combinedTask.reject("No tasks provided")
+      return combinedTask
+    }
+    let isSettled = false
+    tasks.forEach((task) => {
+      task.wait(
+        (result) => {
+          if (isSettled) return
+          isSettled = true
+          combinedTask.resolve(result)
+        },
+        (error) => {
+          if (isSettled) return
+          isSettled = true
+          if (error.type === "abort") {
+            combinedTask.abort(error.reason)
+          } else {
+            combinedTask.reject(error.reason)
+          }
+        },
+      )
+    })
+    return combinedTask
+  }
+  /**
+   * Utility to track progress of multiple tasks
+   *
+   * @param tasks - array of tasks to track
+   * @param onProgress - callback called when any task completes
+   * @returns new task that resolves when all input tasks resolve
+   * @public
+   */
+  static withProgress(tasks, onProgress) {
+    const combinedTask = Task.all(tasks)
+    if (onProgress) {
+      let completedCount = 0
+      tasks.forEach((task) => {
+        task.wait(
+          () => {
+            completedCount++
+            onProgress(completedCount, tasks.length)
+          },
+          () => {
+            completedCount++
+            onProgress(completedCount, tasks.length)
+          },
+        )
+      })
+    }
+    return combinedTask
+  }
+}
+
+const PdfSoftHyphenMarker = "\u00AD"
+const PdfZeroWidthSpace = "\u200B"
+const PdfWordJoiner = "\u2060"
+const PdfBomOrZwnbsp = "\uFEFF"
+const PdfNonCharacterFFFE = "\uFFFE"
+const PdfNonCharacterFFFF = "\uFFFF"
+const PdfUnwantedTextMarkers = Object.freeze([
+  PdfSoftHyphenMarker,
+  PdfZeroWidthSpace,
+  PdfWordJoiner,
+  PdfBomOrZwnbsp,
+  PdfNonCharacterFFFE,
+  PdfNonCharacterFFFF,
+])
+const PdfUnwantedTextRegex = new RegExp(`[${PdfUnwantedTextMarkers.join("")}]`, "g")
+export function stripPdfUnwantedMarkers(text) {
+  return text.replace(PdfUnwantedTextRegex, "")
+}
+
+export var PdfZoomMode = /* @__PURE__ */ ((PdfZoomMode2) => {
+  PdfZoomMode2[(PdfZoomMode2["Unknown"] = 0)] = "Unknown"
+  PdfZoomMode2[(PdfZoomMode2["XYZ"] = 1)] = "XYZ"
+  PdfZoomMode2[(PdfZoomMode2["FitPage"] = 2)] = "FitPage"
+  PdfZoomMode2[(PdfZoomMode2["FitHorizontal"] = 3)] = "FitHorizontal"
+  PdfZoomMode2[(PdfZoomMode2["FitVertical"] = 4)] = "FitVertical"
+  PdfZoomMode2[(PdfZoomMode2["FitRectangle"] = 5)] = "FitRectangle"
+  PdfZoomMode2[(PdfZoomMode2["FitBoundingBox"] = 6)] = "FitBoundingBox"
+  PdfZoomMode2[(PdfZoomMode2["FitBoundingBoxHorizontal"] = 7)] = "FitBoundingBoxHorizontal"
+  PdfZoomMode2[(PdfZoomMode2["FitBoundingBoxVertical"] = 8)] = "FitBoundingBoxVertical"
+  return PdfZoomMode2
+})(PdfZoomMode || {})
+export var PdfTrappedStatus = /* @__PURE__ */ ((PdfTrappedStatus2) => {
+  PdfTrappedStatus2[(PdfTrappedStatus2["NotSet"] = 0)] = "NotSet"
+  PdfTrappedStatus2[(PdfTrappedStatus2["True"] = 1)] = "True"
+  PdfTrappedStatus2[(PdfTrappedStatus2["False"] = 2)] = "False"
+  PdfTrappedStatus2[(PdfTrappedStatus2["Unknown"] = 3)] = "Unknown"
+  return PdfTrappedStatus2
+})(PdfTrappedStatus || {})
+export var PdfActionType = /* @__PURE__ */ ((PdfActionType2) => {
+  PdfActionType2[(PdfActionType2["Unsupported"] = 0)] = "Unsupported"
+  PdfActionType2[(PdfActionType2["Goto"] = 1)] = "Goto"
+  PdfActionType2[(PdfActionType2["RemoteGoto"] = 2)] = "RemoteGoto"
+  PdfActionType2[(PdfActionType2["URI"] = 3)] = "URI"
+  PdfActionType2[(PdfActionType2["LaunchAppOrOpenFile"] = 4)] = "LaunchAppOrOpenFile"
+  return PdfActionType2
+})(PdfActionType || {})
+export var AppearanceMode = /* @__PURE__ */ ((AppearanceMode2) => {
+  AppearanceMode2[(AppearanceMode2["Normal"] = 0)] = "Normal"
+  AppearanceMode2[(AppearanceMode2["Rollover"] = 1)] = "Rollover"
+  AppearanceMode2[(AppearanceMode2["Down"] = 2)] = "Down"
+  return AppearanceMode2
+})(AppearanceMode || {})
+export var PdfPageObjectType = /* @__PURE__ */ ((PdfPageObjectType2) => {
+  PdfPageObjectType2[(PdfPageObjectType2["UNKNOWN"] = 0)] = "UNKNOWN"
+  PdfPageObjectType2[(PdfPageObjectType2["TEXT"] = 1)] = "TEXT"
+  PdfPageObjectType2[(PdfPageObjectType2["PATH"] = 2)] = "PATH"
+  PdfPageObjectType2[(PdfPageObjectType2["IMAGE"] = 3)] = "IMAGE"
+  PdfPageObjectType2[(PdfPageObjectType2["SHADING"] = 4)] = "SHADING"
+  PdfPageObjectType2[(PdfPageObjectType2["FORM"] = 5)] = "FORM"
+  return PdfPageObjectType2
+})(PdfPageObjectType || {})
+export var PdfSegmentObjectType = /* @__PURE__ */ ((PdfSegmentObjectType2) => {
+  PdfSegmentObjectType2[(PdfSegmentObjectType2["UNKNOWN"] = -1)] = "UNKNOWN"
+  PdfSegmentObjectType2[(PdfSegmentObjectType2["LINETO"] = 0)] = "LINETO"
+  PdfSegmentObjectType2[(PdfSegmentObjectType2["BEZIERTO"] = 1)] = "BEZIERTO"
+  PdfSegmentObjectType2[(PdfSegmentObjectType2["MOVETO"] = 2)] = "MOVETO"
+  return PdfSegmentObjectType2
+})(PdfSegmentObjectType || {})
+export var PdfEngineFeature = /* @__PURE__ */ ((PdfEngineFeature2) => {
+  PdfEngineFeature2[(PdfEngineFeature2["RenderPage"] = 0)] = "RenderPage"
+  PdfEngineFeature2[(PdfEngineFeature2["RenderPageRect"] = 1)] = "RenderPageRect"
+  PdfEngineFeature2[(PdfEngineFeature2["Thumbnails"] = 2)] = "Thumbnails"
+  PdfEngineFeature2[(PdfEngineFeature2["Bookmarks"] = 3)] = "Bookmarks"
+  PdfEngineFeature2[(PdfEngineFeature2["Annotations"] = 4)] = "Annotations"
+  return PdfEngineFeature2
+})(PdfEngineFeature || {})
+export var PdfEngineOperation = /* @__PURE__ */ ((PdfEngineOperation2) => {
+  PdfEngineOperation2[(PdfEngineOperation2["Create"] = 0)] = "Create"
+  PdfEngineOperation2[(PdfEngineOperation2["Read"] = 1)] = "Read"
+  PdfEngineOperation2[(PdfEngineOperation2["Update"] = 2)] = "Update"
+  PdfEngineOperation2[(PdfEngineOperation2["Delete"] = 3)] = "Delete"
+  return PdfEngineOperation2
+})(PdfEngineOperation || {})
+export var PdfErrorCode = /* @__PURE__ */ ((PdfErrorCode2) => {
+  PdfErrorCode2[(PdfErrorCode2["Ok"] = 0)] = "Ok"
+  PdfErrorCode2[(PdfErrorCode2["Unknown"] = 1)] = "Unknown"
+  PdfErrorCode2[(PdfErrorCode2["NotFound"] = 2)] = "NotFound"
+  PdfErrorCode2[(PdfErrorCode2["WrongFormat"] = 3)] = "WrongFormat"
+  PdfErrorCode2[(PdfErrorCode2["Password"] = 4)] = "Password"
+  PdfErrorCode2[(PdfErrorCode2["Security"] = 5)] = "Security"
+  PdfErrorCode2[(PdfErrorCode2["PageError"] = 6)] = "PageError"
+  PdfErrorCode2[(PdfErrorCode2["XFALoad"] = 7)] = "XFALoad"
+  PdfErrorCode2[(PdfErrorCode2["XFALayout"] = 8)] = "XFALayout"
+  PdfErrorCode2[(PdfErrorCode2["Cancelled"] = 9)] = "Cancelled"
+  PdfErrorCode2[(PdfErrorCode2["Initialization"] = 10)] = "Initialization"
+  PdfErrorCode2[(PdfErrorCode2["NotReady"] = 11)] = "NotReady"
+  PdfErrorCode2[(PdfErrorCode2["NotSupport"] = 12)] = "NotSupport"
+  PdfErrorCode2[(PdfErrorCode2["LoadDoc"] = 13)] = "LoadDoc"
+  PdfErrorCode2[(PdfErrorCode2["DocNotOpen"] = 14)] = "DocNotOpen"
+  PdfErrorCode2[(PdfErrorCode2["CantCloseDoc"] = 15)] = "CantCloseDoc"
+  PdfErrorCode2[(PdfErrorCode2["CantCreateNewDoc"] = 16)] = "CantCreateNewDoc"
+  PdfErrorCode2[(PdfErrorCode2["CantImportPages"] = 17)] = "CantImportPages"
+  PdfErrorCode2[(PdfErrorCode2["CantCreateAnnot"] = 18)] = "CantCreateAnnot"
+  PdfErrorCode2[(PdfErrorCode2["CantSetAnnotRect"] = 19)] = "CantSetAnnotRect"
+  PdfErrorCode2[(PdfErrorCode2["CantSetAnnotContent"] = 20)] = "CantSetAnnotContent"
+  PdfErrorCode2[(PdfErrorCode2["CantRemoveInkList"] = 21)] = "CantRemoveInkList"
+  PdfErrorCode2[(PdfErrorCode2["CantAddInkStoke"] = 22)] = "CantAddInkStoke"
+  PdfErrorCode2[(PdfErrorCode2["CantReadAttachmentSize"] = 23)] = "CantReadAttachmentSize"
+  PdfErrorCode2[(PdfErrorCode2["CantReadAttachmentContent"] = 24)] = "CantReadAttachmentContent"
+  PdfErrorCode2[(PdfErrorCode2["CantFocusAnnot"] = 25)] = "CantFocusAnnot"
+  PdfErrorCode2[(PdfErrorCode2["CantSelectText"] = 26)] = "CantSelectText"
+  PdfErrorCode2[(PdfErrorCode2["CantSelectOption"] = 27)] = "CantSelectOption"
+  PdfErrorCode2[(PdfErrorCode2["CantCheckField"] = 28)] = "CantCheckField"
+  PdfErrorCode2[(PdfErrorCode2["CantSetAnnotString"] = 29)] = "CantSetAnnotString"
+  return PdfErrorCode2
+})(PdfErrorCode || {})
+
+export class PdfTaskHelper {
+  /**
+   * Create a task
+   * @returns new task
+   */
+  static create() {
+    return new Task()
+  }
+  /**
+   * Create a task that has been resolved with value
+   * @param result - resolved value
+   * @returns resolved task
+   */
+  static resolve(result) {
+    const task = new Task()
+    task.resolve(result)
+    return task
+  }
+  /**
+   * Create a task that has been rejected with error
+   * @param reason - rejected error
+   * @returns rejected task
+   */
+  static reject(reason) {
+    const task = new Task()
+    task.reject(reason)
+    return task
+  }
+  /**
+   * Create a task that has been aborted with error
+   * @param reason - aborted error
+   * @returns aborted task
+   */
+  static abort(reason) {
+    const task = new Task()
+    task.reject(reason)
+    return task
+  }
+}
+
 export function pdfColorToWebColor(c) {
   const clamp = (n) => Math.max(0, Math.min(255, n))
   const toHex = (n) => clamp(n).toString(16).padStart(2, "0")
@@ -1232,5 +2331,52 @@ export function dateToPdfDate(date = /* @__PURE__ */ new Date()) {
   const mm = z(date.getUTCMinutes())
   const SS = z(date.getUTCSeconds())
   return `D:${YYYY}${MM}${DD}${HH}${mm}${SS}`
+}
+
+export function serializeLogger(logger) {
+  if (logger instanceof ConsoleLogger) {
+    return { type: "console" }
+  }
+  return { type: "noop" }
+}
+export function deserializeLogger(serialized) {
+  switch (serialized.type) {
+    case "noop":
+      return new NoopLogger()
+    case "console":
+      return new ConsoleLogger()
+    default:
+      return new NoopLogger()
+  }
+}
+const V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+export function isUuidV4(str) {
+  return V4_REGEX.test(str)
+}
+export function getRandomBytes(len) {
+  var _a
+  if (typeof ((_a = globalThis.crypto) == null ? void 0 : _a.getRandomValues) === "function") {
+    return globalThis.crypto.getRandomValues(new Uint8Array(len))
+  }
+  if (typeof require === "function") {
+    try {
+      const { randomBytes } = require("crypto")
+      return randomBytes(len)
+    } catch {}
+  }
+  const bytes = new Uint8Array(len)
+  for (let i = 0; i < len; i++) bytes[i] = Math.floor(Math.random() * 256)
+  return bytes
+}
+export function uuidV4() {
+  var _a
+  if (typeof ((_a = globalThis.crypto) == null ? void 0 : _a.randomUUID) === "function") {
+    return globalThis.crypto.randomUUID()
+  }
+  const bytes = getRandomBytes(16)
+  bytes[6] = (bytes[6] & 15) | 64
+  bytes[8] = (bytes[8] & 63) | 128
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
 export function ignore() {}
