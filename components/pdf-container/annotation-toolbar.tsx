@@ -1,7 +1,5 @@
-"use client"
-
 import { useEffect, useState } from "react"
-import { useAnnotationCapability } from "./plugin-annotation"
+import { useAnnotationCapability } from "./plugin-annotation-2"
 
 export const AnnotationToolbar = () => {
   const { provides: annotationApi } = useAnnotationCapability()
@@ -33,7 +31,7 @@ export const AnnotationToolbar = () => {
 
   const handleExportAnnotations = () => {
     try {
-      annotationApi?.exportAnnotations()
+      
     } catch (error) {
       console.error("Failed to export annotations:", error)
     }

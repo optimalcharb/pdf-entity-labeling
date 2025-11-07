@@ -1,25 +1,26 @@
-"use client"
-
+import { createPluginRegistration } from "@embedpdf/core"
+import { EmbedPDF } from "@embedpdf/core/react"
 import { usePdfiumEngine } from "@embedpdf/engines/react"
-import { useRef } from "react"
-import { Spinner } from "../shadcn-ui/spinner"
-import { AnnotationToolbar } from "./annotation-toolbar"
-import { ConsoleLogger, createPluginRegistration, EmbedPDF } from "./core"
-import { AnnotationLayer, AnnotationPluginPackage } from "./plugin-annotation"
-import { HistoryPluginPackage } from "./plugin-history"
+import { ConsoleLogger } from "@embedpdf/models"
+// import { AnnotationLayer, AnnotationPluginPackage } from "@embedpdf/plugin-annotation/react"
+import { HistoryPluginPackage } from "@embedpdf/plugin-history/react"
 import {
   GlobalPointerProvider,
   InteractionManagerPluginPackage,
   PagePointerProvider,
-} from "./plugin-interaction-manager"
-import { LoaderPluginPackage } from "./plugin-loader"
-import { RenderLayer, RenderPluginPackage } from "./plugin-render"
-import { Scroller, ScrollPluginPackage, ScrollStrategy } from "./plugin-scroll"
-// import { SearchLayer, SearchPluginPackage } from "./plugin-search"
-import { SelectionLayer, SelectionPluginPackage } from "./plugin-selection"
-import { TilingLayer, TilingPluginPackage } from "./plugin-tiling"
-import { Viewport, ViewportPluginPackage } from "./plugin-viewport"
-import { PinchWrapper, ZoomMode, ZoomPluginPackage } from "./plugin-zoom"
+} from "@embedpdf/plugin-interaction-manager/react"
+import { LoaderPluginPackage } from "@embedpdf/plugin-loader/react"
+import { RenderLayer, RenderPluginPackage } from "@embedpdf/plugin-render/react"
+import { Scroller, ScrollPluginPackage, ScrollStrategy } from "@embedpdf/plugin-scroll/react"
+import { useRef } from "react"
+import { Spinner } from "../shadcn-ui/spinner"
+import { AnnotationToolbar } from "./annotation-toolbar"
+import { AnnotationLayer, AnnotationPluginPackage } from "./plugin-annotation-2"
+// import { SearchLayer, SearchPluginPackage } from "@embedpdf/plugin-search/react"
+import { SelectionLayer, SelectionPluginPackage } from "@embedpdf/plugin-selection/react"
+import { TilingLayer, TilingPluginPackage } from "@embedpdf/plugin-tiling/react"
+import { Viewport, ViewportPluginPackage } from "@embedpdf/plugin-viewport/react"
+import { PinchWrapper, ZoomMode, ZoomPluginPackage } from "@embedpdf/plugin-zoom/react"
 
 const logger = new ConsoleLogger()
 
@@ -28,13 +29,19 @@ interface PDFContainerProps {
 }
 
 export default function PDFContainer({ url }: PDFContainerProps) {
+  fetch("/engines/pdfium.wasm")
+    .then((r) => console.log("WASM fetched:", r.status, r.headers.get("content-type")))
+    .catch(console.error)
+
   const containerRef = useRef<HTMLDivElement>(null)
   const { engine, isLoading, error } = usePdfiumEngine({
+    wasmUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/engines/pdfium.wasm`,
     worker: true,
     logger: logger,
   })
 
   if (error) {
+    console.error("Engine error:", error)
     return <div>Error: {error.message}</div>
   }
 
@@ -78,9 +85,7 @@ export default function PDFContainer({ url }: PDFContainerProps) {
             createPluginRegistration(HistoryPluginPackage),
             createPluginRegistration(SelectionPluginPackage),
             // register Annotation after InteractionManager, Seletion, History
-            createPluginRegistration(AnnotationPluginPackage, {
-              annotationAuthor: "name",
-            }),
+            createPluginRegistration(AnnotationPluginPackage),
             // register Zoom after InteractionManager, Viewport, Scroll
             createPluginRegistration(ZoomPluginPackage, {
               defaultZoomLevel: ZoomMode.Automatic,
@@ -120,6 +125,7 @@ export default function PDFContainer({ url }: PDFContainerProps) {
                             scale={scale}
                             pageWidth={width}
                             pageHeight={height}
+                            rotation={0}
                           />
                           {/* <SearchLayer
                             pageIndex={pageIndex}
