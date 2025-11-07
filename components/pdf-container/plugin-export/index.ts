@@ -133,8 +133,8 @@ export const ExportPluginPackage = createPluginPackage(ExportPluginPackageV1)
   .build()
 
 // ***PLUGIN HOOKS***
-export const useExportPlugin = () => usePlugin(EXPORT_PLUGIN_ID)
-export const useExportCapability = () => useCapability(EXPORT_PLUGIN_ID)
+export const useExportPlugin = () => usePlugin<ExportPlugin>(EXPORT_PLUGIN_ID)
+export const useExportCapability = () => useCapability<ExportPlugin>(EXPORT_PLUGIN_ID)
 
 // *****COMPONENTS******
 export function Download(props: { fileName?: string }) {

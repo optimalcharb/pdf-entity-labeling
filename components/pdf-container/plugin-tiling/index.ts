@@ -113,11 +113,11 @@ export const reducer: Reducer<TilingState, TilingAction> = (
 ) => {
   switch (action.type) {
     case UPDATE_VISIBLE_TILES: {
-      const incoming = action.payload
+      const incoming = action.payload as Record<number, Tile[]>
       const nextPages = { ...state.visibleTiles }
       for (const key in incoming) {
         const pageIndex = Number(key)
-        const newTiles = incoming[pageIndex]
+        const newTiles = incoming[pageIndex] ?? [] // all isFallback=false
         const prevTiles = nextPages[pageIndex] ?? []
         const prevScale = prevTiles.find((t) => !t.isFallback)?.srcScale
         const newScale = newTiles[0]?.srcScale
@@ -342,8 +342,8 @@ export const TilingPluginPackage: PluginPackage<
 }
 
 // ***PLUGIN HOOKS***
-export const useTilingPlugin = () => usePlugin(TILING_PLUGIN_ID)
-export const useTilingCapability = () => useCapability(TILING_PLUGIN_ID)
+export const useTilingPlugin = () => usePlugin<TilingPlugin>(TILING_PLUGIN_ID)
+export const useTilingCapability = () => useCapability<TilingPlugin>(TILING_PLUGIN_ID)
 
 // *****HELPER FUNCTIONS*****
 function calculateTilesForPage({

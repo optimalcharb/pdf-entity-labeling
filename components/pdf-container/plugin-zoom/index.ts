@@ -18,6 +18,7 @@ import {
   Rect,
   type Reducer,
   rotateRect,
+  SET_DOCUMENT,
   SET_PAGES,
   SET_ROTATION,
   setScale,
@@ -27,9 +28,15 @@ import {
 import {
   INTERACTION_MANAGER_PLUGIN_ID,
   InteractionManagerCapability,
+  InteractionManagerPlugin,
 } from "../plugin-interaction-manager"
-import { SCROLL_PLUGIN_ID, ScrollCapability } from "../plugin-scroll"
-import { VIEWPORT_PLUGIN_ID, ViewportCapability, ViewportMetrics } from "../plugin-viewport"
+import { SCROLL_PLUGIN_ID, ScrollCapability, ScrollPlugin } from "../plugin-scroll"
+import {
+  VIEWPORT_PLUGIN_ID,
+  ViewportCapability,
+  ViewportMetrics,
+  ViewportPlugin,
+} from "../plugin-viewport"
 
 // *****CUSTOM TYPES******
 // ***EVENTS***
@@ -156,7 +163,7 @@ function setInitialZoomLevel(zoomLevel: ZoomLevel): SetInitialZoomLevelAction {
 }
 
 // ***ACTION REDUCER***
-const zoomReducer: Reducer<ZoomState, ZoomAction> = (state = initialState, action: ZoomAction) => {
+const reducer: Reducer<ZoomState, ZoomAction> = (state = initialState, action: ZoomAction) => {
   switch (action.type) {
     case SET_ZOOM_LEVEL:
       return {
@@ -214,9 +221,9 @@ export class ZoomPlugin extends BasePlugin<
   private readonly zoom$ = createEmitter<ZoomChangeEvent>()
   private readonly state$ = createBehaviorEmitter<ZoomState>()
   private readonly viewport: ViewportCapability
-  private readonly viewportPlugin: any
+  private readonly viewportPlugin: ViewportPlugin
   private readonly scroll: ScrollCapability
-  private readonly interactionManager: InteractionManagerCapability | null
+  private readonly interactionManager: InteractionManagerCapability
   private readonly presets: ZoomPreset[]
   private readonly zoomRanges: ZoomRangeStep[]
   private readonly minZoom: number
@@ -225,12 +232,12 @@ export class ZoomPlugin extends BasePlugin<
 
   constructor(id: string, registry: PluginRegistry, cfg: ZoomPluginConfig) {
     super(id, registry)
-    this.viewportPlugin = registry.getPlugin(VIEWPORT_PLUGIN_ID)
+    this.viewportPlugin = registry.getPlugin<ViewportPlugin>(VIEWPORT_PLUGIN_ID)!
     this.viewport = this.viewportPlugin.provides()
-    const scrollPlugin = registry.getPlugin(SCROLL_PLUGIN_ID)
-    this.scroll = scrollPlugin?.provides?.() ?? null
-    const interactionManager = registry.getPlugin(INTERACTION_MANAGER_PLUGIN_ID)
-    this.interactionManager = interactionManager?.provides?.() ?? null
+    this.scroll = registry.getPlugin<ScrollPlugin>(SCROLL_PLUGIN_ID)!.provides()
+    this.interactionManager = registry
+      .getPlugin<InteractionManagerPlugin>(INTERACTION_MANAGER_PLUGIN_ID)!
+      .provides()
     this.minZoom = cfg.minZoom ?? 0.25
     this.maxZoom = cfg.maxZoom ?? 10
     this.zoomStep = cfg.zoomStep ?? 0.1
@@ -240,6 +247,7 @@ export class ZoomPlugin extends BasePlugin<
     this.viewport.onViewportResize(() => this.recalcAuto(VerticalZoomFocus.Top))
     this.coreStore.onAction(SET_ROTATION, () => this.recalcAuto(VerticalZoomFocus.Top))
     this.coreStore.onAction(SET_PAGES, () => this.recalcAuto(VerticalZoomFocus.Top))
+    this.coreStore.onAction(SET_DOCUMENT, () => this.recalcAuto(VerticalZoomFocus.Top))
   }
 
   protected buildCapability(): ZoomCapability {
@@ -526,13 +534,13 @@ export const ZoomPluginPackage: PluginPackage<ZoomPlugin, ZoomPluginConfig, Zoom
     manifest,
     create: (registry: PluginRegistry, config: ZoomPluginConfig) =>
       new ZoomPlugin(ZOOM_PLUGIN_ID, registry, config),
-    reducer: zoomReducer,
+    reducer: reducer,
     initialState,
   }
 
 // ***PLUGIN HOOKS***
-export const useZoomPlugin = () => usePlugin(ZOOM_PLUGIN_ID)
-export const useZoomCapability = () => useCapability(ZOOM_PLUGIN_ID)
+export const useZoomPlugin = () => usePlugin<ZoomPlugin>(ZOOM_PLUGIN_ID)
+export const useZoomCapability = () => useCapability<ZoomPlugin>(ZOOM_PLUGIN_ID)
 
 export function PinchWrapper({ children, style, ...props }: PinchWrapperProps) {
   const { elementRef } = usePinch()

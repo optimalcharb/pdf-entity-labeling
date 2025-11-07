@@ -119,8 +119,8 @@ export const RenderPluginPackage: PluginPackage<RenderPlugin, BasePluginConfig> 
 }
 
 // ***PLUGIN HOOKS***
-export const useRenderPlugin = () => usePlugin(RENDER_PLUGIN_ID)
-export const useRenderCapability = () => useCapability(RENDER_PLUGIN_ID)
+export const useRenderPlugin = () => usePlugin<RenderPlugin>(RENDER_PLUGIN_ID)
+export const useRenderCapability = () => useCapability<RenderPlugin>(RENDER_PLUGIN_ID)
 
 // *****COMPONENTS******
 interface RenderLayerProps {

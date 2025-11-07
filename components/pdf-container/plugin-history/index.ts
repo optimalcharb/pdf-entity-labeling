@@ -277,5 +277,5 @@ export const HistoryPluginPackage: PluginPackage<
 }
 
 // ***PLUGIN HOOKS***
-export const useHistoryPlugin = () => usePlugin(HISTORY_PLUGIN_ID)
-export const useHistoryCapability = () => useCapability(HISTORY_PLUGIN_ID)
+export const useHistoryPlugin = () => usePlugin<HistoryPlugin>(HISTORY_PLUGIN_ID)
+export const useHistoryCapability = () => useCapability<HistoryPlugin>(HISTORY_PLUGIN_ID)

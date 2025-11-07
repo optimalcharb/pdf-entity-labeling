@@ -525,8 +525,8 @@ export const SearchPluginPackage: PluginPackage<
 }
 
 // ***PLUGIN HOOKS***
-export const useSearchPlugin = () => usePlugin(SEARCH_PLUGIN_ID)
-export const useSearchCapability = () => useCapability(SEARCH_PLUGIN_ID)
+export const useSearchPlugin = () => usePlugin<SearchPlugin>(SEARCH_PLUGIN_ID)
+export const useSearchCapability = () => useCapability<SearchPlugin>(SEARCH_PLUGIN_ID)
 
 // *****COMPONENTS******
 interface SearchLayerProps {

@@ -4,7 +4,7 @@ import { usePdfiumEngine } from "@embedpdf/engines/react"
 import { useRef } from "react"
 import { Spinner } from "../shadcn-ui/spinner"
 import { AnnotationToolbar } from "./annotation-toolbar"
-import { ConsoleLogger, createPluginRegistration, EmbedPDF } from "./core"
+import { ConsoleLogger, createPluginRegistration, EmbedPDF, PdfEngine } from "./core"
 import { AnnotationLayer, AnnotationPluginPackage } from "./plugin-annotation"
 import { HistoryPluginPackage } from "./plugin-history"
 import {
@@ -14,7 +14,7 @@ import {
 } from "./plugin-interaction-manager"
 import { LoaderPluginPackage } from "./plugin-loader"
 import { RenderLayer, RenderPluginPackage } from "./plugin-render"
-import { Scroller, ScrollPluginPackage, ScrollStrategy } from "./plugin-scroll"
+import { Scroller, ScrollPluginPackage } from "./plugin-scroll"
 // import { SearchLayer, SearchPluginPackage } from "./plugin-search"
 import { SelectionLayer, SelectionPluginPackage } from "./plugin-selection"
 import { TilingLayer, TilingPluginPackage } from "./plugin-tiling"
@@ -47,7 +47,7 @@ export default function PDFContainer({ url }: PDFContainerProps) {
       <div className="flex flex-1 overflow-hidden">
         <EmbedPDF
           logger={logger}
-          engine={engine}
+          engine={engine as PdfEngine<Blob>}
           plugins={[
             // register Loader first
             createPluginRegistration(LoaderPluginPackage, {
@@ -66,7 +66,8 @@ export default function PDFContainer({ url }: PDFContainerProps) {
               viewportGap: 5,
             }),
             createPluginRegistration(ScrollPluginPackage, {
-              strategy: ScrollStrategy.Vertical,
+              enabled: true,
+              pageGap: 10,
             }),
             createPluginRegistration(RenderPluginPackage),
             createPluginRegistration(InteractionManagerPluginPackage),

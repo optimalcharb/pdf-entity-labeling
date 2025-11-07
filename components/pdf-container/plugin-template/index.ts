@@ -123,8 +123,8 @@ export const TemplatePluginPackage: PluginPackage<
 }
 
 // ***PLUGIN HOOKS***
-export const useTemplatePlugin = () => usePlugin(TEMPLATE_PLUGIN_ID)
-export const useTemplateCapability = () => useCapability(TEMPLATE_PLUGIN_ID)
+export const useTemplatePlugin = () => usePlugin<TemplatePlugin>(TEMPLATE_PLUGIN_ID)
+export const useTemplateCapability = () => useCapability<TemplatePlugin>(TEMPLATE_PLUGIN_ID)
 
 // *****HELPER FUNCTIONS*****
 // optional

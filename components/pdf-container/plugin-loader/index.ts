@@ -299,8 +299,8 @@ export const LoaderPluginPackage = createPluginPackage(LoaderPluginPackageV1)
   .build()
 
 // ***PLUGIN HOOKS***
-export const useLoaderPlugin = () => usePlugin(LOADER_PLUGIN_ID)
-export const useLoaderCapability = () => useCapability(LOADER_PLUGIN_ID)
+export const useLoaderPlugin = () => usePlugin<LoaderPlugin>(LOADER_PLUGIN_ID)
+export const useLoaderCapability = () => useCapability<LoaderPlugin>(LOADER_PLUGIN_ID)
 
 // *****COMPONENTS******
 function FilePicker() {

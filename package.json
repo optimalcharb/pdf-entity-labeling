@@ -139,7 +139,7 @@
     "style-loader": "^4.0.0",
     "tsx": "^4.20.6",
     "typed-query-selector": "^2.12.0",
-    "typescript": "^5.9.3",
+    "typescript": "5.9.3",
     "webpack": "5.102.1"
   }
 }

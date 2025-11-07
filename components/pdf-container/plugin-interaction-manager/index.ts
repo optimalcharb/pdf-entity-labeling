@@ -761,8 +761,8 @@ export const InteractionManagerPluginPackage: PluginPackage<
 }
 
 // ***PLUGIN HOOKS***
-export const useInteractionManagerPlugin = () => usePlugin(InteractionManagerPlugin.id)
-export const useInteractionManagerCapability = () => useCapability(InteractionManagerPlugin.id)
+export const useInteractionManagerPlugin = () => usePlugin<InteractionManagerPlugin>(INTERACTION_MANAGER_PLUGIN_ID)
+export const useInteractionManagerCapability = () => useCapability<InteractionManagerPlugin>(INTERACTION_MANAGER_PLUGIN_ID)
 
 // *****CUSTOM HOOKS*****
 export function useInteractionManager(): {

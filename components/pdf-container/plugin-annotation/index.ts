@@ -18,9 +18,18 @@ import {
   usePlugin,
   uuidV4,
 } from "../core"
-import { HistoryCapability } from "../plugin-history"
-import { InteractionManagerCapability } from "../plugin-interaction-manager"
-import { SelectionCapability, useSelectionCapability } from "../plugin-selection"
+import { HISTORY_PLUGIN_ID, HistoryCapability, HistoryPlugin } from "../plugin-history"
+import {
+  INTERACTION_MANAGER_PLUGIN_ID,
+  InteractionManagerCapability,
+  InteractionManagerPlugin,
+} from "../plugin-interaction-manager"
+import {
+  SELECTION_PLUGIN_ID,
+  SelectionCapability,
+  SelectionPlugin,
+  useSelectionCapability,
+} from "../plugin-selection"
 
 // *****CUSTOM TYPES******
 // ***EVENTS***
@@ -398,38 +407,31 @@ export class AnnotationPlugin extends BasePlugin<
   AnnotationAction
 > {
   static readonly id: string = ANNOTATION_PLUGIN_ID
-  private readonly ANNOTATION_HISTORY_TOPIC: string
+  private readonly ANNOTATION_HISTORY_TOPIC = "annotations"
   public readonly config: AnnotationPluginConfig
-  private state$: any
-  private readonly interactionManager: InteractionManagerCapability
-  private readonly selection: SelectionCapability
-  private readonly history: HistoryCapability
-  private activeTool$: any
-  private events$: any
+  private state$ = createBehaviorEmitter<AnnotationState>()
+  private readonly interactionManager: InteractionManagerCapability | null
+  private readonly selection: SelectionCapability | null
+  private readonly history: HistoryCapability | null
+  private readonly activeTool$ = createBehaviorEmitter<AnnotationTool | null>(null)
+  private readonly events$ = createBehaviorEmitter<AnnotationEvent>()
   private isInitialLoadComplete = false
   private importQueue: Array<{ annotation: PdfAnnotationObject }> = []
 
   constructor(id: string, registry: PluginRegistry, config: AnnotationPluginConfig) {
     super(id, registry)
-    this.ANNOTATION_HISTORY_TOPIC = "annotations"
-    this.state$ = createBehaviorEmitter()
-    this.activeTool$ = createBehaviorEmitter(null)
-    this.events$ = createBehaviorEmitter()
-    this.isInitialLoadComplete = false
-    this.importQueue = []
     this.config = config
-    const selectionPlugin = registry.getPlugin("selection")
-    const historyPlugin = registry.getPlugin("history")
-    const interactionManagerPlugin = registry.getPlugin("interaction-manager")
 
-    this.selection = selectionPlugin ? selectionPlugin.provides() : undefined
-    this.history = historyPlugin ? historyPlugin.provides() : undefined
-    this.interactionManager = interactionManagerPlugin
-      ? interactionManagerPlugin.provides()
-      : undefined
+    this.selection = registry.getPlugin<SelectionPlugin>(SELECTION_PLUGIN_ID)?.provides() ?? null
+    this.history = registry.getPlugin<HistoryPlugin>(HISTORY_PLUGIN_ID)?.provides() ?? null
+    this.interactionManager =
+      registry.getPlugin<InteractionManagerPlugin>(INTERACTION_MANAGER_PLUGIN_ID)?.provides() ??
+      null
 
     if (!this.selection || !this.history || !this.interactionManager) {
-      throw new Error("Required plugins not found: selection, history, or interaction-manager")
+      throw new Error(
+        `Annotation plugin did not find ${SELECTION_PLUGIN_ID}, ${HISTORY_PLUGIN_ID}, or ${INTERACTION_MANAGER_PLUGIN_ID}`,
+      )
     }
     this.coreStore.onAction(SET_DOCUMENT, (_, state) => {
       const doc = state.core.document
@@ -439,79 +441,70 @@ export class AnnotationPlugin extends BasePlugin<
   }
 
   // setup communication with InteractionManager, History, and Selection plugins
-  async initialize() {
-    var _a, _b, _c
-    ;(this.state as AnnotationState).tools.forEach((tool: AnnotationTool) => {
-      var _tool_a, _tool_b
-      ;(_tool_a = this.interactionManager) == null
-        ? void 0
-        : _tool_a.registerMode({
-            id: tool.interaction.mode ?? tool.id,
-            scope: "page",
-            exclusive: tool.interaction.exclusive,
-            cursor: tool.interaction.cursor,
-          })
-      if (tool.interaction.textSelection) {
-        ;(_tool_b = this.selection) == null
-          ? void 0
-          : _tool_b.enableForMode(tool.interaction.mode ?? tool.id)
+  async initialize(): Promise<void> {
+    this.state.tools.forEach((tool) => this.registerInteractionForTool(tool))
+
+    this.history?.onHistoryChange((topic) => {
+      if (topic === this.ANNOTATION_HISTORY_TOPIC && this.config.autoCommit !== false) {
+        this.commit()
       }
     })
-    ;(_a = this.history) == null
-      ? void 0
-      : _a.onHistoryChange((topic) => {
-          if (topic === this.ANNOTATION_HISTORY_TOPIC && this.config.autoCommit !== false) {
-            this.commit()
+
+    this.interactionManager?.onModeChange((s) => {
+      const newToolId =
+        this.state.tools.find((t) => (t.interaction.mode ?? t.id) === s.activeMode)?.id ?? null
+      if (newToolId !== this.state.activeToolId) {
+        this.dispatch(setActiveToolId(newToolId))
+      }
+    })
+
+    this.selection?.onEndSelection(() => {
+      const activeTool = this.getActiveTool()
+      if (!activeTool || !activeTool.interaction.textSelection) return
+
+      const formattedSelection = this.selection?.getFormattedSelection()
+      const selectionText = this.selection?.getSelectedText()
+
+      if (!formattedSelection || !selectionText) return
+
+      for (const selection of formattedSelection) {
+        selectionText.wait((text) => {
+          const annotationId = uuidV4()
+          // Create an annotation using the defaults from the active text tool
+          this.createAnnotation(selection.pageIndex, {
+            type: activeTool.type,
+            color: activeTool.color,
+            rect: selection.rect,
+            segmentRects: selection.segmentRects,
+            pageIndex: selection.pageIndex,
+            created: /* @__PURE__ */ new Date(),
+            id: annotationId,
+            opacity: activeTool.opacity,
+          } as PdfAnnotationObject)
+
+          if (this.getToolBehavior(activeTool, "deactivateToolAfterCreate")) {
+            this.setActiveTool(null)
           }
-        })
-    ;(_b = this.interactionManager) == null
-      ? void 0
-      : _b.onModeChange((s) => {
-          var _a2
-          const newToolId =
-            ((_a2 = (this.state as AnnotationState).tools.find(
-              (t: AnnotationTool) => (t.interaction.mode ?? t.id) === s.activeMode,
-            )) == null
-              ? void 0
-              : _a2.id) ?? null
-          if (newToolId !== (this.state as AnnotationState).activeToolId) {
-            this.dispatch(setActiveToolId(newToolId))
+          if (this.getToolBehavior(activeTool, "selectAfterCreate")) {
+            this.selectAnnotation(selection.pageIndex, annotationId)
           }
-        })
-    ;(_c = this.selection) == null
-      ? void 0
-      : _c.onEndSelection(() => {
-          var _a2, _b2, _c2
-          const activeTool = this.getActiveTool()
-          if (!activeTool || !activeTool.interaction.textSelection) return
-          const formattedSelection =
-            (_a2 = this.selection) == null ? void 0 : _a2.getFormattedSelection()
-          const selectionText = (_b2 = this.selection) == null ? void 0 : _b2.getSelectedText()
-          if (!formattedSelection || !selectionText) return
-          for (const selection of formattedSelection) {
-            selectionText.wait((_text) => {
-              const annotationId = uuidV4()
-              this.createAnnotation(selection.pageIndex, {
-                type: activeTool.type,
-                color: activeTool.color,
-                rect: selection.rect,
-                segmentRects: selection.segmentRects,
-                pageIndex: selection.pageIndex,
-                created: /* @__PURE__ */ new Date(),
-                id: annotationId,
-                opacity: activeTool.opacity,
-              })
-              // tool behavior after creating an annotation
-              if (this.getToolBehavior(activeTool, "deactivateToolAfterCreate")) {
-                this.setActiveTool(null)
-              }
-              if (this.getToolBehavior(activeTool, "selectAfterCreate")) {
-                this.selectAnnotation(selection.pageIndex, annotationId)
-              }
-            }, ignore)
-          }
-          ;(_c2 = this.selection) == null ? void 0 : _c2.clear()
-        })
+        }, ignore)
+      }
+
+      this.selection?.clear()
+    })
+  }
+
+  private registerInteractionForTool(tool: AnnotationTool) {
+    this.interactionManager?.registerMode({
+      id: tool.interaction.mode ?? tool.id,
+      scope: "page",
+      exclusive: tool.interaction.exclusive,
+      cursor: tool.interaction.cursor,
+    })
+    if (tool.interaction.textSelection) {
+      this.selection?.enableForMode(tool.interaction.mode ?? tool.id)
+    }
   }
 
   // capabilitiy functions to enable the client program to...
@@ -858,8 +851,8 @@ export const AnnotationPluginPackage: PluginPackage<
 }
 
 // ***PLUGIN HOOKS***
-export const useAnnotationPlugin = () => usePlugin(ANNOTATION_PLUGIN_ID)
-export const useAnnotationCapability = () => useCapability(ANNOTATION_PLUGIN_ID)
+export const useAnnotationPlugin = () => usePlugin<AnnotationPlugin>(ANNOTATION_PLUGIN_ID)
+export const useAnnotationCapability = () => useCapability<AnnotationPlugin>(ANNOTATION_PLUGIN_ID)
 
 // *****HELPER FUNCTIONS*****
 // Helper functions to get annotations by page and exported functions for client program to get annotations
@@ -1242,8 +1235,7 @@ function TextMarkupPreview(props: { pageIndex: number; scale: number }) {
     if (!selectionProvides) return
 
     const unsubscribe = selectionProvides.onSelectionChange(() => {
-      const highlightRects = selectionProvides.getHighlightRectsForPage(pageIndex)
-      setRects(Array.isArray(highlightRects) ? highlightRects : [])
+      setRects(selectionProvides.getHighlightRectsForPage(pageIndex))
       setBoundingRect(selectionProvides.getBoundingRectForPage(pageIndex))
     })
 

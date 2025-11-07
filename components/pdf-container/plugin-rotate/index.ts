@@ -129,8 +129,8 @@ export const RotatePluginPackage: PluginPackage<RotatePlugin, RotatePluginConfig
 }
 
 // ***PLUGIN HOOKS***
-export const useRotatePlugin = () => usePlugin(ROTATE_PLUGIN_ID)
-export const useRotateCapability = () => useCapability(ROTATE_PLUGIN_ID)
+export const useRotatePlugin = () => usePlugin<RotatePlugin>(ROTATE_PLUGIN_ID)
+export const useRotateCapability = () => useCapability<RotatePlugin>(ROTATE_PLUGIN_ID)
 
 // *****HELPER FUNCTIONS*****
 function getRotationMatrix(

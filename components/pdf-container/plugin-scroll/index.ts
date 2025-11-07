@@ -897,9 +897,8 @@ export const ScrollPluginPackage = {
 }
 
 // ***PLUGIN HOOKS***
-export const useScrollPlugin = () => usePlugin(ScrollPlugin.id)
-export const useScrollCapability = () => useCapability(ScrollPlugin.id)
-
+export const useScrollPlugin = () => usePlugin<ScrollPlugin>(SCROLL_PLUGIN_ID)
+export const useScrollCapability = () => useCapability<ScrollPlugin>(SCROLL_PLUGIN_ID)
 // *****HELPER FUNCTIONS*****
 const getScrollerLayout = (state: ScrollState, scale: number) => {
   return {

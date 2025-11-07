@@ -12,7 +12,7 @@ In the previous page or settings sidebar, the user can decide whether each entit
 
 ### Plugins
 
-I don't think additional plugins will be necessary and plugin-rotate can be ignored for now (it enables rotating the PDF from portrait to landscape). plugin-template is not a real plugin; it's a template to make plugin code readable. Eventually plugins could be split into multiple files but that would take some time changing imports/exports and the template ensures some things are exported and others aren't.
+I don't think additional plugins will be necessary and plugin-rotate can be ignored for now (it enables rotating the PDF from portrait to landscape). plugin-template is not a real plugin; it's a template to make plugin code readable. Eventually plugins could be split into multiple files.
 
 ## Quickstart
 

@@ -396,8 +396,8 @@ export const ViewportPluginPackage: PluginPackage<
 }
 
 // ***PLUGIN HOOKS***
-export const useViewportPlugin = () => usePlugin(VIEWPORT_PLUGIN_ID)
-export const useViewportCapability = () => useCapability(VIEWPORT_PLUGIN_ID)
+export const useViewportPlugin = () => usePlugin<ViewportPlugin>(VIEWPORT_PLUGIN_ID)
+export const useViewportCapability = () => useCapability<ViewportPlugin>(VIEWPORT_PLUGIN_ID)
 
 // *****COMPONENTS******
 interface ViewportProps {
