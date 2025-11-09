@@ -45,11 +45,7 @@ export interface AnnotationState {
   byUid: Record<string, TrackedAnnotation>
   selectedUid: string | null
   activeToolId: string | null
-
-  /** The complete list of available tools, including any user modifications. */
   tools: AnnotationTool[]
-
-  colorPresets: string[]
   hasPendingChanges: boolean
 }
 

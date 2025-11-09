@@ -14,7 +14,7 @@ export const AnnotationPluginPackage: PluginPackage<
   manifest,
   create: (registry, config) => new AnnotationPlugin(ANNOTATION_PLUGIN_ID, registry, config),
   reducer,
-  initialState: (_, config) => initialState(config),
+  initialState: initialState,
 }
 
 export * from "./annotation-plugin"
