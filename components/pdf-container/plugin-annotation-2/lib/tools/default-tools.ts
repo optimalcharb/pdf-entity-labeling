@@ -1,5 +1,5 @@
 import { PdfAnnotationSubtype, PdfBlendMode } from "@embedpdf/models"
-import { AnnotationTool } from "./types"
+import type { AnnotationTool } from "./annotation-tool"
 
 export const defaultTools = [
   {

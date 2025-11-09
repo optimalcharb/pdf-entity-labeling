@@ -24,8 +24,6 @@ import {
 } from "@embedpdf/plugin-interaction-manager"
 import { SelectionCapability, SelectionPlugin } from "@embedpdf/plugin-selection"
 import {
-  addColorPreset,
-  addTool,
   AnnotationAction,
   commitPendingChanges,
   createAnnotation,
@@ -35,18 +33,16 @@ import {
   selectAnnotation,
   setActiveToolId,
   setAnnotations,
-  setToolDefaults,
 } from "./actions"
-import { getSelectedAnnotation } from "./selectors"
-import { AnnotationTool } from "./tools/types"
-import {
+import type {
   AnnotationEvent,
-  AnnotationState,
   GetPageAnnotationsOptions,
-  ImportAnnotationItem,
   RenderAnnotationOptions,
   TrackedAnnotation,
-} from "./types"
+} from "./custom-types"
+import { getSelectedAnnotation } from "./selectors"
+import type { AnnotationState } from "./state"
+import type { AnnotationTool } from "./tools/annotation-tool"
 
 // ***PLUGIN CONFIG***
 export interface AnnotationPluginConfig extends BasePluginConfig {
@@ -65,6 +61,10 @@ export interface AnnotationPluginConfig extends BasePluginConfig {
 
 // ***PLUGIN CAPABILITY***
 export interface AnnotationCapability {
+  onStateChange: EventHook<AnnotationState>
+  onActiveToolChange: EventHook<AnnotationTool | null>
+  onAnnotationEvent: EventHook<AnnotationEvent>
+
   getPageAnnotations: (
     options: GetPageAnnotationsOptions,
   ) => Task<PdfAnnotationObject[], PdfErrorReason>
@@ -76,14 +76,8 @@ export interface AnnotationCapability {
   setActiveTool: (toolId: string | null) => void
   getTools: () => AnnotationTool[]
   getTool: <T extends AnnotationTool>(toolId: string) => T | undefined
-  addTool: <T extends AnnotationTool>(tool: T) => void
-  findToolForAnnotation: (annotation: PdfAnnotationObject) => AnnotationTool | null
-  setToolDefaults: (toolId: string, patch: Partial<any>) => void
 
-  getColorPresets: () => string[]
-  addColorPreset: (color: string) => void
-
-  importAnnotations: (items: ImportAnnotationItem<PdfAnnotationObject>[]) => void
+  importAnnotations: (items: PdfAnnotationObject[]) => void
   createAnnotation: <A extends PdfAnnotationObject>(
     pageIndex: number,
     annotation: A,
@@ -93,9 +87,6 @@ export interface AnnotationCapability {
 
   renderAnnotation: (options: RenderAnnotationOptions) => Task<Blob, PdfErrorReason>
 
-  onStateChange: EventHook<AnnotationState>
-  onActiveToolChange: EventHook<AnnotationTool | null>
-  onAnnotationEvent: EventHook<AnnotationEvent>
   commit: () => Task<boolean, PdfErrorReason>
 }
 
@@ -120,7 +111,7 @@ export class AnnotationPlugin extends BasePlugin<
   private readonly events$ = createBehaviorEmitter<AnnotationEvent>()
 
   private isInitialLoadComplete = false
-  private importQueue: ImportAnnotationItem<PdfAnnotationObject>[] = []
+  private importQueue: PdfAnnotationObject[] = []
 
   constructor(id: string, registry: PluginRegistry, config: AnnotationPluginConfig) {
     super(id, registry)
@@ -181,11 +172,11 @@ export class AnnotationPlugin extends BasePlugin<
             },
           } as PdfAnnotationObject)
 
-          if (this.getToolBehavior(activeTool, "deactivateToolAfterCreate")) {
+          if (this.config.deactivateToolAfterCreate) {
             this.setActiveTool(null)
           }
-          if (this.getToolBehavior(activeTool, "selectAfterCreate")) {
-            this.selectAnnotation(selection.pageIndex, annotationId)
+          if (this.config.selectAfterCreate) {
+            this.dispatch(selectAnnotation(selection.pageIndex, annotationId))
           }
         }, ignore)
       }
@@ -208,36 +199,27 @@ export class AnnotationPlugin extends BasePlugin<
 
   protected buildCapability(): AnnotationCapability {
     return {
+      onStateChange: this.state$.on,
+      onActiveToolChange: this.activeTool$.on,
+      onAnnotationEvent: this.events$.on,
       getPageAnnotations: (options) => this.getPageAnnotations(options),
       getSelectedAnnotation: () => getSelectedAnnotation(this.state),
-      selectAnnotation: (pageIndex, id) => this.selectAnnotation(pageIndex, id),
+      selectAnnotation: (pageIndex, id) => this.dispatch(selectAnnotation(pageIndex, id)),
       deselectAnnotation: () => this.dispatch(deselectAnnotation()),
       getActiveTool: () => this.getActiveTool(),
       setActiveTool: (toolId) => this.setActiveTool(toolId),
       getTools: () => this.state.tools,
       getTool: (toolId) => this.getTool(toolId),
-      addTool: (tool) => {
-        this.dispatch(addTool(tool))
-        this.registerInteractionForTool(tool)
-      },
-      findToolForAnnotation: (anno) => this.findToolForAnnotation(anno),
-      setToolDefaults: (toolId, patch) => this.dispatch(setToolDefaults(toolId, patch)),
-      getColorPresets: () => [...this.state.colorPresets],
-      addColorPreset: (color) => this.dispatch(addColorPreset(color)),
       importAnnotations: (items) => this.importAnnotations(items),
       createAnnotation: (pageIndex, anno, ctx) => this.createAnnotation(pageIndex, anno, ctx),
       deleteAnnotation: (pageIndex, id) => this.deleteAnnotation(pageIndex, id),
       renderAnnotation: (options) => this.renderAnnotation(options),
-      onStateChange: this.state$.on,
-      onActiveToolChange: this.activeTool$.on,
-      onAnnotationEvent: this.events$.on,
       commit: () => this.commit(),
     }
   }
 
   override onStoreUpdated(prev: AnnotationState, next: AnnotationState): void {
     this.state$.emit(next)
-
     // If the active tool ID changes, or the tools array itself changes, emit the new active tool
     if (prev.activeToolId !== next.activeToolId || prev.tools !== next.tools) {
       this.activeTool$.emit(this.getActiveTool())
@@ -249,10 +231,8 @@ export class AnnotationPlugin extends BasePlugin<
     task.wait((annotations) => {
       this.dispatch(setAnnotations(annotations))
 
-      // Mark initial load as complete
       this.isInitialLoadComplete = true
 
-      // Process any queued imports
       if (this.importQueue.length > 0) {
         this.processImportQueue()
       }
@@ -302,35 +282,28 @@ export class AnnotationPlugin extends BasePlugin<
     return this.engine.renderPageAnnotation(coreState.document, page, annotation, options)
   }
 
-  private importAnnotations(items: ImportAnnotationItem<PdfAnnotationObject>[]) {
+  private importAnnotations(items: PdfAnnotationObject[]) {
     // If initial load hasn't completed, queue the items
     if (!this.isInitialLoadComplete) {
       this.importQueue.push(...items)
       return
     }
-
     // Otherwise, import immediately
     this.processImportItems(items)
   }
 
   private processImportQueue() {
     if (this.importQueue.length === 0) return
-
     const items = [...this.importQueue]
     this.importQueue = [] // Clear the queue
     this.processImportItems(items)
   }
 
-  private processImportItems(items: ImportAnnotationItem<PdfAnnotationObject>[]) {
-    for (const item of items) {
-      const { annotation, ctx } = item
+  private processImportItems(items: PdfAnnotationObject[]) {
+    for (const annotation of items) {
       const pageIndex = annotation.pageIndex
-      const id = annotation.id
-
       this.dispatch(createAnnotation(pageIndex, annotation))
-      if (ctx) this.pendingContexts.set(id, ctx)
     }
-
     if (this.config.autoCommit !== false) this.commit()
   }
 
@@ -413,10 +386,6 @@ export class AnnotationPlugin extends BasePlugin<
     this.history.register(command, this.ANNOTATION_HISTORY_TOPIC)
   }
 
-  private selectAnnotation(pageIndex: number, id: string) {
-    this.dispatch(selectAnnotation(pageIndex, id))
-  }
-
   public getActiveTool(): AnnotationTool | null {
     if (!this.state.activeToolId) return null
     return this.state.tools.find((t) => t.id === this.state.activeToolId) ?? null
@@ -434,19 +403,6 @@ export class AnnotationPlugin extends BasePlugin<
 
   public getTool<T extends AnnotationTool>(toolId: string): T | undefined {
     return this.state.tools.find((t) => t.id === toolId) as T | undefined
-  }
-
-  public findToolForAnnotation(annotation: PdfAnnotationObject): AnnotationTool | null {
-    let bestTool: AnnotationTool | null = null
-    let bestScore = 0
-    for (const tool of this.state.tools) {
-      const score = tool.matchScore(annotation)
-      if (score > bestScore) {
-        bestScore = score
-        bestTool = tool
-      }
-    }
-    return bestTool
   }
 
   private commit(): Task<boolean, PdfErrorReason> {
@@ -541,22 +497,5 @@ export class AnnotationPlugin extends BasePlugin<
     }, task.fail)
 
     return task
-  }
-
-  /**
-   * Gets the effective behavior setting for a tool, checking tool-specific config first,
-   * then falling back to plugin config.
-   */
-  private getToolBehavior(
-    tool: AnnotationTool,
-    setting: "deactivateToolAfterCreate" | "selectAfterCreate",
-  ): boolean {
-    // Check if tool has specific behavior setting
-    if (tool.behavior?.[setting] !== undefined) {
-      return tool.behavior[setting]
-    }
-
-    // Fall back to plugin config
-    return this.config[setting] !== false
   }
 }

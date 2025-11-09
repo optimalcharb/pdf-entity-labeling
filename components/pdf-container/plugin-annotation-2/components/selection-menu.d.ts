@@ -3,7 +3,7 @@ import { MenuWrapperProps } from "@embedpdf/utils/react"
 import { JSX } from "react"
 import { TrackedAnnotation } from "../lib"
 
-export interface SelectionMenuProps {
+interface SelectionMenuProps {
   annotation: TrackedAnnotation
   selected: boolean
   rect: Rect

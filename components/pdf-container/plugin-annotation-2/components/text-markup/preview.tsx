@@ -1,13 +1,13 @@
 import { blendModeToCss, PdfAnnotationSubtype, PdfBlendMode, Rect } from "@embedpdf/models"
-import { AnnotationTool } from "../lib"
 import { useSelectionCapability } from "@embedpdf/plugin-selection/react"
+import { AnnotationTool } from "../../lib/tools/annotation-tool"
 
 import { useEffect, useState } from "react"
-import { useAnnotationCapability } from "../hooks"
-import { Highlight } from "./text-markup/highlight"
-import { Squiggly } from "./text-markup/squiggly"
-import { Underline } from "./text-markup/underline"
-import { Strikeout } from "./text-markup/strikeout"
+import { useAnnotationCapability } from "../../hooks"
+import { Highlight } from "./highlight"
+import { Squiggly } from "./squiggly"
+import { Strikeout } from "./strikeout"
+import { Underline } from "./underline"
 
 interface TextMarkupPreviewProps {
   pageIndex: number

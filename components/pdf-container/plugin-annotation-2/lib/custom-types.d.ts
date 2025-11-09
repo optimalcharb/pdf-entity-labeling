@@ -1,10 +1,8 @@
-import { BasePluginConfig } from "@embedpdf/core"
-import {
+import type {
   AnnotationCreateContext,
   PdfAnnotationObject,
   PdfRenderPageAnnotationOptions,
 } from "@embedpdf/models"
-import { AnnotationTool } from "./tools/types"
 
 export type AnnotationEvent =
   | {
@@ -37,15 +35,6 @@ export interface RenderAnnotationOptions {
   options?: PdfRenderPageAnnotationOptions
 }
 
-export interface AnnotationState {
-  pages: Record<number, string[]>
-  byUid: Record<string, TrackedAnnotation>
-  selectedUid: string | null
-  activeToolId: string | null
-  tools: AnnotationTool[]
-  hasPendingChanges: boolean
-}
-
 /**
  * Options for transforming an annotation
  */
@@ -61,11 +50,6 @@ export interface TransformOptions<T extends PdfAnnotationObject = PdfAnnotationO
     maintainAspectRatio?: boolean
     [key: string]: any
   }
-}
-
-export type ImportAnnotationItem<T extends PdfAnnotationObject = PdfAnnotationObject> = {
-  annotation: T
-  ctx?: AnnotationCreateContext<T>
 }
 
 export interface GetPageAnnotationsOptions {

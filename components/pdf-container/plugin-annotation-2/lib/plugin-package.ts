@@ -1,0 +1,33 @@
+import { PluginManifest, PluginPackage } from "@embedpdf/core"
+import { AnnotationAction, reducer } from "./actions"
+import { AnnotationPlugin, AnnotationPluginConfig } from "./plugin"
+import { AnnotationState, initialState } from "./state"
+
+export const ANNOTATION_PLUGIN_ID = "annotation"
+
+const manifest: PluginManifest<AnnotationPluginConfig> = {
+  id: ANNOTATION_PLUGIN_ID,
+  name: "Annotation Plugin",
+  version: "1.0.0",
+  provides: ["annotation"],
+  requires: ["interaction-manager", "selection"],
+  optional: ["history"],
+  defaultConfig: {
+    autoCommit: true,
+    annotationAuthor: "Guest",
+    deactivateToolAfterCreate: false, //true
+    selectAfterCreate: true,
+  },
+}
+
+export const AnnotationPluginPackage: PluginPackage<
+  AnnotationPlugin,
+  AnnotationPluginConfig,
+  AnnotationState,
+  AnnotationAction
+> = {
+  manifest,
+  create: (registry, config) => new AnnotationPlugin(ANNOTATION_PLUGIN_ID, registry, config),
+  reducer,
+  initialState,
+}

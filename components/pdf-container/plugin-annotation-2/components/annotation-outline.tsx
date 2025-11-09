@@ -2,9 +2,9 @@ import { PdfAnnotationObject } from "@embedpdf/models"
 import { CounterRotate, useDoublePressProps } from "@embedpdf/utils/react"
 import { CSSProperties, JSX, useEffect, useState } from "react"
 import { TrackedAnnotation } from "../lib"
-import { SelectionMenuProps } from "./types"
+import { SelectionMenuProps } from "./selection-menu"
 
-interface AnnotationContainerProps<T extends PdfAnnotationObject> {
+interface AnnotationOutlineProps<T extends PdfAnnotationObject> {
   scale: number
   pageIndex: number
   rotation: number
@@ -23,8 +23,7 @@ interface AnnotationContainerProps<T extends PdfAnnotationObject> {
   selectionOutlineOffset?: number
 }
 
-// Simplified AnnotationContainer
-export function AnnotationContainer<T extends PdfAnnotationObject>({
+export function AnnotationOutline<T extends PdfAnnotationObject>({
   scale,
   pageIndex,
   rotation,
@@ -42,7 +41,7 @@ export function AnnotationContainer<T extends PdfAnnotationObject>({
   selectionOutlineWidth = 2,
   selectionOutlineOffset = 1,
   ...props
-}: AnnotationContainerProps<T>): JSX.Element {
+}: AnnotationOutlineProps<T>): JSX.Element {
   const [preview, setPreview] = useState<T>(trackedAnnotation.object)
   const currentObject = preview
     ? { ...trackedAnnotation.object, ...preview }

@@ -1,4 +1,4 @@
-import { AnnotationState } from "./types"
+import type { AnnotationState } from "./state"
 
 /* ─────────── public selectors ─────────── */
 

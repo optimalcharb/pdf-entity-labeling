@@ -1,4 +1,4 @@
-import { AnnotationTool } from "./types"
+import type { AnnotationTool } from "./annotation-tool"
 import { defaultTools } from "./default-tools"
 
 // Infer the exact union type of all tool objects.

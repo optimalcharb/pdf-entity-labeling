@@ -1,7 +1,7 @@
 import { CSSProperties, HTMLAttributes } from "react"
 import { Annotations } from "./annotations"
-import { TextMarkupPreview } from "./text-markup"
-import { SelectionMenu } from "./types"
+import { SelectionMenu } from "./selection-menu"
+import { TextMarkupPreview } from "./text-markup/preview"
 
 type AnnotationLayerProps = Omit<HTMLAttributes<HTMLDivElement>, "style"> & {
   pageIndex: number
