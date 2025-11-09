@@ -1,6 +1,5 @@
 import { PdfAnnotationObject } from "@embedpdf/models"
 import { CSSProperties, HTMLAttributes } from "react"
-import { AnnotationPaintLayer } from "./annotation-paint-layer"
 import { Annotations } from "./annotations"
 import { TextMarkup } from "./text-markup"
 import { CustomAnnotationRenderer, ResizeHandleUI, SelectionMenu, VertexHandleUI } from "./types"
@@ -59,7 +58,6 @@ export function AnnotationLayer({
         data-testid="annotations"
       />
       <TextMarkup pageIndex={pageIndex} scale={scale} data-testid="text-markup" />
-      <AnnotationPaintLayer pageIndex={pageIndex} scale={scale} />
     </div>
   )
 }

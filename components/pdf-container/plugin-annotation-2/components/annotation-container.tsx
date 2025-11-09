@@ -1,44 +1,39 @@
-import { PdfAnnotationObject } from '@embedpdf/models';
-import {
-  CounterRotate,
-  useDoublePressProps,
-  useInteractionHandles,
-} from '@embedpdf/utils/react';
-import { TrackedAnnotation } from '../lib';
-import { useState, JSX, CSSProperties, useRef, useEffect } from 'react';
-
-import { useAnnotationCapability } from '../hooks';
+import { PdfAnnotationObject } from "@embedpdf/models"
+import { CounterRotate, useDoublePressProps, useInteractionHandles } from "@embedpdf/utils/react"
+import { CSSProperties, JSX, useEffect, useRef, useState } from "react"
+import { useAnnotationCapability } from "../hooks"
+import { TrackedAnnotation } from "../lib"
+import { VertexConfig } from "../types"
 import {
   CustomAnnotationRenderer,
   ResizeHandleUI,
   SelectionMenuProps,
   VertexHandleUI,
-} from './types';
-import { VertexConfig } from '../types';
+} from "./types"
 
 interface AnnotationContainerProps<T extends PdfAnnotationObject> {
-  scale: number;
-  pageIndex: number;
-  rotation: number;
-  pageWidth: number;
-  pageHeight: number;
-  trackedAnnotation: TrackedAnnotation<T>;
-  children: JSX.Element | ((annotation: T) => JSX.Element);
-  isSelected: boolean;
-  isDraggable: boolean;
-  isResizable: boolean;
-  lockAspectRatio?: boolean;
-  style?: CSSProperties;
-  vertexConfig?: VertexConfig<T>;
-  selectionMenu?: (props: SelectionMenuProps) => JSX.Element;
-  outlineOffset?: number;
-  onDoubleClick?: (event: any) => void; // You'll need to import proper MouseEvent type
-  onSelect: (event: any) => void;
-  zIndex?: number;
-  resizeUI?: ResizeHandleUI;
-  vertexUI?: VertexHandleUI;
-  selectionOutlineColor?: string;
-  customAnnotationRenderer?: CustomAnnotationRenderer<T>;
+  scale: number
+  pageIndex: number
+  rotation: number
+  pageWidth: number
+  pageHeight: number
+  trackedAnnotation: TrackedAnnotation<T>
+  children: JSX.Element | ((annotation: T) => JSX.Element)
+  isSelected: boolean
+  isDraggable: boolean
+  isResizable: boolean
+  lockAspectRatio?: boolean
+  style?: CSSProperties
+  vertexConfig?: VertexConfig<T>
+  selectionMenu?: (props: SelectionMenuProps) => JSX.Element
+  outlineOffset?: number
+  onDoubleClick?: (event: any) => void // You'll need to import proper MouseEvent type
+  onSelect: (event: any) => void
+  zIndex?: number
+  resizeUI?: ResizeHandleUI
+  vertexUI?: VertexHandleUI
+  selectionOutlineColor?: string
+  customAnnotationRenderer?: CustomAnnotationRenderer<T>
 }
 
 // Simplified AnnotationContainer
@@ -63,23 +58,23 @@ export function AnnotationContainer<T extends PdfAnnotationObject>({
   zIndex = 1,
   resizeUI,
   vertexUI,
-  selectionOutlineColor = '#007ACC',
+  selectionOutlineColor = "#007ACC",
   customAnnotationRenderer,
   ...props
 }: AnnotationContainerProps<T>): JSX.Element {
-  const [preview, setPreview] = useState<T>(trackedAnnotation.object);
-  const { provides: annotationProvides } = useAnnotationCapability();
-  const gestureBaseRef = useRef<T | null>(null);
+  const [preview, setPreview] = useState<T>(trackedAnnotation.object)
+  const { provides: annotationProvides } = useAnnotationCapability()
+  const gestureBaseRef = useRef<T | null>(null)
 
   const currentObject = preview
     ? { ...trackedAnnotation.object, ...preview }
-    : trackedAnnotation.object;
+    : trackedAnnotation.object
 
   // Defaults retain current behavior
-  const HANDLE_COLOR = resizeUI?.color ?? '#007ACC';
-  const VERTEX_COLOR = vertexUI?.color ?? '#007ACC';
-  const HANDLE_SIZE = resizeUI?.size ?? 12;
-  const VERTEX_SIZE = vertexUI?.size ?? 12;
+  const HANDLE_COLOR = resizeUI?.color ?? "#007ACC"
+  const VERTEX_COLOR = vertexUI?.color ?? "#007ACC"
+  const HANDLE_SIZE = resizeUI?.size ?? 12
+  const VERTEX_SIZE = vertexUI?.size ?? 12
 
   const { dragProps, vertices, resize } = useInteractionHandles({
     controller: {
@@ -95,42 +90,42 @@ export function AnnotationContainer<T extends PdfAnnotationObject>({
       scale: scale,
       enabled: isSelected,
       onUpdate: (event) => {
-        if (!event.transformData?.type) return;
+        if (!event.transformData?.type) return
 
-        if (event.state === 'start') {
-          gestureBaseRef.current = currentObject;
+        if (event.state === "start") {
+          gestureBaseRef.current = currentObject
         }
 
-        const transformType = event.transformData.type;
-        const base = gestureBaseRef.current ?? currentObject;
+        const transformType = event.transformData.type
+        const base = gestureBaseRef.current ?? currentObject
 
         const changes = event.transformData.changes.vertices
           ? vertexConfig?.transformAnnotation(base, event.transformData.changes.vertices)
-          : { rect: event.transformData.changes.rect };
+          : { rect: event.transformData.changes.rect }
 
         const patched = annotationProvides?.transformAnnotation<T>(base, {
           type: transformType,
           changes: changes as Partial<T>,
           metadata: event.transformData.metadata,
-        });
+        })
 
         if (patched) {
           setPreview((prev) => ({
             ...prev,
             ...patched,
-          }));
+          }))
         }
 
-        if (event.state === 'end' && patched) {
-          gestureBaseRef.current = null;
-          annotationProvides?.updateAnnotation(pageIndex, trackedAnnotation.object.id, patched);
+        if (event.state === "end" && patched) {
+          gestureBaseRef.current = null
+          annotationProvides?.updateAnnotation(pageIndex, trackedAnnotation.object.id, patched)
         }
       },
     },
     resizeUI: {
       handleSize: HANDLE_SIZE,
       spacing: outlineOffset,
-      offsetMode: 'outside',
+      offsetMode: "outside",
       includeSides: lockAspectRatio ? false : true,
       zIndex: zIndex + 1,
     },
@@ -139,13 +134,13 @@ export function AnnotationContainer<T extends PdfAnnotationObject>({
       zIndex: zIndex + 2,
     },
     includeVertices: vertexConfig ? true : false,
-  });
+  })
 
-  const doubleProps = useDoublePressProps(onDoubleClick);
+  const doubleProps = useDoublePressProps(onDoubleClick)
 
   useEffect(() => {
-    setPreview(trackedAnnotation.object);
-  }, [trackedAnnotation.object]);
+    setPreview(trackedAnnotation.object)
+  }, [trackedAnnotation.object])
 
   return (
     <div data-no-interaction>
@@ -153,24 +148,23 @@ export function AnnotationContainer<T extends PdfAnnotationObject>({
         {...(isDraggable && isSelected ? dragProps : {})}
         {...doubleProps}
         style={{
-          position: 'absolute',
+          position: "absolute",
           left: currentObject.rect.origin.x * scale,
           top: currentObject.rect.origin.y * scale,
           width: currentObject.rect.size.width * scale,
           height: currentObject.rect.size.height * scale,
-          outline: isSelected ? `1px solid ${selectionOutlineColor}` : 'none',
-          outlineOffset: isSelected ? `${outlineOffset}px` : '0px',
-          pointerEvents: isSelected ? 'auto' : 'none',
-          touchAction: 'none',
-          cursor: isSelected && isDraggable ? 'move' : 'default',
+          outline: isSelected ? `1px solid ${selectionOutlineColor}` : "none",
+          outlineOffset: isSelected ? `${outlineOffset}px` : "0px",
+          pointerEvents: isSelected ? "auto" : "none",
+          touchAction: "none",
+          cursor: isSelected && isDraggable ? "move" : "default",
           zIndex,
           ...style,
         }}
         {...props}
       >
         {(() => {
-          const childrenRender =
-            typeof children === 'function' ? children(currentObject) : children;
+          const childrenRender = typeof children === "function" ? children(currentObject) : children
           // Check for custom renderer first
           const customRender = customAnnotationRenderer?.({
             annotation: currentObject,
@@ -182,13 +176,13 @@ export function AnnotationContainer<T extends PdfAnnotationObject>({
             pageHeight,
             pageIndex,
             onSelect,
-          });
+          })
           if (customRender !== null && customRender !== undefined) {
-            return customRender;
+            return customRender
           }
 
           // Fall back to default children rendering
-          return childrenRender;
+          return childrenRender
         })()}
 
         {isSelected &&
@@ -251,5 +245,5 @@ export function AnnotationContainer<T extends PdfAnnotationObject>({
         }
       </CounterRotate>
     </div>
-  );
+  )
 }
