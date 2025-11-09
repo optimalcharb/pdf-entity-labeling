@@ -1,4 +1,4 @@
-import { blendModeToCss, PdfAnnotationObject, PdfBlendMode } from "@embedpdf/models"
+import { blendModeToCss, PdfBlendMode } from "@embedpdf/models"
 import { PointerEventHandlers } from "@embedpdf/plugin-interaction-manager"
 import { usePointerHandlers } from "@embedpdf/plugin-interaction-manager/react"
 import { useSelectionCapability } from "@embedpdf/plugin-selection/react"
@@ -18,7 +18,7 @@ import { Highlight } from "./text-markup/highlight"
 import { Squiggly } from "./text-markup/squiggly"
 import { Strikeout } from "./text-markup/strikeout"
 import { Underline } from "./text-markup/underline"
-import { CustomAnnotationRenderer, ResizeHandleUI, SelectionMenu, VertexHandleUI } from "./types"
+import { SelectionMenu } from "./types"
 
 interface AnnotationsProps {
   pageIndex: number
@@ -27,10 +27,7 @@ interface AnnotationsProps {
   pageWidth: number
   pageHeight: number
   selectionMenu?: SelectionMenu
-  resizeUI?: ResizeHandleUI
-  vertexUI?: VertexHandleUI
   selectionOutlineColor?: string
-  customAnnotationRenderer?: CustomAnnotationRenderer<PdfAnnotationObject>
 }
 
 export function Annotations(annotationsProps: AnnotationsProps) {
@@ -86,8 +83,6 @@ export function Annotations(annotationsProps: AnnotationsProps) {
     <>
       {annotations.map((annotation) => {
         const isSelected = selectionState?.object.id === annotation.object.id
-        const isEditing = editingId === annotation.object.id
-        const tool = annotationProvides?.findToolForAnnotation(annotation.object)
 
         if (isUnderline(annotation)) {
           return (
@@ -95,9 +90,6 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
-              isDraggable={tool?.interaction.isDraggable ?? false}
-              isResizable={tool?.interaction.isResizable ?? false}
-              lockAspectRatio={tool?.interaction.lockAspectRatio ?? false}
               selectionMenu={selectionMenu}
               onSelect={(e) => handleClick(e, annotation)}
               zIndex={0}
@@ -119,9 +111,6 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
-              isDraggable={tool?.interaction.isDraggable ?? false}
-              isResizable={tool?.interaction.isResizable ?? false}
-              lockAspectRatio={tool?.interaction.lockAspectRatio ?? false}
               selectionMenu={selectionMenu}
               onSelect={(e) => handleClick(e, annotation)}
               zIndex={0}
@@ -143,9 +132,6 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
-              isDraggable={tool?.interaction.isDraggable ?? false}
-              isResizable={tool?.interaction.isResizable ?? false}
-              lockAspectRatio={tool?.interaction.lockAspectRatio ?? false}
               selectionMenu={selectionMenu}
               onSelect={(e) => handleClick(e, annotation)}
               zIndex={0}
@@ -167,9 +153,6 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
-              isDraggable={tool?.interaction.isDraggable ?? false}
-              isResizable={tool?.interaction.isResizable ?? false}
-              lockAspectRatio={tool?.interaction.lockAspectRatio ?? false}
               selectionMenu={selectionMenu}
               onSelect={(e) => handleClick(e, annotation)}
               zIndex={0}
@@ -185,7 +168,6 @@ export function Annotations(annotationsProps: AnnotationsProps) {
           )
         }
 
-        /* --------- fallback: an unsupported subtype --------------- */
         return null
       })}
     </>

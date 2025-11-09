@@ -1,45 +1,45 @@
-import { blendModeToCss, PdfAnnotationSubtype, PdfBlendMode, Rect } from '@embedpdf/models';
-import { AnnotationTool } from '../lib';
-import { useSelectionCapability } from '@embedpdf/plugin-selection/react';
+import { blendModeToCss, PdfAnnotationSubtype, PdfBlendMode, Rect } from "@embedpdf/models"
+import { AnnotationTool } from "../lib"
+import { useSelectionCapability } from "@embedpdf/plugin-selection/react"
 
-import { useEffect, useState } from 'react';
-import { useAnnotationCapability } from '../hooks';
-import { Highlight } from './text-markup/highlight';
-import { Squiggly } from './text-markup/squiggly';
-import { Underline } from './text-markup/underline';
-import { Strikeout } from './text-markup/strikeout';
+import { useEffect, useState } from "react"
+import { useAnnotationCapability } from "../hooks"
+import { Highlight } from "./text-markup/highlight"
+import { Squiggly } from "./text-markup/squiggly"
+import { Underline } from "./text-markup/underline"
+import { Strikeout } from "./text-markup/strikeout"
 
-interface TextMarkupProps {
-  pageIndex: number;
-  scale: number;
+interface TextMarkupPreviewProps {
+  pageIndex: number
+  scale: number
 }
 
-export function TextMarkup({ pageIndex, scale }: TextMarkupProps) {
-  const { provides: selectionProvides } = useSelectionCapability();
-  const { provides: annotationProvides } = useAnnotationCapability();
-  const [rects, setRects] = useState<Array<Rect>>([]);
-  const [boundingRect, setBoundingRect] = useState<Rect | null>(null);
-  const [activeTool, setActiveTool] = useState<AnnotationTool | null>(null);
+export function TextMarkupPreview({ pageIndex, scale }: TextMarkupPreviewProps) {
+  const { provides: selectionProvides } = useSelectionCapability()
+  const { provides: annotationProvides } = useAnnotationCapability()
+  const [rects, setRects] = useState<Array<Rect>>([])
+  const [boundingRect, setBoundingRect] = useState<Rect | null>(null)
+  const [activeTool, setActiveTool] = useState<AnnotationTool | null>(null)
 
   useEffect(() => {
-    if (!selectionProvides) return;
+    if (!selectionProvides) return
 
     const off = selectionProvides.onSelectionChange(() => {
-      setRects(selectionProvides.getHighlightRectsForPage(pageIndex));
-      setBoundingRect(selectionProvides.getBoundingRectForPage(pageIndex));
-    });
-    return off;
-  }, [selectionProvides, pageIndex]);
+      setRects(selectionProvides.getHighlightRectsForPage(pageIndex))
+      setBoundingRect(selectionProvides.getBoundingRectForPage(pageIndex))
+    })
+    return off
+  }, [selectionProvides, pageIndex])
 
   useEffect(() => {
-    if (!annotationProvides) return;
+    if (!annotationProvides) return
 
-    const off = annotationProvides.onActiveToolChange(setActiveTool);
-    return off;
-  }, [annotationProvides]);
+    const off = annotationProvides.onActiveToolChange(setActiveTool)
+    return off
+  }, [annotationProvides])
 
-  if (!boundingRect) return null;
-  if (!activeTool || !activeTool.defaults) return null;
+  if (!boundingRect) return null
+  if (!activeTool || !activeTool.defaults) return null
 
   switch (activeTool.defaults.type) {
     case PdfAnnotationSubtype.UNDERLINE:
@@ -47,8 +47,8 @@ export function TextMarkup({ pageIndex, scale }: TextMarkupProps) {
         <div
           style={{
             mixBlendMode: blendModeToCss(activeTool.defaults?.blendMode ?? PdfBlendMode.Normal),
-            pointerEvents: 'none',
-            position: 'absolute',
+            pointerEvents: "none",
+            position: "absolute",
             inset: 0,
           }}
         >
@@ -59,14 +59,14 @@ export function TextMarkup({ pageIndex, scale }: TextMarkupProps) {
             scale={scale}
           />
         </div>
-      );
+      )
     case PdfAnnotationSubtype.HIGHLIGHT:
       return (
         <div
           style={{
             mixBlendMode: blendModeToCss(activeTool.defaults?.blendMode ?? PdfBlendMode.Multiply),
-            pointerEvents: 'none',
-            position: 'absolute',
+            pointerEvents: "none",
+            position: "absolute",
             inset: 0,
           }}
         >
@@ -77,14 +77,14 @@ export function TextMarkup({ pageIndex, scale }: TextMarkupProps) {
             scale={scale}
           />
         </div>
-      );
+      )
     case PdfAnnotationSubtype.STRIKEOUT:
       return (
         <div
           style={{
             mixBlendMode: blendModeToCss(activeTool.defaults?.blendMode ?? PdfBlendMode.Normal),
-            pointerEvents: 'none',
-            position: 'absolute',
+            pointerEvents: "none",
+            position: "absolute",
             inset: 0,
           }}
         >
@@ -95,14 +95,14 @@ export function TextMarkup({ pageIndex, scale }: TextMarkupProps) {
             scale={scale}
           />
         </div>
-      );
+      )
     case PdfAnnotationSubtype.SQUIGGLY:
       return (
         <div
           style={{
             mixBlendMode: blendModeToCss(activeTool.defaults?.blendMode ?? PdfBlendMode.Normal),
-            pointerEvents: 'none',
-            position: 'absolute',
+            pointerEvents: "none",
+            position: "absolute",
             inset: 0,
           }}
         >
@@ -113,8 +113,8 @@ export function TextMarkup({ pageIndex, scale }: TextMarkupProps) {
             scale={scale}
           />
         </div>
-      );
+      )
     default:
-      return null;
+      return null
   }
 }
