@@ -29,14 +29,6 @@ export const AnnotationToolbar = () => {
     }
   }
 
-  const handleExportAnnotations = () => {
-    try {
-      
-    } catch (error) {
-      console.error("Failed to export annotations:", error)
-    }
-  }
-
   const tools = [
     { id: "highlight", active: activeTool === "highlight" },
     { id: "underline", active: activeTool === "underline" },
@@ -58,7 +50,7 @@ export const AnnotationToolbar = () => {
       ))}
       <div className="h-6 w-px bg-gray-200"></div>
       <button
-        onClick={handleExportAnnotations}
+        onClick={() => annotationApi?.exportAnnotations()}
         className="rounded-md bg-blue-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-blue-600"
       >
         Export JSON

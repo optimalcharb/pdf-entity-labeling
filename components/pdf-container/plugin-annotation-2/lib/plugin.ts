@@ -45,17 +45,11 @@ import type { AnnotationState } from "./state"
 import type { AnnotationTool } from "./tools/annotation-tool"
 
 // ***PLUGIN CONFIG***
+// ***PLUGIN CONFIG***
 export interface AnnotationPluginConfig extends BasePluginConfig {
-  /** A list of custom tools to add or default tools to override. */
-  tools?: AnnotationTool[]
-  colorPresets?: string[]
-  /** When true (default), automatically commit the annotation changes into the PDF document. */
   autoCommit?: boolean
-  /** The author of the annotation. */
   annotationAuthor?: string
-  /** When true (default false), deactivate the active tool after creating an annotation. */
   deactivateToolAfterCreate?: boolean
-  /** When true (default false), select the annotation immediately after creation. */
   selectAfterCreate?: boolean
 }
 
@@ -86,6 +80,7 @@ export interface AnnotationCapability {
   deleteAnnotation: (pageIndex: number, annotationId: string) => void
 
   renderAnnotation: (options: RenderAnnotationOptions) => Task<Blob, PdfErrorReason>
+  exportAnnotations: () => any
 
   commit: () => Task<boolean, PdfErrorReason>
 }
@@ -215,6 +210,7 @@ export class AnnotationPlugin extends BasePlugin<
       deleteAnnotation: (pageIndex, id) => this.deleteAnnotation(pageIndex, id),
       renderAnnotation: (options) => this.renderAnnotation(options),
       commit: () => this.commit(),
+      exportAnnotations: () => this.exportAnnotationsToJSON(),
     }
   }
 
@@ -497,5 +493,31 @@ export class AnnotationPlugin extends BasePlugin<
     }, task.fail)
 
     return task
+  }
+
+  exportAnnotationsToJSON() {
+    const annotations = Object.values((this.state as AnnotationState).byUid).map(
+      (ta: TrackedAnnotation) => ta.object,
+    )
+    const exportData = {
+      exportedBy: this.config.annotationAuthor,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        totalAnnotations: annotations.length,
+      },
+      annotations: annotations,
+    }
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: "application/json",
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `pdf-annotations-${new Date().toISOString().split("T")[0]}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    return exportData
   }
 }
