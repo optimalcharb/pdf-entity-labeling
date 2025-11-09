@@ -1,28 +1,28 @@
-import { HTMLAttributes, CSSProperties } from 'react';
-import { Annotations } from './annotations';
-import { TextMarkup } from './text-markup';
-import { SelectionMenu, ResizeHandleUI, VertexHandleUI, CustomAnnotationRenderer } from './types';
-import { AnnotationPaintLayer } from './annotation-paint-layer';
-import { PdfAnnotationObject } from '@embedpdf/models';
+import { PdfAnnotationObject } from "@embedpdf/models"
+import { CSSProperties, HTMLAttributes } from "react"
+import { AnnotationPaintLayer } from "./annotation-paint-layer"
+import { Annotations } from "./annotations"
+import { TextMarkup } from "./text-markup"
+import { CustomAnnotationRenderer, ResizeHandleUI, SelectionMenu, VertexHandleUI } from "./types"
 
-type AnnotationLayerProps = Omit<HTMLAttributes<HTMLDivElement>, 'style'> & {
-  pageIndex: number;
-  scale: number;
-  pageWidth: number;
-  pageHeight: number;
-  rotation: number;
+type AnnotationLayerProps = Omit<HTMLAttributes<HTMLDivElement>, "style"> & {
+  pageIndex: number
+  scale: number
+  pageWidth: number
+  pageHeight: number
+  rotation: number
   /** Customize selection menu across all annotations on this layer */
-  selectionMenu?: SelectionMenu;
-  style?: CSSProperties;
+  selectionMenu?: SelectionMenu
+  style?: CSSProperties
   /** Customize resize handles */
-  resizeUI?: ResizeHandleUI;
+  resizeUI?: ResizeHandleUI
   /** Customize vertex handles */
-  vertexUI?: VertexHandleUI;
+  vertexUI?: VertexHandleUI
   /** Customize selection outline color */
-  selectionOutlineColor?: string;
+  selectionOutlineColor?: string
   /** Customize annotation renderer */
-  customAnnotationRenderer?: CustomAnnotationRenderer<PdfAnnotationObject>;
-};
+  customAnnotationRenderer?: CustomAnnotationRenderer<PdfAnnotationObject>
+}
 
 export function AnnotationLayer({
   style,
@@ -56,9 +56,10 @@ export function AnnotationLayer({
         vertexUI={vertexUI}
         selectionOutlineColor={selectionOutlineColor}
         customAnnotationRenderer={customAnnotationRenderer}
+        data-testid="annotations"
       />
-      <TextMarkup pageIndex={pageIndex} scale={scale} />
+      <TextMarkup pageIndex={pageIndex} scale={scale} data-testid="text-markup" />
       <AnnotationPaintLayer pageIndex={pageIndex} scale={scale} />
     </div>
-  );
+  )
 }

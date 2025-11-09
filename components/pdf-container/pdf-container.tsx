@@ -29,9 +29,10 @@ interface PDFContainerProps {
 }
 
 export default function PDFContainer({ url }: PDFContainerProps) {
-  fetch("/engines/pdfium.wasm")
-    .then((r) => console.log("WASM fetched:", r.status, r.headers.get("content-type")))
-    .catch(console.error)
+  // TESTING
+  // fetch("/engines/pdfium.wasm")
+  //   .then((r) => console.log("WASM fetched:", r.status, r.headers.get("content-type")))
+  //   .catch(console.error)
 
   const containerRef = useRef<HTMLDivElement>(null)
   const { engine, isLoading, error } = usePdfiumEngine({
@@ -46,12 +47,12 @@ export default function PDFContainer({ url }: PDFContainerProps) {
   }
 
   if (isLoading || !engine) {
-    return <Spinner />
+    return <Spinner data-testid="spinner0" />
   }
 
   return (
     <div className="flex h-screen flex-1 flex-col overflow-hidden" ref={containerRef}>
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden" data-testid="embedpdf">
         <EmbedPDF
           logger={logger}
           engine={engine}
@@ -95,11 +96,11 @@ export default function PDFContainer({ url }: PDFContainerProps) {
         >
           {({ pluginsReady }) => (
             <GlobalPointerProvider>
-              <AnnotationToolbar />
+              <AnnotationToolbar data-testid="annotation-toolbar" />
               <Viewport className="h-full w-full flex-1 overflow-auto bg-gray-100 select-none">
                 {!pluginsReady && (
                   <div className="flex h-full w-full items-center justify-center">
-                    <Spinner />
+                    <Spinner data-testid="spinner1" />
                   </div>
                 )}
                 {pluginsReady && (
@@ -126,6 +127,7 @@ export default function PDFContainer({ url }: PDFContainerProps) {
                             pageWidth={width}
                             pageHeight={height}
                             rotation={0}
+                            data-testid="annotation-layer"
                           />
                           {/* <SearchLayer
                             pageIndex={pageIndex}
