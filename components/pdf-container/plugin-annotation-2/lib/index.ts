@@ -1,9 +1,9 @@
 import { PluginPackage } from "@embedpdf/core"
 import { AnnotationAction } from "./actions"
-import { AnnotationPlugin } from "./annotation-plugin"
+import { AnnotationPlugin, AnnotationPluginConfig } from "./annotation-plugin"
 import { ANNOTATION_PLUGIN_ID, manifest } from "./manifest"
 import { initialState, reducer } from "./reducer"
-import { AnnotationPluginConfig, AnnotationState } from "./types"
+import { AnnotationState } from "./types"
 
 export const AnnotationPluginPackage: PluginPackage<
   AnnotationPlugin,

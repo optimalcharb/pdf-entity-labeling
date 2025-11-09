@@ -1,4 +1,11 @@
-import { BasePlugin, createBehaviorEmitter, PluginRegistry, SET_DOCUMENT } from "@embedpdf/core"
+import {
+  BasePlugin,
+  BasePluginConfig,
+  createBehaviorEmitter,
+  EventHook,
+  PluginRegistry,
+  SET_DOCUMENT,
+} from "@embedpdf/core"
 import {
   AnnotationCreateContext,
   ignore,
@@ -33,9 +40,7 @@ import {
 import { getSelectedAnnotation } from "./selectors"
 import { AnnotationTool } from "./tools/types"
 import {
-  AnnotationCapability,
   AnnotationEvent,
-  AnnotationPluginConfig,
   AnnotationState,
   GetPageAnnotationsOptions,
   ImportAnnotationItem,
@@ -43,6 +48,58 @@ import {
   TrackedAnnotation,
 } from "./types"
 
+// ***PLUGIN CONFIG***
+export interface AnnotationPluginConfig extends BasePluginConfig {
+  /** A list of custom tools to add or default tools to override. */
+  tools?: AnnotationTool[]
+  colorPresets?: string[]
+  /** When true (default), automatically commit the annotation changes into the PDF document. */
+  autoCommit?: boolean
+  /** The author of the annotation. */
+  annotationAuthor?: string
+  /** When true (default false), deactivate the active tool after creating an annotation. */
+  deactivateToolAfterCreate?: boolean
+  /** When true (default false), select the annotation immediately after creation. */
+  selectAfterCreate?: boolean
+}
+
+// ***PLUGIN CAPABILITY***
+export interface AnnotationCapability {
+  getPageAnnotations: (
+    options: GetPageAnnotationsOptions,
+  ) => Task<PdfAnnotationObject[], PdfErrorReason>
+  getSelectedAnnotation: () => TrackedAnnotation | null
+  selectAnnotation: (pageIndex: number, annotationId: string) => void
+  deselectAnnotation: () => void
+
+  getActiveTool: () => AnnotationTool | null
+  setActiveTool: (toolId: string | null) => void
+  getTools: () => AnnotationTool[]
+  getTool: <T extends AnnotationTool>(toolId: string) => T | undefined
+  addTool: <T extends AnnotationTool>(tool: T) => void
+  findToolForAnnotation: (annotation: PdfAnnotationObject) => AnnotationTool | null
+  setToolDefaults: (toolId: string, patch: Partial<any>) => void
+
+  getColorPresets: () => string[]
+  addColorPreset: (color: string) => void
+
+  importAnnotations: (items: ImportAnnotationItem<PdfAnnotationObject>[]) => void
+  createAnnotation: <A extends PdfAnnotationObject>(
+    pageIndex: number,
+    annotation: A,
+    context?: AnnotationCreateContext<A>,
+  ) => void
+  deleteAnnotation: (pageIndex: number, annotationId: string) => void
+
+  renderAnnotation: (options: RenderAnnotationOptions) => Task<Blob, PdfErrorReason>
+
+  onStateChange: EventHook<AnnotationState>
+  onActiveToolChange: EventHook<AnnotationTool | null>
+  onAnnotationEvent: EventHook<AnnotationEvent>
+  commit: () => Task<boolean, PdfErrorReason>
+}
+
+// ***PLUGIN CLASS***
 export class AnnotationPlugin extends BasePlugin<
   AnnotationPluginConfig,
   AnnotationCapability,

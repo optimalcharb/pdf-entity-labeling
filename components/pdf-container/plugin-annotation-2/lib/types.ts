@@ -1,11 +1,8 @@
-import { BasePluginConfig, EventHook } from "@embedpdf/core"
+import { BasePluginConfig } from "@embedpdf/core"
 import {
   AnnotationCreateContext,
   PdfAnnotationObject,
-  PdfErrorReason,
   PdfRenderPageAnnotationOptions,
-  PdfTextAnnoObject,
-  Task,
 } from "@embedpdf/models"
 import { AnnotationTool } from "./tools/types"
 
@@ -49,20 +46,6 @@ export interface AnnotationState {
   hasPendingChanges: boolean
 }
 
-export interface AnnotationPluginConfig extends BasePluginConfig {
-  /** A list of custom tools to add or default tools to override. */
-  tools?: AnnotationTool[]
-  colorPresets?: string[]
-  /** When true (default), automatically commit the annotation changes into the PDF document. */
-  autoCommit?: boolean
-  /** The author of the annotation. */
-  annotationAuthor?: string
-  /** When true (default false), deactivate the active tool after creating an annotation. */
-  deactivateToolAfterCreate?: boolean
-  /** When true (default false), select the annotation immediately after creation. */
-  selectAfterCreate?: boolean
-}
-
 /**
  * Options for transforming an annotation
  */
@@ -80,60 +63,11 @@ export interface TransformOptions<T extends PdfAnnotationObject = PdfAnnotationO
   }
 }
 
-/**
- * Function type for custom patch functions
- */
-export type PatchFunction<T extends PdfAnnotationObject> = (
-  original: T,
-  context: TransformOptions<T>,
-) => Partial<T>
-
 export type ImportAnnotationItem<T extends PdfAnnotationObject = PdfAnnotationObject> = {
   annotation: T
   ctx?: AnnotationCreateContext<T>
 }
 
-export interface AnnotationCapability {
-  getPageAnnotations: (
-    options: GetPageAnnotationsOptions,
-  ) => Task<PdfAnnotationObject[], PdfErrorReason>
-  getSelectedAnnotation: () => TrackedAnnotation | null
-  selectAnnotation: (pageIndex: number, annotationId: string) => void
-  deselectAnnotation: () => void
-
-  getActiveTool: () => AnnotationTool | null
-  setActiveTool: (toolId: string | null) => void
-  getTools: () => AnnotationTool[]
-  getTool: <T extends AnnotationTool>(toolId: string) => T | undefined
-  addTool: <T extends AnnotationTool>(tool: T) => void
-  findToolForAnnotation: (annotation: PdfAnnotationObject) => AnnotationTool | null
-  setToolDefaults: (toolId: string, patch: Partial<any>) => void
-
-  getColorPresets: () => string[]
-  addColorPreset: (color: string) => void
-
-  importAnnotations: (items: ImportAnnotationItem<PdfAnnotationObject>[]) => void
-  createAnnotation: <A extends PdfAnnotationObject>(
-    pageIndex: number,
-    annotation: A,
-    context?: AnnotationCreateContext<A>,
-  ) => void
-  deleteAnnotation: (pageIndex: number, annotationId: string) => void
-
-  renderAnnotation: (options: RenderAnnotationOptions) => Task<Blob, PdfErrorReason>
-
-  onStateChange: EventHook<AnnotationState>
-  onActiveToolChange: EventHook<AnnotationTool | null>
-  onAnnotationEvent: EventHook<AnnotationEvent>
-  commit: () => Task<boolean, PdfErrorReason>
-}
-
 export interface GetPageAnnotationsOptions {
   pageIndex: number
-}
-
-export interface SidebarAnnotationEntry {
-  page: number
-  annotation: TrackedAnnotation
-  replies: TrackedAnnotation<PdfTextAnnoObject>[]
 }

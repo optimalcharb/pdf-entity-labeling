@@ -14,22 +14,8 @@ import {
   SET_TOOL_DEFAULTS,
   ADD_TOOL,
 } from "./actions"
-import { AnnotationPluginConfig, AnnotationState, TrackedAnnotation } from "./types"
+import { AnnotationState, TrackedAnnotation } from "./types"
 import { defaultTools } from "./tools/default-tools"
-import { AnnotationTool } from "./tools/types"
-
-const DEFAULT_COLORS = [
-  "#E44234",
-  "#FF8D00",
-  "#FFCD45",
-  "#5CC96E",
-  "#25D2D1",
-  "#597CE2",
-  "#C544CE",
-  "#7D2E25",
-  "#000000",
-  "#FFFFFF",
-]
 
 const patchAnno = (
   state: AnnotationState,
