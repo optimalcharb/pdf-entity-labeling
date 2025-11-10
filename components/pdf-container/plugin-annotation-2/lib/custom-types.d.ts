@@ -35,23 +35,6 @@ export interface RenderAnnotationOptions {
   options?: PdfRenderPageAnnotationOptions
 }
 
-/**
- * Options for transforming an annotation
- */
-export interface TransformOptions<T extends PdfAnnotationObject = PdfAnnotationObject> {
-  /** The type of transformation */
-  type: "move" | "resize" | "vertex-edit" | "property-update"
-
-  /** The changes to apply */
-  changes: Partial<T>
-
-  /** Optional metadata */
-  metadata?: {
-    maintainAspectRatio?: boolean
-    [key: string]: any
-  }
-}
-
 export interface GetPageAnnotationsOptions {
   pageIndex: number
 }

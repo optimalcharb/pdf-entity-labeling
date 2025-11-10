@@ -30,7 +30,7 @@ export interface CreateAnnotationAction extends Action {
 }
 export interface PatchAnnotationAction extends Action {
   type: typeof PATCH_ANNOTATION
-  payload: { pageIndex: number; id: string; patch: Partial<PdfAnnotationObject> }
+  payload: { id: string; patch: Partial<PdfAnnotationObject> }
 }
 export interface DeleteAnnotationAction extends Action {
   type: typeof DELETE_ANNOTATION
@@ -73,10 +73,9 @@ export const createAnnotation = (
   annotation: PdfAnnotationObject,
 ): CreateAnnotationAction => ({ type: CREATE_ANNOTATION, payload: { pageIndex, annotation } })
 export const patchAnnotation = (
-  pageIndex: number,
   id: string,
   patch: Partial<PdfAnnotationObject>,
-): PatchAnnotationAction => ({ type: PATCH_ANNOTATION, payload: { pageIndex, id, patch } })
+): PatchAnnotationAction => ({ type: PATCH_ANNOTATION, payload: { id, patch } })
 export const deleteAnnotation = (pageIndex: number, id: string): DeleteAnnotationAction => ({
   type: DELETE_ANNOTATION,
   payload: { pageIndex, id },
@@ -90,27 +89,6 @@ export const setActiveToolId = (id: string | null): SetActiveToolIdAction => ({
   type: SET_ACTIVE_TOOL_ID,
   payload: id,
 })
-
-const patchAnno = (
-  state: AnnotationState,
-  uid: string,
-  patch: Partial<TrackedAnnotation["object"]>,
-): AnnotationState => {
-  const prev = state.byUid[uid]
-  if (!prev) return state
-  return {
-    ...state,
-    byUid: {
-      ...state.byUid,
-      [uid]: {
-        ...prev,
-        commitState: prev.commitState === "synced" ? "dirty" : prev.commitState,
-        object: { ...prev.object, ...patch },
-      } as TrackedAnnotation,
-    },
-    hasPendingChanges: true,
-  }
-}
 
 export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, action) => {
   switch (action.type) {
@@ -172,8 +150,24 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
       }
     }
 
-    case PATCH_ANNOTATION:
-      return patchAnno(state, action.payload.id, action.payload.patch)
+    case PATCH_ANNOTATION: {
+      const { id, patch } = action.payload
+      const prev = state.byUid[id]
+      if (!prev) return state
+
+      return {
+        ...state,
+        byUid: {
+          ...state.byUid,
+          [id]: {
+            ...prev,
+            commitState: prev.commitState === "synced" ? "dirty" : prev.commitState,
+            object: { ...prev.object, ...patch },
+          } as TrackedAnnotation,
+        },
+        hasPendingChanges: true,
+      }
+    }
 
     case COMMIT_PENDING_CHANGES: {
       const cleaned: AnnotationState["byUid"] = {}

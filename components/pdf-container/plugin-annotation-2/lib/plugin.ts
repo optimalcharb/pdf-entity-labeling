@@ -29,6 +29,7 @@ import {
   createAnnotation,
   deleteAnnotation,
   deselectAnnotation,
+  patchAnnotation,
   purgeAnnotation,
   selectAnnotation,
   setActiveToolId,
@@ -72,15 +73,20 @@ export interface AnnotationCapability {
   getTool: <T extends AnnotationTool>(toolId: string) => T | undefined
 
   importAnnotations: (items: PdfAnnotationObject[]) => void
+  exportAnnotations: () => any
+
   createAnnotation: <A extends PdfAnnotationObject>(
     pageIndex: number,
     annotation: A,
     context?: AnnotationCreateContext<A>,
   ) => void
   deleteAnnotation: (pageIndex: number, annotationId: string) => void
-
+  updateAnnotation: (
+    pageIndex: number,
+    annotationId: string,
+    patch: Partial<PdfAnnotationObject>,
+  ) => void
   renderAnnotation: (options: RenderAnnotationOptions) => Task<Blob, PdfErrorReason>
-  exportAnnotations: () => any
 
   commit: () => Task<boolean, PdfErrorReason>
 }
@@ -208,6 +214,7 @@ export class AnnotationPlugin extends BasePlugin<
       importAnnotations: (items) => this.importAnnotations(items),
       createAnnotation: (pageIndex, anno, ctx) => this.createAnnotation(pageIndex, anno, ctx),
       deleteAnnotation: (pageIndex, id) => this.deleteAnnotation(pageIndex, id),
+      updateAnnotation: (pageIndex, id, patch) => this.updateAnnotation(pageIndex, id, patch),
       renderAnnotation: (options) => this.renderAnnotation(options),
       commit: () => this.commit(),
       exportAnnotations: () => this.exportAnnotationsToJSON(),
@@ -382,6 +389,49 @@ export class AnnotationPlugin extends BasePlugin<
     this.history.register(command, this.ANNOTATION_HISTORY_TOPIC)
   }
 
+  private updateAnnotation(pageIndex: number, id: string, patch: Partial<PdfAnnotationObject>) {
+    const originalAnnotation = this.state.byUid[id]?.object
+    if (!originalAnnotation) return
+    const patchWithAuthor = {
+      ...patch,
+      author: patch.author ?? this.config.annotationAuthor,
+    }
+
+    const execute = () => {
+      this.dispatch(patchAnnotation(id, patch))
+      this.events$.emit({
+        type: "update",
+        annotation: originalAnnotation,
+        pageIndex,
+        patch: patchWithAuthor,
+        committed: false,
+      })
+    }
+
+    if (!this.history) {
+      execute()
+      if (this.config.autoCommit !== false) this.commit()
+      return
+    }
+    const undoPatch = Object.fromEntries(
+      Object.keys(patch).map((key) => [key, originalAnnotation[key as keyof PdfAnnotationObject]]),
+    )
+    const command: Command = {
+      execute,
+      undo: () => {
+        this.dispatch(patchAnnotation(id, originalAnnotation))
+        this.events$.emit({
+          type: "update",
+          annotation: originalAnnotation,
+          pageIndex,
+          patch: undoPatch,
+          committed: false,
+        })
+      },
+    }
+    this.history.register(command, this.ANNOTATION_HISTORY_TOPIC)
+  }
+
   public getActiveTool(): AnnotationTool | null {
     if (!this.state.activeToolId) return null
     return this.state.tools.find((t) => t.id === this.state.activeToolId) ?? null
@@ -496,9 +546,7 @@ export class AnnotationPlugin extends BasePlugin<
   }
 
   exportAnnotationsToJSON() {
-    const annotations = Object.values((this.state as AnnotationState).byUid).map(
-      (ta: TrackedAnnotation) => ta.object,
-    )
+    const annotations = Object.values(this.state.byUid).map((ta: TrackedAnnotation) => ta.object)
     const exportData = {
       exportedBy: this.config.annotationAuthor,
       timestamp: new Date().toISOString(),
