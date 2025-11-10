@@ -34,6 +34,7 @@ import {
   selectAnnotation,
   setActiveToolId,
   setAnnotations,
+  setToolDefaults,
 } from "./actions"
 import type {
   AnnotationEvent,
@@ -59,10 +60,11 @@ export interface AnnotationCapability {
   onStateChange: EventHook<AnnotationState>
   onActiveToolChange: EventHook<AnnotationTool | null>
   onAnnotationEvent: EventHook<AnnotationEvent>
-
+  // use PDFium to get annotations on the PDF, including those not created by this component
   getPageAnnotations: (
     options: GetPageAnnotationsOptions,
   ) => Task<PdfAnnotationObject[], PdfErrorReason>
+
   getSelectedAnnotation: () => TrackedAnnotation | null
   selectAnnotation: (pageIndex: number, annotationId: string) => void
   deselectAnnotation: () => void
@@ -71,6 +73,8 @@ export interface AnnotationCapability {
   setActiveTool: (toolId: string | null) => void
   getTools: () => AnnotationTool[]
   getTool: <T extends AnnotationTool>(toolId: string) => T | undefined
+  // set the styles for new annotations created using a tool
+  setToolDefaults: (toolId: string, patch: Partial<any>) => void
 
   importAnnotations: (items: PdfAnnotationObject[]) => void
   exportAnnotations: () => any
@@ -211,6 +215,7 @@ export class AnnotationPlugin extends BasePlugin<
       setActiveTool: (toolId) => this.setActiveTool(toolId),
       getTools: () => this.state.tools,
       getTool: (toolId) => this.getTool(toolId),
+      setToolDefaults: (toolId, patch) => this.dispatch(setToolDefaults(toolId, patch)),
       importAnnotations: (items) => this.importAnnotations(items),
       createAnnotation: (pageIndex, anno, ctx) => this.createAnnotation(pageIndex, anno, ctx),
       deleteAnnotation: (pageIndex, id) => this.deleteAnnotation(pageIndex, id),

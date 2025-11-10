@@ -12,6 +12,7 @@ export const DELETE_ANNOTATION = "ANNOTATION/DELETE_ANNOTATION"
 export const COMMIT_PENDING_CHANGES = "ANNOTATION/COMMIT"
 export const PURGE_ANNOTATION = "ANNOTATION/PURGE_ANNOTATION"
 export const SET_ACTIVE_TOOL_ID = "ANNOTATION/SET_ACTIVE_TOOL_ID"
+export const SET_TOOL_DEFAULTS = "ANNOTATION/SET_TOOL_DEFAULTS"
 
 export interface SetAnnotationsAction extends Action {
   type: typeof SET_ANNOTATIONS
@@ -47,6 +48,10 @@ export interface SetActiveToolIdAction extends Action {
   type: typeof SET_ACTIVE_TOOL_ID
   payload: string | null
 }
+export interface SetToolDefaultsAction extends Action {
+  type: typeof SET_TOOL_DEFAULTS
+  payload: { toolId: string; patch: Partial<any> }
+}
 
 export type AnnotationAction =
   | SetAnnotationsAction
@@ -58,6 +63,7 @@ export type AnnotationAction =
   | CommitAction
   | PurgeAnnotationAction
   | SetActiveToolIdAction
+  | SetToolDefaultsAction
 
 export const setAnnotations = (p: Record<number, PdfAnnotationObject[]>): SetAnnotationsAction => ({
   type: SET_ANNOTATIONS,
@@ -88,6 +94,10 @@ export const purgeAnnotation = (uid: string): PurgeAnnotationAction => ({
 export const setActiveToolId = (id: string | null): SetActiveToolIdAction => ({
   type: SET_ACTIVE_TOOL_ID,
   payload: id,
+})
+export const setToolDefaults = (toolId: string, patch: Partial<any>): SetToolDefaultsAction => ({
+  type: SET_TOOL_DEFAULTS,
+  payload: { toolId, patch },
 })
 
 export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, action) => {
