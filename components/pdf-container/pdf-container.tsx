@@ -29,11 +29,6 @@ interface PDFContainerProps {
 }
 
 export default function PDFContainer({ url }: PDFContainerProps) {
-  // TESTING
-  // fetch("/engines/pdfium.wasm")
-  //   .then((r) => console.log("WASM fetched:", r.status, r.headers.get("content-type")))
-  //   .catch(console.error)
-
   const containerRef = useRef<HTMLDivElement>(null)
   const { engine, isLoading, error } = usePdfiumEngine({
     wasmUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/engines/pdfium.wasm`,
