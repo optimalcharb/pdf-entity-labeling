@@ -1,8 +1,8 @@
 import type { AnnotationTool } from "./annotation-tool"
-import { defaultTools } from "./initial-tools"
+import { initialTools } from "./initial-tools"
 
 // Infer the exact union type of all tool objects.
-type DefaultTool = (typeof defaultTools)[number]
+type DefaultTool = (typeof initialTools)[number]
 
 // Create a map from a tool's ID to its specific type.
 type ToolMap = {
