@@ -1,6 +1,6 @@
 import type { TrackedAnnotation } from "./custom-types"
 import type { AnnotationTool } from "./tools/annotation-tool"
-import { defaultTools } from "./tools/default-tools"
+import { initialTools } from "./tools/initial-tools"
 
 export interface AnnotationState {
   pages: Record<number, string[]>
@@ -16,6 +16,6 @@ export const initialState: AnnotationState = {
   byUid: {},
   selectedUid: null,
   activeToolId: null,
-  tools: defaultTools,
+  tools: initialTools,
   hasPendingChanges: false,
 }

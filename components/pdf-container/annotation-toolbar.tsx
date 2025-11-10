@@ -50,7 +50,7 @@ export const AnnotationToolbar = () => {
       ))}
       <div className="h-6 w-px bg-gray-200"></div>
       <button
-        onClick={() => annotationApi?.exportAnnotations()}
+        onClick={() => annotationApi?.exportAnnotationsToJSON()}
         className="rounded-md bg-blue-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-blue-600"
       >
         Export JSON

@@ -47,7 +47,6 @@ import type { AnnotationState } from "./state"
 import type { AnnotationTool } from "./tools/annotation-tool"
 
 // ***PLUGIN CONFIG***
-// ***PLUGIN CONFIG***
 export interface AnnotationPluginConfig extends BasePluginConfig {
   autoCommit?: boolean
   annotationAuthor?: string
@@ -60,7 +59,7 @@ export interface AnnotationCapability {
   onStateChange: EventHook<AnnotationState>
   onActiveToolChange: EventHook<AnnotationTool | null>
   onAnnotationEvent: EventHook<AnnotationEvent>
-  // use PDFium to get annotations on the PDF, including those not created by this component
+  // use PDFium to get any annotations saved in the PDF, even those not made by this plugin
   getPageAnnotations: (
     options: GetPageAnnotationsOptions,
   ) => Task<PdfAnnotationObject[], PdfErrorReason>
@@ -73,11 +72,12 @@ export interface AnnotationCapability {
   setActiveTool: (toolId: string | null) => void
   getTools: () => AnnotationTool[]
   getTool: <T extends AnnotationTool>(toolId: string) => T | undefined
-  // set the styles for new annotations created using a tool
+  // set the props for new annotations created using a tool
   setToolDefaults: (toolId: string, patch: Partial<any>) => void
 
   importAnnotations: (items: PdfAnnotationObject[]) => void
-  exportAnnotations: () => any
+  // created by Charlie
+  exportAnnotationsToJSON: () => any
 
   createAnnotation: <A extends PdfAnnotationObject>(
     pageIndex: number,
@@ -85,6 +85,7 @@ export interface AnnotationCapability {
     context?: AnnotationCreateContext<A>,
   ) => void
   deleteAnnotation: (pageIndex: number, annotationId: string) => void
+  // change the props of an annotation
   updateAnnotation: (
     pageIndex: number,
     annotationId: string,
@@ -158,7 +159,6 @@ export class AnnotationPlugin extends BasePlugin<
 
       const formattedSelection = this.selection?.getFormattedSelection()
       const selectionText = this.selection?.getSelectedText()
-
       if (!formattedSelection || !selectionText) return
 
       for (const selection of formattedSelection) {
@@ -222,7 +222,7 @@ export class AnnotationPlugin extends BasePlugin<
       updateAnnotation: (pageIndex, id, patch) => this.updateAnnotation(pageIndex, id, patch),
       renderAnnotation: (options) => this.renderAnnotation(options),
       commit: () => this.commit(),
-      exportAnnotations: () => this.exportAnnotationsToJSON(),
+      exportAnnotationsToJSON: () => this.exportAnnotationsToJSON(),
     }
   }
 
