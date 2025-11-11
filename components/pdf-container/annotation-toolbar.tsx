@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react"
 import { useAnnotationCapability } from "./plugin-annotation-2"
+import { useExportCapability } from "@embedpdf/plugin-export/react"
 
 export const AnnotationToolbar = () => {
   const { provides: annotationApi } = useAnnotationCapability()
+  const { provides: exportApi } = useExportCapability()
   const [activeTool, setActiveTool] = useState<string | null>(null)
   const [canDelete, setCanDelete] = useState(false)
 
@@ -54,6 +56,13 @@ export const AnnotationToolbar = () => {
         className="rounded-md bg-blue-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-blue-600"
       >
         Export JSON
+      </button>
+      <button
+        onClick={() => exportApi?.download()}
+        disabled={!exportApi}
+        className="rounded-md bg-green-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-300"
+      >
+        Download PDF
       </button>
       <button
         onClick={handleDelete}

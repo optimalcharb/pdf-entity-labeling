@@ -2,7 +2,7 @@ import { createPluginRegistration } from "@embedpdf/core"
 import { EmbedPDF } from "@embedpdf/core/react"
 import { usePdfiumEngine } from "@embedpdf/engines/react"
 import { ConsoleLogger } from "@embedpdf/models"
-// import { AnnotationLayer, AnnotationPluginPackage } from "@embedpdf/plugin-annotation/react"
+import { ExportPluginPackage } from "@embedpdf/plugin-export/react"
 import { HistoryPluginPackage } from "@embedpdf/plugin-history/react"
 import {
   GlobalPointerProvider,
@@ -82,6 +82,8 @@ export default function PDFContainer({ url }: PDFContainerProps) {
             createPluginRegistration(SelectionPluginPackage),
             // register Annotation after InteractionManager, Seletion, History
             createPluginRegistration(AnnotationPluginPackage),
+            // register Export after Annotation
+            createPluginRegistration(ExportPluginPackage),
             // register Zoom after InteractionManager, Viewport, Scroll
             createPluginRegistration(ZoomPluginPackage, {
               defaultZoomLevel: ZoomMode.Automatic,
