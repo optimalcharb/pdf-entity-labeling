@@ -5,7 +5,6 @@
   "engines": {
     "node": ">=22.0.0"
   },
-  "packageManager": "npm@11.6.2",
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",
@@ -26,7 +25,7 @@
     "@embedpdf/core": "1.3.16",
     "@embedpdf/engines": "1.3.16",
     "@embedpdf/models": "1.3.16",
-    "@embedpdf/plugin-annotation": "1.3.16",
+    "@embedpdf/pdfium": "1.3.16",
     "@embedpdf/plugin-history": "1.3.16",
     "@embedpdf/plugin-interaction-manager": "1.3.16",
     "@embedpdf/plugin-loader": "1.3.16",

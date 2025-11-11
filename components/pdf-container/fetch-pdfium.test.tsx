@@ -17,7 +17,7 @@ async function hashBuffer(buffer: ArrayBuffer | Buffer): Promise<string> {
   return hash.digest("hex")
 }
 
-describe("PDFium WASM Fetch", () => {
+describe("PDFium WASM", () => {
   // Skip this test unless npm run dev is running
   test.skip("fetch pdfium.wasm from dev server", async () => {
     const baseUrl = mockBaseUrl
