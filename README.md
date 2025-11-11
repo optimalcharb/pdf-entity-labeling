@@ -10,10 +10,6 @@ In-browser PDF labeling to enable NER (named entity recognition) model training.
 
 In the previous page or settings sidebar, the user can decide whether each entity type is required (each PDF must have that entity), unique (each PDF has at most one of that entity), and single-word (whether the entity value can have spaces). Later, I also want an option for highlighting to only select full words. I want undo and redo buttons using plugin-history, a search button and input field using plugin-search, zoom-in and zoom-out buttons using plugin-zoom, and an export button using plugin-export. The current "export annotations to json" and "delete annotation" buttons are temporary for testing. A key upcoming enhancement is better storage import/export of annotations so that they can be easily passed to the table and later preloaded with annotations from a previous session.
 
-### Plugins
-
-I don't think additional plugins will be necessary and plugin-rotate can be ignored for now (it enables rotating the PDF from portrait to landscape). plugin-template is not a real plugin; it's a template to make plugin code readable. Eventually plugins could be split into multiple files but that would take some time changing imports/exports and the template ensures some things are exported and others aren't.
-
 ## Quickstart
 
 1. Install [Node.js v22](https://nodejs.org/en/download/), [Git](https://git-scm.com/downloads), and [VS Code](https://code.visualstudio.com/download)
