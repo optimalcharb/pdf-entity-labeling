@@ -2,8 +2,7 @@ import { PDFContainer } from "./pdf-container-dynamic"
 
 export default function HomePage() {
   return (
-    <main className="py-20">
-      <h1>PDF Container</h1>
+    <main className="h-screen overflow-hidden">
       <PDFContainer url="https://snippet.embedpdf.com/ebook.pdf" />
     </main>
   )
