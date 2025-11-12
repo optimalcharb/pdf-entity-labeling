@@ -1,10 +1,13 @@
+import { useExportCapability } from "@embedpdf/plugin-export/react"
+import { useZoom } from "@embedpdf/plugin-zoom/react"
+import { Download, Highlighter, Trash2, Underline, ZoomIn, ZoomOut } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useAnnotationCapability } from "./plugin-annotation-2"
-import { useExportCapability } from "@embedpdf/plugin-export/react"
 
 export const Toolbar = () => {
   const { provides: annotationApi } = useAnnotationCapability()
   const { provides: exportApi } = useExportCapability()
+  const { provides: zoom } = useZoom()
   const [activeTool, setActiveTool] = useState<string | null>(null)
   const [canDelete, setCanDelete] = useState(false)
 
@@ -32,9 +35,8 @@ export const Toolbar = () => {
   }
 
   const tools = [
-    { id: "highlight", active: activeTool === "highlight" },
-    { id: "underline", active: activeTool === "underline" },
-    { id: "squiggly", active: activeTool === "squiggly" },
+    { id: "highlight", active: activeTool === "highlight", icon: Highlighter },
+    { id: "underline", active: activeTool === "underline", icon: Underline },
   ]
 
   return (
@@ -47,9 +49,24 @@ export const Toolbar = () => {
             tool.active ? "bg-blue-500 text-white" : "bg-gray-100 hover:bg-gray-200"
           }`}
         >
-          {tool.id}
+          {tool.icon ? <tool.icon size={18} /> : tool.id}
         </button>
       ))}
+      <div className="h-6 w-px bg-gray-200"></div>
+      <button
+        onClick={() => zoom?.zoomOut()}
+        disabled={!zoom}
+        className="rounded-md bg-gray-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:bg-gray-300"
+      >
+        <ZoomOut size={18} />
+      </button>
+      <button
+        onClick={() => zoom?.zoomIn()}
+        disabled={!zoom}
+        className="rounded-md bg-gray-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:bg-gray-300"
+      >
+        <ZoomIn size={18} />
+      </button>
       <div className="h-6 w-px bg-gray-200"></div>
       <button
         onClick={() => annotationApi?.exportAnnotationsToJSON()}
@@ -62,14 +79,14 @@ export const Toolbar = () => {
         disabled={!exportApi}
         className="rounded-md bg-green-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-green-300"
       >
-        Download PDF
+        <Download size={18} />
       </button>
       <button
         onClick={handleDelete}
         disabled={!canDelete}
         className="rounded-md bg-red-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-red-300"
       >
-        Delete Selected
+        <Trash2 size={18} />
       </button>
     </div>
   )
