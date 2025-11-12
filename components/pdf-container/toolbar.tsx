@@ -1,6 +1,6 @@
 import { useExportCapability } from "@embedpdf/plugin-export/react"
 import { useZoom } from "@embedpdf/plugin-zoom/react"
-import { Download, Highlighter, Trash2, Underline, ZoomIn, ZoomOut } from "lucide-react"
+import { Download, Highlighter, Trash2, Type, Underline, ZoomIn, ZoomOut } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useAnnotationCapability } from "./plugin-annotation-2"
 
@@ -37,6 +37,7 @@ export const Toolbar = () => {
   const tools = [
     { id: "highlight", active: activeTool === "highlight", icon: Highlighter },
     { id: "underline", active: activeTool === "underline", icon: Underline },
+    { id: "squiggly", active: activeTool === "squiggly", icon: Type },
   ]
 
   return (
