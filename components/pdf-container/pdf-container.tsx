@@ -14,7 +14,7 @@ import { RenderLayer, RenderPluginPackage } from "@embedpdf/plugin-render/react"
 import { Scroller, ScrollPluginPackage, ScrollStrategy } from "@embedpdf/plugin-scroll/react"
 import { useRef } from "react"
 import { Spinner } from "../shadcn-ui/spinner"
-import { AnnotationToolbar } from "./annotation-toolbar"
+import { Toolbar } from "./toolbar"
 import { AnnotationLayer, AnnotationPluginPackage } from "./plugin-annotation-2"
 // import { SearchLayer, SearchPluginPackage } from "@embedpdf/plugin-search/react"
 import { SelectionLayer, SelectionPluginPackage } from "@embedpdf/plugin-selection/react"
@@ -93,7 +93,7 @@ export default function PDFContainer({ url }: PDFContainerProps) {
         >
           {({ pluginsReady }) => (
             <GlobalPointerProvider>
-              <AnnotationToolbar data-testid="annotation-toolbar" />
+              <Toolbar data-testid="annotation-toolbar" />
               <Viewport className="h-full w-full flex-1 overflow-auto bg-gray-100 select-none">
                 {!pluginsReady && (
                   <div className="flex h-full w-full items-center justify-center">

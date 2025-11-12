@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { useAnnotationCapability } from "./plugin-annotation-2"
 import { useExportCapability } from "@embedpdf/plugin-export/react"
 
-export const AnnotationToolbar = () => {
+export const Toolbar = () => {
   const { provides: annotationApi } = useAnnotationCapability()
   const { provides: exportApi } = useExportCapability()
   const [activeTool, setActiveTool] = useState<string | null>(null)
