@@ -38,6 +38,7 @@ playwright/.cache/
 .kilocode/
 .claude/
 CLAUDE.md
+prompts.txt
 
 # amplify
 .amplify
