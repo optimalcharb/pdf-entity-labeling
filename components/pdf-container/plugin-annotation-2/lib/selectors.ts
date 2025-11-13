@@ -18,9 +18,12 @@ export const getAnnotations = (s: AnnotationState): Record<number, TrackedAnnota
 
 /** The full `TrackedAnnotation` for the current selection. */
 export const getSelectedAnnotation = (s: AnnotationState): TrackedAnnotation | null =>
-  s.selectedUid ? s.byUid[s.selectedUid] ?? null : null
+  s.selectedUid ? (s.byUid[s.selectedUid] ?? null) : null
 
-export const getSelectedAnnotationByPageIndex = (s: AnnotationState, pageIndex: number): TrackedAnnotation | null => {
+export const getSelectedAnnotationByPageIndex = (
+  s: AnnotationState,
+  pageIndex: number,
+): TrackedAnnotation | null => {
   if (!s.selectedUid) return null
 
   const pageUids = s.pages[pageIndex] ?? []
