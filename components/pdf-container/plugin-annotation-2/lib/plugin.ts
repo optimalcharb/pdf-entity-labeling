@@ -35,12 +35,7 @@ import {
   setAnnotations,
   setToolDefaults,
 } from "./actions"
-import type {
-  AnnotationEvent,
-  GetPageAnnotationsOptions,
-  RenderAnnotationOptions,
-  TrackedAnnotation,
-} from "./custom-types"
+import type { AnnotationEvent, GetPageAnnotationsOptions, TrackedAnnotation } from "./custom-types"
 import { getSelectedAnnotation } from "./selectors"
 import type { AnnotationState } from "./state"
 import type { AnnotationTool } from "./tools/annotation-tool"
@@ -85,7 +80,6 @@ export interface AnnotationCapability {
     annotationId: string,
     patch: Partial<PdfAnnotationObject>,
   ) => void
-  renderAnnotation: (options: RenderAnnotationOptions) => Task<Blob, PdfErrorReason>
 }
 
 // ***PLUGIN CLASS***
@@ -211,7 +205,6 @@ export class AnnotationPlugin extends BasePlugin<
       createAnnotation: (pageIndex, anno) => this.createAnnotation(pageIndex, anno),
       deleteAnnotation: (pageIndex, id) => this.deleteAnnotation(pageIndex, id),
       updateAnnotation: (pageIndex, id, patch) => this.updateAnnotation(pageIndex, id, patch),
-      renderAnnotation: (options) => this.renderAnnotation(options),
       exportAnnotationsToJSON: () => this.exportAnnotationsToJSON(),
     }
   }
@@ -262,21 +255,6 @@ export class AnnotationPlugin extends BasePlugin<
     }
 
     return this.engine.getPageAnnotations(doc, page)
-  }
-
-  private renderAnnotation({ pageIndex, annotation, options }: RenderAnnotationOptions) {
-    const coreState = this.coreState.core
-
-    if (!coreState.document) {
-      return PdfTaskHelper.reject({ code: PdfErrorCode.NotFound, message: "Document not found" })
-    }
-
-    const page = coreState.document.pages.find((page) => page.index === pageIndex)
-    if (!page) {
-      return PdfTaskHelper.reject({ code: PdfErrorCode.NotFound, message: "Page not found" })
-    }
-
-    return this.engine.renderPageAnnotation(coreState.document, page, annotation, options)
   }
 
   private importAnnotations(items: PdfAnnotationObject[]) {
