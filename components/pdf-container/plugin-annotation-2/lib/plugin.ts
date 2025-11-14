@@ -47,7 +47,6 @@ import type { AnnotationTool } from "./tools/annotation-tool"
 
 // ***PLUGIN CONFIG***
 export interface AnnotationPluginConfig extends BasePluginConfig {
-  autoCommit?: boolean
   annotationAuthor?: string
   deactivateToolAfterCreate?: boolean
   selectAfterCreate?: boolean
@@ -87,8 +86,6 @@ export interface AnnotationCapability {
     patch: Partial<PdfAnnotationObject>,
   ) => void
   renderAnnotation: (options: RenderAnnotationOptions) => Task<Blob, PdfErrorReason>
-
-  commit: () => Task<boolean, PdfErrorReason>
 }
 
 // ***PLUGIN CLASS***
@@ -134,7 +131,7 @@ export class AnnotationPlugin extends BasePlugin<
     this.state.tools.forEach((tool) => this.registerInteractionForTool(tool))
 
     this.history?.onHistoryChange((topic) => {
-      if (topic === this.ANNOTATION_HISTORY_TOPIC && this.config.autoCommit !== false) {
+      if (topic === this.ANNOTATION_HISTORY_TOPIC) {
         this.commit()
       }
     })
@@ -215,7 +212,6 @@ export class AnnotationPlugin extends BasePlugin<
       deleteAnnotation: (pageIndex, id) => this.deleteAnnotation(pageIndex, id),
       updateAnnotation: (pageIndex, id, patch) => this.updateAnnotation(pageIndex, id, patch),
       renderAnnotation: (options) => this.renderAnnotation(options),
-      commit: () => this.commit(),
       exportAnnotationsToJSON: () => this.exportAnnotationsToJSON(),
     }
   }
@@ -305,7 +301,7 @@ export class AnnotationPlugin extends BasePlugin<
       const pageIndex = annotation.pageIndex
       this.dispatch(createAnnotation(pageIndex, annotation))
     }
-    if (this.config.autoCommit !== false) this.commit()
+    this.commit()
   }
 
   private createAnnotation<A extends PdfAnnotationObject>(pageIndex: number, annotation: A) {
@@ -326,7 +322,7 @@ export class AnnotationPlugin extends BasePlugin<
 
     if (!this.history) {
       execute()
-      if (this.config.autoCommit) this.commit()
+      this.commit()
       return
     }
     const command: Command = {
@@ -362,7 +358,7 @@ export class AnnotationPlugin extends BasePlugin<
 
     if (!this.history) {
       execute()
-      if (this.config.autoCommit !== false) this.commit()
+      this.commit()
       return
     }
     const command: Command = {
@@ -401,7 +397,7 @@ export class AnnotationPlugin extends BasePlugin<
 
     if (!this.history) {
       execute()
-      if (this.config.autoCommit !== false) this.commit()
+      this.commit()
       return
     }
     const undoPatch = Object.fromEntries(
