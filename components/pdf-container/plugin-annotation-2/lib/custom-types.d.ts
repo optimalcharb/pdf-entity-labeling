@@ -1,15 +1,10 @@
-import type {
-  AnnotationCreateContext,
-  PdfAnnotationObject,
-  PdfRenderPageAnnotationOptions,
-} from "@embedpdf/models"
+import type { PdfAnnotationObject, PdfRenderPageAnnotationOptions } from "@embedpdf/models"
 
 export type AnnotationEvent =
   | {
       type: "create"
       annotation: PdfAnnotationObject
       pageIndex: number
-      ctx?: AnnotationCreateContext<any>
       committed: boolean
     }
   | {

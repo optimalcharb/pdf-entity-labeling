@@ -7,7 +7,6 @@ import {
   SET_DOCUMENT,
 } from "@embedpdf/core"
 import {
-  AnnotationCreateContext,
   ignore,
   PdfAnnotationObject,
   PdfDocumentObject,
@@ -79,11 +78,7 @@ export interface AnnotationCapability {
   // created by Charlie
   exportAnnotationsToJSON: () => any
 
-  createAnnotation: <A extends PdfAnnotationObject>(
-    pageIndex: number,
-    annotation: A,
-    context?: AnnotationCreateContext<A>,
-  ) => void
+  createAnnotation: <A extends PdfAnnotationObject>(pageIndex: number, annotation: A) => void
   deleteAnnotation: (pageIndex: number, annotationId: string) => void
   // change the props of an annotation
   updateAnnotation: (
@@ -112,7 +107,6 @@ export class AnnotationPlugin extends BasePlugin<
   private readonly selection: SelectionCapability | null
   private readonly history: HistoryCapability | null
 
-  private pendingContexts = new Map<string, unknown>()
   private readonly activeTool$ = createBehaviorEmitter<AnnotationTool | null>(null)
   private readonly events$ = createBehaviorEmitter<AnnotationEvent>()
 
@@ -217,7 +211,7 @@ export class AnnotationPlugin extends BasePlugin<
       getTool: (toolId) => this.getTool(toolId),
       setToolDefaults: (toolId, patch) => this.dispatch(setToolDefaults(toolId, patch)),
       importAnnotations: (items) => this.importAnnotations(items),
-      createAnnotation: (pageIndex, anno, ctx) => this.createAnnotation(pageIndex, anno, ctx),
+      createAnnotation: (pageIndex, anno) => this.createAnnotation(pageIndex, anno),
       deleteAnnotation: (pageIndex, id) => this.deleteAnnotation(pageIndex, id),
       updateAnnotation: (pageIndex, id, patch) => this.updateAnnotation(pageIndex, id, patch),
       renderAnnotation: (options) => this.renderAnnotation(options),
@@ -259,7 +253,6 @@ export class AnnotationPlugin extends BasePlugin<
     options: GetPageAnnotationsOptions,
   ): Task<PdfAnnotationObject[], PdfErrorReason> {
     const { pageIndex } = options
-
     const doc = this.coreState.core.document
 
     if (!doc) {
@@ -315,11 +308,7 @@ export class AnnotationPlugin extends BasePlugin<
     if (this.config.autoCommit !== false) this.commit()
   }
 
-  private createAnnotation<A extends PdfAnnotationObject>(
-    pageIndex: number,
-    annotation: A,
-    ctx?: AnnotationCreateContext<A>,
-  ) {
+  private createAnnotation<A extends PdfAnnotationObject>(pageIndex: number, annotation: A) {
     const id = annotation.id
     const newAnnotation = {
       ...annotation,
@@ -327,12 +316,10 @@ export class AnnotationPlugin extends BasePlugin<
     }
     const execute = () => {
       this.dispatch(createAnnotation(pageIndex, newAnnotation))
-      if (ctx) this.pendingContexts.set(id, ctx)
       this.events$.emit({
         type: "create",
         annotation: newAnnotation,
         pageIndex,
-        ctx,
         committed: false,
       })
     }
@@ -345,7 +332,6 @@ export class AnnotationPlugin extends BasePlugin<
     const command: Command = {
       execute,
       undo: () => {
-        this.pendingContexts.delete(id)
         this.dispatch(deselectAnnotation())
         this.dispatch(deleteAnnotation(pageIndex, id))
         this.events$.emit({
@@ -478,19 +464,14 @@ export class AnnotationPlugin extends BasePlugin<
 
       switch (ta.commitState) {
         case "new":
-          const ctx = this.pendingContexts.get(ta.object.id) as AnnotationCreateContext<
-            typeof ta.object
-          >
-          const task = this.engine.createPageAnnotation!(doc, page, ta.object, ctx)
+          const task = this.engine.createPageAnnotation!(doc, page, ta.object)
           task.wait(() => {
             this.events$.emit({
               type: "create",
               annotation: ta.object,
               pageIndex: ta.object.pageIndex,
-              ctx,
               committed: true,
             })
-            this.pendingContexts.delete(ta.object.id)
           }, ignore)
           creations.push(task)
           break
