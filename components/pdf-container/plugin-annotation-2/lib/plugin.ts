@@ -72,14 +72,10 @@ export interface AnnotationCapability {
   // created by Charlie
   exportAnnotationsToJSON: () => any
 
-  createAnnotation: <A extends PdfAnnotationObject>(pageIndex: number, annotation: A) => void
-  deleteAnnotation: (pageIndex: number, annotationId: string) => void
+  createAnnotation: (annotation: PdfAnnotationObject) => void
+  deleteAnnotation: (annotationId: string) => void
   // change the props of an annotation
-  updateAnnotation: (
-    pageIndex: number,
-    annotationId: string,
-    patch: Partial<PdfAnnotationObject>,
-  ) => void
+  updateAnnotation: (annotationId: string, patch: Partial<PdfAnnotationObject>) => void
 }
 
 // ***PLUGIN CLASS***
@@ -150,7 +146,7 @@ export class AnnotationPlugin extends BasePlugin<
         selectionText.wait((text) => {
           const annotationId = uuidV4()
           // Create an annotation using the defaults from the active text tool
-          this.createAnnotation(selection.pageIndex, {
+          this.createAnnotation({
             ...activeTool.defaults,
             rect: selection.rect,
             segmentRects: selection.segmentRects,
@@ -202,9 +198,9 @@ export class AnnotationPlugin extends BasePlugin<
       getTool: (toolId) => this.getTool(toolId),
       setToolDefaults: (toolId, patch) => this.dispatch(setToolDefaults(toolId, patch)),
       importAnnotations: (items) => this.importAnnotations(items),
-      createAnnotation: (pageIndex, anno) => this.createAnnotation(pageIndex, anno),
-      deleteAnnotation: (pageIndex, id) => this.deleteAnnotation(pageIndex, id),
-      updateAnnotation: (pageIndex, id, patch) => this.updateAnnotation(pageIndex, id, patch),
+      createAnnotation: (anno) => this.createAnnotation(anno),
+      deleteAnnotation: (id) => this.deleteAnnotation(id),
+      updateAnnotation: (id, patch) => this.updateAnnotation(id, patch),
       exportAnnotationsToJSON: () => this.exportAnnotationsToJSON(),
     }
   }
@@ -257,39 +253,40 @@ export class AnnotationPlugin extends BasePlugin<
     return this.engine.getPageAnnotations(doc, page)
   }
 
+  // consumer capability to batch add annotations
   private importAnnotations(items: PdfAnnotationObject[]) {
-    // If initial load hasn't completed, queue the items
     if (!this.isInitialLoadComplete) {
       this.importQueue.push(...items)
       return
     }
-    // Otherwise, import immediately
     this.processImportItems(items)
   }
 
+  // internal process to load annotations existing in a PDF
   private processImportQueue() {
     if (this.importQueue.length === 0) return
     const items = [...this.importQueue]
-    this.importQueue = [] // Clear the queue
+    this.importQueue = []
     this.processImportItems(items)
   }
 
   private processImportItems(items: PdfAnnotationObject[]) {
     for (const annotation of items) {
       const pageIndex = annotation.pageIndex
-      this.dispatch(createAnnotation(pageIndex, annotation))
+      this.dispatch(createAnnotation(annotation))
     }
     this.commit()
   }
 
-  private createAnnotation<A extends PdfAnnotationObject>(pageIndex: number, annotation: A) {
+  private createAnnotation(annotation: PdfAnnotationObject) {
     const id = annotation.id
+    const pageIndex = annotation.pageIndex
     const newAnnotation = {
       ...annotation,
       author: annotation.author ?? this.config.annotationAuthor,
     }
     const execute = () => {
-      this.dispatch(createAnnotation(pageIndex, newAnnotation))
+      this.dispatch(createAnnotation(newAnnotation))
       this.events$.emit({
         type: "create",
         annotation: newAnnotation,
@@ -307,7 +304,7 @@ export class AnnotationPlugin extends BasePlugin<
       execute,
       undo: () => {
         this.dispatch(deselectAnnotation())
-        this.dispatch(deleteAnnotation(pageIndex, id))
+        this.dispatch(deleteAnnotation(id))
         this.events$.emit({
           type: "delete",
           annotation: newAnnotation,
@@ -319,17 +316,17 @@ export class AnnotationPlugin extends BasePlugin<
     this.history.register(command, this.ANNOTATION_HISTORY_TOPIC)
   }
 
-  private deleteAnnotation(pageIndex: number, id: string) {
+  private deleteAnnotation(id: string) {
     const originalAnnotation = this.state.byUid[id]?.object
     if (!originalAnnotation) return
 
     const execute = () => {
       this.dispatch(deselectAnnotation())
-      this.dispatch(deleteAnnotation(pageIndex, id))
+      this.dispatch(deleteAnnotation(id))
       this.events$.emit({
         type: "delete",
         annotation: originalAnnotation,
-        pageIndex,
+        pageIndex: originalAnnotation.pageIndex,
         committed: false,
       })
     }
@@ -342,11 +339,11 @@ export class AnnotationPlugin extends BasePlugin<
     const command: Command = {
       execute,
       undo: () => {
-        this.dispatch(createAnnotation(pageIndex, originalAnnotation))
+        this.dispatch(createAnnotation(originalAnnotation))
         this.events$.emit({
           type: "create",
           annotation: originalAnnotation,
-          pageIndex,
+          pageIndex: originalAnnotation.pageIndex,
           committed: false,
         })
       },
@@ -354,7 +351,7 @@ export class AnnotationPlugin extends BasePlugin<
     this.history.register(command, this.ANNOTATION_HISTORY_TOPIC)
   }
 
-  private updateAnnotation(pageIndex: number, id: string, patch: Partial<PdfAnnotationObject>) {
+  private updateAnnotation(id: string, patch: Partial<PdfAnnotationObject>) {
     const originalAnnotation = this.state.byUid[id]?.object
     if (!originalAnnotation) return
     const patchWithAuthor = {
@@ -367,7 +364,7 @@ export class AnnotationPlugin extends BasePlugin<
       this.events$.emit({
         type: "update",
         annotation: originalAnnotation,
-        pageIndex,
+        pageIndex: originalAnnotation.pageIndex,
         patch: patchWithAuthor,
         committed: false,
       })
@@ -388,7 +385,7 @@ export class AnnotationPlugin extends BasePlugin<
         this.events$.emit({
           type: "update",
           annotation: originalAnnotation,
-          pageIndex,
+          pageIndex: originalAnnotation.pageIndex,
           patch: undoPatch,
           committed: false,
         })

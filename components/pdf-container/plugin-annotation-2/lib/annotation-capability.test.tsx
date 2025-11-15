@@ -1,6 +1,6 @@
 import { createPluginRegistration, PluginRegistry } from "@embedpdf/core"
 import { PDFContext } from "@embedpdf/core/react"
-import type { PdfHighlightAnnoObject, PdfUnderlineAnnoObject } from "@embedpdf/models"
+import type { PdfAnnotationObject } from "@embedpdf/models"
 import {
   NoopLogger,
   PdfAnnotationSubtype,
@@ -24,6 +24,7 @@ const createMockEngine = () => ({
   createPageAnnotation: mock(() => PdfTaskHelper.resolve(true)),
   updatePageAnnotation: mock(() => PdfTaskHelper.resolve(true)),
   deletePageAnnotation: mock(() => PdfTaskHelper.resolve(true)),
+  removePageAnnotation: mock(() => PdfTaskHelper.resolve(true)),
   renderPageAnnotation: mock(() => PdfTaskHelper.resolve(new Blob())),
 })
 
@@ -41,33 +42,35 @@ const createMockDocument = () => ({
 
 // Helper to create mock annotation objects
 const createMockHighlightAnnotation = (
-  overrides: Partial<PdfHighlightAnnoObject> = {},
-): PdfHighlightAnnoObject => ({
-  id: uuidV4(),
-  type: PdfAnnotationSubtype.HIGHLIGHT,
-  pageIndex: 0,
-  color: "#FFCD45",
-  opacity: 0.6,
-  blendMode: PdfBlendMode.Multiply,
-  created: new Date(),
-  rect: { origin: { x: 100, y: 100 }, size: { width: 100, height: 20 } },
-  segmentRects: [{ origin: { x: 100, y: 100 }, size: { width: 100, height: 20 } }],
-  ...overrides,
-})
+  overrides: Partial<PdfAnnotationObject> = {},
+): PdfAnnotationObject =>
+  ({
+    id: uuidV4(),
+    type: PdfAnnotationSubtype.HIGHLIGHT,
+    pageIndex: 0,
+    color: "#FFCD45",
+    opacity: 0.6,
+    blendMode: PdfBlendMode.Multiply,
+    created: new Date(),
+    rect: { origin: { x: 100, y: 100 }, size: { width: 100, height: 20 } },
+    segmentRects: [{ origin: { x: 100, y: 100 }, size: { width: 100, height: 20 } }],
+    ...overrides,
+  }) as PdfAnnotationObject
 
 const createMockUnderlineAnnotation = (
-  overrides: Partial<PdfUnderlineAnnoObject> = {},
-): PdfUnderlineAnnoObject => ({
-  id: uuidV4(),
-  type: PdfAnnotationSubtype.UNDERLINE,
-  pageIndex: 0,
-  color: "#E44234",
-  opacity: 1,
-  created: new Date(),
-  rect: { origin: { x: 100, y: 100 }, size: { width: 100, height: 20 } },
-  segmentRects: [{ origin: { x: 100, y: 100 }, size: { width: 100, height: 20 } }],
-  ...overrides,
-})
+  overrides: Partial<PdfAnnotationObject> = {},
+): PdfAnnotationObject =>
+  ({
+    id: uuidV4(),
+    type: PdfAnnotationSubtype.UNDERLINE,
+    pageIndex: 0,
+    color: "#E44234",
+    opacity: 1,
+    created: new Date(),
+    rect: { origin: { x: 100, y: 100 }, size: { width: 100, height: 20 } },
+    segmentRects: [{ origin: { x: 100, y: 100 }, size: { width: 100, height: 20 } }],
+    ...overrides,
+  }) as PdfAnnotationObject
 
 describe("AnnotationCapability", () => {
   let registry: PluginRegistry
@@ -88,7 +91,6 @@ describe("AnnotationCapability", () => {
       createPluginRegistration(SelectionPluginPackage, {}),
       createPluginRegistration(HistoryPluginPackage, {}),
       createPluginRegistration(AnnotationPluginPackage, {
-        autoCommit: false,
         annotationAuthor: "test-user",
       }),
     ]
@@ -201,7 +203,7 @@ describe("AnnotationCapability", () => {
     const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
 
     const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
-    result.current.provides?.createAnnotation(0, annotation)
+    result.current.provides?.createAnnotation(annotation)
 
     await waitFor(() => {
       const selected = result.current.provides?.getSelectedAnnotation()
@@ -210,30 +212,17 @@ describe("AnnotationCapability", () => {
     })
   })
 
-  test("createAnnotation with context stores context", async () => {
-    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
-
-    const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
-    const context = { source: "text-selection", text: "Test text" } as any
-    result.current.provides?.createAnnotation(0, annotation, context)
-
-    await waitFor(() => {
-      // The annotation should be created (verified by no error)
-      expect(result.current.provides).toBeDefined()
-    })
-  })
-
   test("deleteAnnotation removes annotation from state", async () => {
     const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
 
     const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
-    result.current.provides?.createAnnotation(0, annotation)
+    result.current.provides?.createAnnotation(annotation)
 
     await waitFor(() => {
       expect(result.current.provides).toBeDefined()
     })
 
-    result.current.provides?.deleteAnnotation(0, annotation.id)
+    result.current.provides?.deleteAnnotation(annotation.id)
 
     await waitFor(() => {
       // Annotation should be marked as deleted
@@ -245,14 +234,14 @@ describe("AnnotationCapability", () => {
     const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
 
     const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
-    result.current.provides?.createAnnotation(0, annotation)
+    result.current.provides?.createAnnotation(annotation)
 
     await waitFor(() => {
       expect(result.current.provides).toBeDefined()
     })
 
     const newColor = "#00FF00"
-    result.current.provides?.updateAnnotation(0, annotation.id, { color: newColor })
+    result.current.provides?.updateAnnotation(annotation.id, { color: newColor })
 
     await waitFor(() => {
       // Update should complete without error
@@ -264,7 +253,7 @@ describe("AnnotationCapability", () => {
     const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
 
     const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
-    result.current.provides?.createAnnotation(0, annotation)
+    result.current.provides?.createAnnotation(annotation)
 
     await waitFor(() => {
       expect(result.current.provides).toBeDefined()
@@ -283,7 +272,7 @@ describe("AnnotationCapability", () => {
     const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
 
     const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
-    result.current.provides?.createAnnotation(0, annotation)
+    result.current.provides?.createAnnotation(annotation)
 
     await waitFor(() => {
       expect(result.current.provides).toBeDefined()
@@ -331,8 +320,8 @@ describe("AnnotationCapability", () => {
     const annotation1 = createMockHighlightAnnotation({ pageIndex: 0 })
     const annotation2 = createMockUnderlineAnnotation({ pageIndex: 1 })
 
-    result.current.provides?.createAnnotation(0, annotation1)
-    result.current.provides?.createAnnotation(1, annotation2)
+    result.current.provides?.createAnnotation(annotation1)
+    result.current.provides?.createAnnotation(annotation2)
 
     await waitFor(() => {
       expect(result.current.provides).toBeDefined()
@@ -378,90 +367,6 @@ describe("AnnotationCapability", () => {
     })
   })
 
-  test("renderAnnotation returns task with blob", async () => {
-    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
-
-    const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
-    const mockBlob = new Blob(["test"], { type: "image/png" })
-    mockEngine.renderPageAnnotation.mockReturnValue(PdfTaskHelper.resolve(mockBlob))
-
-    const task = result.current.provides?.renderAnnotation({
-      pageIndex: 0,
-      annotation,
-      options: { scaleFactor: 1 },
-    })
-
-    await waitFor(() => {
-      task?.wait(
-        (blob) => {
-          expect(blob).toBeInstanceOf(Blob)
-        },
-        mock(() => {}),
-      )
-    })
-  })
-
-  test("renderAnnotation returns error for non-existent page", async () => {
-    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
-
-    // Render annotation for a page that doesn't exist
-    const annotation = createMockHighlightAnnotation({ pageIndex: 999 })
-    const task = result.current.provides?.renderAnnotation({
-      pageIndex: 999,
-      annotation,
-    })
-
-    const onError = mock(() => {})
-    task?.wait(
-      mock(() => {}),
-      onError,
-    )
-
-    await waitFor(() => {
-      expect(onError.mock.calls.length).toBeGreaterThan(0)
-    })
-  })
-
-  test("commit returns task resolving to true when no pending changes", async () => {
-    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
-
-    const task = result.current.provides?.commit()
-
-    await waitFor(() => {
-      task?.wait(
-        (success) => {
-          expect(success).toBe(true)
-        },
-        mock(() => {}),
-      )
-    })
-  })
-
-  test("commit processes pending annotations", async () => {
-    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
-
-    const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
-    result.current.provides?.createAnnotation(0, annotation)
-
-    await waitFor(() => {
-      expect(result.current.provides).toBeDefined()
-    })
-
-    mockEngine.createPageAnnotation.mockReturnValue(PdfTaskHelper.resolve(true))
-
-    const task = result.current.provides?.commit()
-
-    await waitFor(() => {
-      task?.wait(
-        (success) => {
-          expect(success).toBe(true)
-          expect(mockEngine.createPageAnnotation.mock.calls.length).toBeGreaterThan(0)
-        },
-        mock(() => {}),
-      )
-    })
-  })
-
   test("onStateChange event fires when state changes", async () => {
     const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
 
@@ -469,7 +374,7 @@ describe("AnnotationCapability", () => {
     result.current.provides?.onStateChange(stateChangeHandler)
 
     const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
-    result.current.provides?.createAnnotation(0, annotation)
+    result.current.provides?.createAnnotation(annotation)
 
     await waitFor(() => {
       expect(stateChangeHandler.mock.calls.length).toBeGreaterThan(0)
@@ -498,7 +403,7 @@ describe("AnnotationCapability", () => {
     result.current.provides?.onAnnotationEvent(eventHandler)
 
     const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
-    result.current.provides?.createAnnotation(0, annotation)
+    result.current.provides?.createAnnotation(annotation)
 
     await waitFor(() => {
       expect(eventHandler.mock.calls.length).toBeGreaterThan(0)
@@ -513,7 +418,7 @@ describe("AnnotationCapability", () => {
     const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
 
     const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
-    result.current.provides?.createAnnotation(0, annotation)
+    result.current.provides?.createAnnotation(annotation)
 
     await waitFor(() => {
       expect(result.current.provides).toBeDefined()
@@ -522,7 +427,7 @@ describe("AnnotationCapability", () => {
     const eventHandler = mock(() => {})
     result.current.provides?.onAnnotationEvent(eventHandler)
 
-    result.current.provides?.updateAnnotation(0, annotation.id, { color: "#FF0000" })
+    result.current.provides?.updateAnnotation(annotation.id, { color: "#FF0000" })
 
     await waitFor(() => {
       expect(eventHandler.mock.calls.length).toBeGreaterThan(0)
@@ -536,7 +441,7 @@ describe("AnnotationCapability", () => {
     const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
 
     const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
-    result.current.provides?.createAnnotation(0, annotation)
+    result.current.provides?.createAnnotation(annotation)
 
     await waitFor(() => {
       expect(result.current.provides).toBeDefined()
@@ -545,7 +450,7 @@ describe("AnnotationCapability", () => {
     const eventHandler = mock(() => {})
     result.current.provides?.onAnnotationEvent(eventHandler)
 
-    result.current.provides?.deleteAnnotation(0, annotation.id)
+    result.current.provides?.deleteAnnotation(annotation.id)
 
     await waitFor(() => {
       expect(eventHandler.mock.calls.length).toBeGreaterThan(0)
@@ -562,9 +467,9 @@ describe("AnnotationCapability", () => {
     const annotation2 = createMockHighlightAnnotation({ pageIndex: 1 })
     const annotation3 = createMockUnderlineAnnotation({ pageIndex: 2 })
 
-    result.current.provides?.createAnnotation(0, annotation1)
-    result.current.provides?.createAnnotation(1, annotation2)
-    result.current.provides?.createAnnotation(2, annotation3)
+    result.current.provides?.createAnnotation(annotation1)
+    result.current.provides?.createAnnotation(annotation2)
+    result.current.provides?.createAnnotation(annotation3)
 
     await waitFor(() => {
       // All annotations should be created
@@ -579,7 +484,7 @@ describe("AnnotationCapability", () => {
     result.current.provides?.onAnnotationEvent(eventHandler)
 
     const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
-    result.current.provides?.createAnnotation(0, annotation)
+    result.current.provides?.createAnnotation(annotation)
 
     await waitFor(() => {
       expect(eventHandler.mock.calls.length).toBeGreaterThan(0)
@@ -596,7 +501,7 @@ describe("AnnotationCapability", () => {
     result.current.provides?.onAnnotationEvent(eventHandler)
 
     // Try to update an annotation that doesn't exist
-    result.current.provides?.updateAnnotation(0, "non-existent-id", { color: "#FF0000" })
+    result.current.provides?.updateAnnotation("non-existent-id", { color: "#FF0000" })
 
     await waitFor(() => {
       // Should not fire any events
@@ -612,7 +517,7 @@ describe("AnnotationCapability", () => {
     result.current.provides?.onAnnotationEvent(eventHandler)
 
     // Try to delete an annotation that doesn't exist
-    result.current.provides?.deleteAnnotation(0, "non-existent-id")
+    result.current.provides?.deleteAnnotation("non-existent-id")
 
     await waitFor(() => {
       // Should not fire any events

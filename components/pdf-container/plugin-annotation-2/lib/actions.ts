@@ -27,7 +27,7 @@ export interface DeselectAnnotationAction extends Action {
 }
 export interface CreateAnnotationAction extends Action {
   type: typeof CREATE_ANNOTATION
-  payload: { pageIndex: number; annotation: PdfAnnotationObject }
+  payload: { annotation: PdfAnnotationObject }
 }
 export interface PatchAnnotationAction extends Action {
   type: typeof PATCH_ANNOTATION
@@ -35,7 +35,7 @@ export interface PatchAnnotationAction extends Action {
 }
 export interface DeleteAnnotationAction extends Action {
   type: typeof DELETE_ANNOTATION
-  payload: { pageIndex: number; id: string }
+  payload: { id: string }
 }
 export interface CommitAction extends Action {
   type: typeof COMMIT_PENDING_CHANGES
@@ -74,17 +74,17 @@ export const selectAnnotation = (pageIndex: number, id: string): SelectAnnotatio
   payload: { pageIndex, id },
 })
 export const deselectAnnotation = (): DeselectAnnotationAction => ({ type: DESELECT_ANNOTATION })
-export const createAnnotation = (
-  pageIndex: number,
-  annotation: PdfAnnotationObject,
-): CreateAnnotationAction => ({ type: CREATE_ANNOTATION, payload: { pageIndex, annotation } })
+export const createAnnotation = (annotation: PdfAnnotationObject): CreateAnnotationAction => ({
+  type: CREATE_ANNOTATION,
+  payload: { annotation },
+})
 export const patchAnnotation = (
   id: string,
   patch: Partial<PdfAnnotationObject>,
 ): PatchAnnotationAction => ({ type: PATCH_ANNOTATION, payload: { id, patch } })
-export const deleteAnnotation = (pageIndex: number, id: string): DeleteAnnotationAction => ({
+export const deleteAnnotation = (id: string): DeleteAnnotationAction => ({
   type: DELETE_ANNOTATION,
-  payload: { pageIndex, id },
+  payload: { id },
 })
 export const commitPendingChanges = (): CommitAction => ({ type: COMMIT_PENDING_CHANGES })
 export const purgeAnnotation = (uid: string): PurgeAnnotationAction => ({
@@ -131,7 +131,8 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
       return { ...state, selectedUid: null }
 
     case CREATE_ANNOTATION: {
-      const { pageIndex, annotation } = action.payload
+      const { annotation } = action.payload
+      const pageIndex = annotation.pageIndex
       const uid = annotation.id
       return {
         ...state,
@@ -142,8 +143,11 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
     }
 
     case DELETE_ANNOTATION: {
-      const { pageIndex, id: uid } = action.payload
-      if (!state.byUid[uid]) return state
+      const { id: uid } = action.payload
+      const annotation = state.byUid[uid]?.object
+      if (!annotation) return state
+
+      const pageIndex = annotation.pageIndex
 
       /* keep the object but mark it as deleted */
       return {
@@ -154,7 +158,7 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
         },
         byUid: {
           ...state.byUid,
-          [uid]: { ...state.byUid[uid], commitState: "deleted" },
+          [uid]: { ...state.byUid[uid], commitState: "deleted" } as TrackedAnnotation,
         },
         hasPendingChanges: true,
       }

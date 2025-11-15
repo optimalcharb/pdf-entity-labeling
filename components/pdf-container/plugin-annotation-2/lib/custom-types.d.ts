@@ -19,9 +19,9 @@ export type AnnotationEvent =
 
 export type CommitState = "new" | "dirty" | "deleted" | "synced" | "ignored"
 
-export interface TrackedAnnotation<T extends PdfAnnotationObject = PdfAnnotationObject> {
+export interface TrackedAnnotation<A extends PdfAnnotationObject = PdfAnnotationObject> {
   commitState: CommitState
-  object: T
+  object: A
 }
 
 export interface GetPageAnnotationsOptions {

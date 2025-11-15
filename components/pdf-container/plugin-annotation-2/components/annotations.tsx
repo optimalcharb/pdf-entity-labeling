@@ -10,7 +10,7 @@ import {
   TrackedAnnotation,
 } from "../lib"
 import { isHighlight, isSquiggly, isStrikeout, isUnderline } from "../lib/subtype-predicates"
-import { AnnotationOutline } from "./annotation-outline"
+import { AnnotationContainter } from "./annotation-container"
 import { SelectionMenu } from "./selection-menu"
 import { Highlight } from "./text-markup/highlight"
 import { Squiggly } from "./text-markup/squiggly"
@@ -83,7 +83,7 @@ export function Annotations(annotationsProps: AnnotationsProps) {
 
         if (isUnderline(annotation)) {
           return (
-            <AnnotationOutline
+            <AnnotationContainter
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
@@ -98,13 +98,13 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               {(obj) => (
                 <Underline {...obj} scale={scale} onClick={(e) => handleClick(e, annotation)} />
               )}
-            </AnnotationOutline>
+            </AnnotationContainter>
           )
         }
 
         if (isStrikeout(annotation)) {
           return (
-            <AnnotationOutline
+            <AnnotationContainter
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
@@ -119,13 +119,13 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               {(obj) => (
                 <Strikeout {...obj} scale={scale} onClick={(e) => handleClick(e, annotation)} />
               )}
-            </AnnotationOutline>
+            </AnnotationContainter>
           )
         }
 
         if (isSquiggly(annotation)) {
           return (
-            <AnnotationOutline
+            <AnnotationContainter
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
@@ -140,13 +140,13 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               {(obj) => (
                 <Squiggly {...obj} scale={scale} onClick={(e) => handleClick(e, annotation)} />
               )}
-            </AnnotationOutline>
+            </AnnotationContainter>
           )
         }
 
         if (isHighlight(annotation)) {
           return (
-            <AnnotationOutline
+            <AnnotationContainter
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
@@ -161,7 +161,7 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               {(obj) => (
                 <Highlight {...obj} scale={scale} onClick={(e) => handleClick(e, annotation)} />
               )}
-            </AnnotationOutline>
+            </AnnotationContainter>
           )
         }
 
