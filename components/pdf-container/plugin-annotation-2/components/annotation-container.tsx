@@ -4,7 +4,7 @@ import { CSSProperties, JSX, useEffect, useState } from "react"
 import { TrackedAnnotation } from "../lib"
 import { SelectionMenuProps } from "./selection-menu"
 
-interface AnnotationOutlineProps<T extends PdfAnnotationObject> {
+interface AnnotationContainterProps<T extends PdfAnnotationObject> {
   scale: number
   pageIndex: number
   rotation: number
@@ -23,7 +23,7 @@ interface AnnotationOutlineProps<T extends PdfAnnotationObject> {
   selectionOutlineOffset?: number
 }
 
-export function AnnotationOutline<T extends PdfAnnotationObject>({
+export function AnnotationContainter<T extends PdfAnnotationObject>({
   scale,
   pageIndex,
   rotation,
@@ -41,7 +41,7 @@ export function AnnotationOutline<T extends PdfAnnotationObject>({
   selectionOutlineWidth = 2,
   selectionOutlineOffset = 1,
   ...props
-}: AnnotationOutlineProps<T>): JSX.Element {
+}: AnnotationContainterProps<T>): JSX.Element {
   const [preview, setPreview] = useState<T>(trackedAnnotation.object)
   const currentObject = preview
     ? { ...trackedAnnotation.object, ...preview }
