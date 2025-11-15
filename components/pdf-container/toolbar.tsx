@@ -2,11 +2,6 @@
 
 import { useExportCapability } from "@embedpdf/plugin-export/react"
 import { useZoom } from "@embedpdf/plugin-zoom/react"
-import { useCallback, useEffect, useState } from "react"
-import { useAnnotationCapability } from "./plugin-annotation-2"
-
-// use the capability (not useHistory)
-import { useHistoryCapability } from "@embedpdf/plugin-history/react"
 import {
   Download,
   Highlighter,
@@ -17,6 +12,9 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react"
+import { useCallback, useEffect, useState } from "react"
+import { useAnnotationCapability } from "./plugin-annotation-2"
+import { useHistoryCapability } from "./plugin-history-2"
 
 export const Toolbar = () => {
   const { provides: annotationApi } = useAnnotationCapability()
