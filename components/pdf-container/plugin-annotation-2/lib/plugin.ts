@@ -66,11 +66,14 @@ export interface AnnotationCapability {
   deselectAnnotation: () => void
 
   getActiveTool: () => AnnotationTool | null
+  getActiveToolId: () => string | null
   setActiveTool: (toolId: string | null) => void
+  getToolIds: () => string[]
   getTools: () => AnnotationTool[]
   getTool: <T extends AnnotationTool>(toolId: string) => T | undefined
   // set the props for new annotations created using a tool
-  setToolDefaults: (toolId: string, patch: Partial<any>) => void
+  setToolDefaults: (toolId: string, patch: Partial<PdfAnnotationObject>) => void
+  setActiveToolDefaults: (patch: Partial<PdfAnnotationObject>) => void
 
   importAnnotations: (items: PdfAnnotationObject[]) => void
   // created by Charlie
@@ -161,7 +164,7 @@ export class AnnotationPlugin extends BasePlugin<
           } as PdfAnnotationObject)
 
           if (this.config.deactivateToolAfterCreate) {
-            this.setActiveTool(null)
+            this.activateToolId(null)
           }
           if (this.config.selectAfterCreate) {
             this.dispatch(selectAnnotation(selection.pageIndex, annotationId))
@@ -195,10 +198,14 @@ export class AnnotationPlugin extends BasePlugin<
       selectAnnotation: (pageIndex, id) => this.dispatch(selectAnnotation(pageIndex, id)),
       deselectAnnotation: () => this.dispatch(deselectAnnotation()),
       getActiveTool: () => this.getActiveTool(),
-      setActiveTool: (toolId) => this.setActiveTool(toolId),
-      getTools: () => this.state.tools,
+      getActiveToolId: () => this.state.activeToolId,
+      setActiveTool: (toolId) => this.activateToolId(toolId),
+      getToolIds: () => this.state.tools.map((tool) => tool.id),
       getTool: (toolId) => this.getTool(toolId),
+      getTools: () => this.state.tools,
       setToolDefaults: (toolId, patch) => this.dispatch(setToolDefaults(toolId, patch)),
+      setActiveToolDefaults: (patch) =>
+        this.state.activeToolId && this.dispatch(setToolDefaults(this.state.activeToolId, patch)),
       importAnnotations: (items) => this.importAnnotations(items),
       createAnnotation: (anno) => this.createAnnotation(anno),
       deleteAnnotation: (id) => this.deleteAnnotation(id),
@@ -414,12 +421,17 @@ export class AnnotationPlugin extends BasePlugin<
     this.commitWithTimeline(command)
   }
 
-  public getActiveTool(): AnnotationTool | null {
+  private getActiveTool(): AnnotationTool | null {
     if (!this.state.activeToolId) return null
     return this.state.tools.find((t) => t.id === this.state.activeToolId) ?? null
   }
 
-  public setActiveTool(toolId: string | null): void {
+  /**
+   * 1. Activates tool in InteractionManager
+   * 2. callback for InteractionManager?.onModeChange in initialize() dispatches setActiveToolId action
+   * 3. reducer changes this.state.activeToolId
+   */
+  private activateToolId(toolId: string | null): void {
     if (toolId === this.state.activeToolId) return
     const tool = this.state.tools.find((t) => t.id === toolId)
     if (tool) {
@@ -429,7 +441,7 @@ export class AnnotationPlugin extends BasePlugin<
     }
   }
 
-  public getTool<T extends AnnotationTool>(toolId: string): T | undefined {
+  private getTool<T extends AnnotationTool>(toolId: string): T | undefined {
     return this.state.tools.find((t) => t.id === toolId) as T | undefined
   }
 
@@ -522,7 +534,7 @@ export class AnnotationPlugin extends BasePlugin<
     return task
   }
 
-  exportAnnotationsToJSON() {
+  private exportAnnotationsToJSON() {
     const annotations = Object.values(this.state.byUid).map((ta: TrackedAnnotation) => ta.object)
     const exportData = {
       exportedBy: this.config.annotationAuthor,

@@ -1,6 +1,6 @@
 import type { PdfAnnotationObject } from "@embedpdf/models"
 
-export type AnnotationTool<T extends PdfAnnotationObject = PdfAnnotationObject> = {
+export type AnnotationTool = {
   id: string
   interaction: {
     mode?: string
@@ -8,5 +8,5 @@ export type AnnotationTool<T extends PdfAnnotationObject = PdfAnnotationObject> 
     cursor?: string
     textSelection?: boolean
   }
-  defaults: Partial<T>
+  defaults: Partial<PdfAnnotationObject>
 }

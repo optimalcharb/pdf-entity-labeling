@@ -50,7 +50,7 @@ export interface SetActiveToolIdAction extends Action {
 }
 export interface SetToolDefaultsAction extends Action {
   type: typeof SET_TOOL_DEFAULTS
-  payload: { toolId: string; patch: Partial<any> }
+  payload: { toolId: string; patch: Partial<PdfAnnotationObject> }
 }
 
 export type AnnotationAction =
@@ -95,7 +95,10 @@ export const setActiveToolId = (id: string | null): SetActiveToolIdAction => ({
   type: SET_ACTIVE_TOOL_ID,
   payload: id,
 })
-export const setToolDefaults = (toolId: string, patch: Partial<any>): SetToolDefaultsAction => ({
+export const setToolDefaults = (
+  toolId: string,
+  patch: Partial<PdfAnnotationObject>,
+): SetToolDefaultsAction => ({
   type: SET_TOOL_DEFAULTS,
   payload: { toolId, patch },
 })
