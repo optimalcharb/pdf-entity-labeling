@@ -16,7 +16,6 @@ import {
   Task,
   uuidV4,
 } from "@embedpdf/models"
-import { Command, HistoryCapability, HistoryPlugin } from "@embedpdf/plugin-history"
 import {
   InteractionManagerCapability,
   InteractionManagerPlugin,
@@ -35,7 +34,12 @@ import {
   setAnnotations,
   setToolDefaults,
 } from "./actions"
-import type { AnnotationEvent, GetPageAnnotationsOptions, TrackedAnnotation } from "./custom-types"
+import type {
+  AnnotationEvent,
+  Command,
+  GetPageAnnotationsOptions,
+  TrackedAnnotation,
+} from "./custom-types"
 import { getSelectedAnnotation } from "./selectors"
 import type { AnnotationState } from "./state"
 import type { AnnotationTool } from "./tools/annotation-tool"
@@ -76,6 +80,10 @@ export interface AnnotationCapability {
   deleteAnnotation: (annotationId: string) => void
   // change the props of an annotation
   updateAnnotation: (annotationId: string, patch: Partial<PdfAnnotationObject>) => void
+  undo: () => void
+  redo: () => void
+  canUndo: () => boolean
+  canRedo: () => boolean
 }
 
 // ***PLUGIN CLASS***
@@ -86,26 +94,26 @@ export class AnnotationPlugin extends BasePlugin<
   AnnotationAction
 > {
   static readonly id = "annotation" as const
-  private readonly ANNOTATION_HISTORY_TOPIC = "annotations"
 
   public readonly config: AnnotationPluginConfig
   private readonly state$ = createBehaviorEmitter<AnnotationState>()
   private readonly interactionManager: InteractionManagerCapability | null
   private readonly selection: SelectionCapability | null
-  private readonly history: HistoryCapability | null
 
   private readonly activeTool$ = createBehaviorEmitter<AnnotationTool | null>(null)
   private readonly events$ = createBehaviorEmitter<AnnotationEvent>()
 
-  private isInitialLoadComplete = false
+  private isInitialLoadComplete: boolean = false
   private importQueue: PdfAnnotationObject[] = []
+
+  private timeline: Command[] = []
+  private timelineIndex: number = -1
 
   constructor(id: string, registry: PluginRegistry, config: AnnotationPluginConfig) {
     super(id, registry)
     this.config = config
 
     this.selection = registry.getPlugin<SelectionPlugin>("selection")?.provides() ?? null
-    this.history = registry.getPlugin<HistoryPlugin>("history")?.provides() ?? null
     this.interactionManager =
       registry.getPlugin<InteractionManagerPlugin>("interaction-manager")?.provides() ?? null
 
@@ -119,12 +127,6 @@ export class AnnotationPlugin extends BasePlugin<
   async initialize(): Promise<void> {
     // Register interaction modes for all tools defined in the initial state
     this.state.tools.forEach((tool) => this.registerInteractionForTool(tool))
-
-    this.history?.onHistoryChange((topic) => {
-      if (topic === this.ANNOTATION_HISTORY_TOPIC) {
-        this.commit()
-      }
-    })
 
     this.interactionManager?.onModeChange((s) => {
       const newToolId =
@@ -202,6 +204,26 @@ export class AnnotationPlugin extends BasePlugin<
       deleteAnnotation: (id) => this.deleteAnnotation(id),
       updateAnnotation: (id, patch) => this.updateAnnotation(id, patch),
       exportAnnotationsToJSON: () => this.exportAnnotationsToJSON(),
+      undo: () => {
+        if (this.timelineIndex > -1) {
+          const command = this.timeline[this.timelineIndex]
+          command?.undo()
+          this.timelineIndex--
+        }
+      },
+      redo: () => {
+        if (this.timelineIndex < this.timeline.length - 1) {
+          this.timelineIndex++
+          const command = this.timeline[this.timelineIndex]
+          command?.execute()
+        }
+      },
+      canUndo: () => {
+        return this.timelineIndex > -1
+      },
+      canRedo: () => {
+        return this.timelineIndex < this.timeline.length - 1
+      },
     }
   }
 
@@ -278,6 +300,19 @@ export class AnnotationPlugin extends BasePlugin<
     this.commit()
   }
 
+  private commitWithTimeline(command: Command) {
+    // add to timeline
+    this.timeline.splice(this.timelineIndex + 1)
+    this.timeline.push(command)
+    this.timelineIndex++
+
+    // emit event
+    command.execute()
+
+    // process all pending events
+    this.commit()
+  }
+
   private createAnnotation(annotation: PdfAnnotationObject) {
     const id = annotation.id
     const pageIndex = annotation.pageIndex
@@ -295,11 +330,6 @@ export class AnnotationPlugin extends BasePlugin<
       })
     }
 
-    if (!this.history) {
-      execute()
-      this.commit()
-      return
-    }
     const command: Command = {
       execute,
       undo: () => {
@@ -313,7 +343,7 @@ export class AnnotationPlugin extends BasePlugin<
         })
       },
     }
-    this.history.register(command, this.ANNOTATION_HISTORY_TOPIC)
+    this.commitWithTimeline(command)
   }
 
   private deleteAnnotation(id: string) {
@@ -331,11 +361,6 @@ export class AnnotationPlugin extends BasePlugin<
       })
     }
 
-    if (!this.history) {
-      execute()
-      this.commit()
-      return
-    }
     const command: Command = {
       execute,
       undo: () => {
@@ -348,7 +373,7 @@ export class AnnotationPlugin extends BasePlugin<
         })
       },
     }
-    this.history.register(command, this.ANNOTATION_HISTORY_TOPIC)
+    this.commitWithTimeline(command)
   }
 
   private updateAnnotation(id: string, patch: Partial<PdfAnnotationObject>) {
@@ -370,11 +395,6 @@ export class AnnotationPlugin extends BasePlugin<
       })
     }
 
-    if (!this.history) {
-      execute()
-      this.commit()
-      return
-    }
     const undoPatch = Object.fromEntries(
       Object.keys(patch).map((key) => [key, originalAnnotation[key as keyof PdfAnnotationObject]]),
     )
@@ -391,7 +411,7 @@ export class AnnotationPlugin extends BasePlugin<
         })
       },
     }
-    this.history.register(command, this.ANNOTATION_HISTORY_TOPIC)
+    this.commitWithTimeline(command)
   }
 
   public getActiveTool(): AnnotationTool | null {

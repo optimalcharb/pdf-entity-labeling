@@ -3,7 +3,6 @@ import { EmbedPDF } from "@embedpdf/core/react"
 import { usePdfiumEngine } from "@embedpdf/engines/react"
 import { ConsoleLogger } from "@embedpdf/models"
 import { ExportPluginPackage } from "@embedpdf/plugin-export/react"
-// import { HistoryPluginPackage } from "@embedpdf/plugin-history/react"
 import {
   GlobalPointerProvider,
   InteractionManagerPluginPackage,
@@ -15,7 +14,6 @@ import { Scroller, ScrollPluginPackage, ScrollStrategy } from "@embedpdf/plugin-
 import { useRef } from "react"
 import { Spinner } from "../shadcn-ui/spinner"
 import { AnnotationLayer, AnnotationPluginPackage } from "./plugin-annotation-2"
-import { HistoryPluginPackage } from "./plugin-history-2"
 import { Toolbar } from "./toolbar"
 // import { SearchLayer, SearchPluginPackage } from "@embedpdf/plugin-search/react"
 import { SelectionLayer, SelectionPluginPackage } from "@embedpdf/plugin-selection/react"
@@ -79,9 +77,8 @@ export default function PDFContainer({ url }: PDFContainerProps) {
               overlapPx: 2.5,
               extraRings: 0,
             }),
-            createPluginRegistration(HistoryPluginPackage),
             createPluginRegistration(SelectionPluginPackage),
-            // register Annotation after InteractionManager, Seletion, History
+            // register Annotation after InteractionManager, Seletion
             createPluginRegistration(AnnotationPluginPackage),
             // register Export after Annotation
             createPluginRegistration(ExportPluginPackage),
