@@ -1,12 +1,12 @@
 "use client"
 
-import ActiveToolTable from "../components/active-tool-table"
+import AnnotationStoreTable from "../components/annotation-store-table"
 import PDFContainer from "../components/pdf-container/pdf-container-dynamic"
 
-export default function HomePageSynced() {
+export default function ClientSideHomePage() {
   return (
     <div className="space-y-4">
-      <ActiveToolTable />
+      <AnnotationStoreTable />
       <PDFContainer url="https://snippet.embedpdf.com/ebook.pdf" />
     </div>
   )

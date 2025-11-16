@@ -1,7 +1,7 @@
 import { PdfAnnotationObject } from "@embedpdf/models"
 import { CounterRotate, useDoublePressProps } from "@embedpdf/utils/react"
 import { CSSProperties, JSX, useEffect, useState } from "react"
-import { TrackedAnnotation } from "../lib"
+import { TrackedAnnotation } from "../lib/custom-types"
 import { SelectionMenuProps } from "./selection-menu"
 
 interface AnnotationContainterProps<T extends PdfAnnotationObject> {

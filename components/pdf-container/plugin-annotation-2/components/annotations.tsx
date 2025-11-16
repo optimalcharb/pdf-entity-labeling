@@ -4,14 +4,11 @@ import { usePointerHandlers } from "@embedpdf/plugin-interaction-manager/react"
 import { useSelectionCapability } from "@embedpdf/plugin-selection/react"
 import { MouseEvent, TouchEvent, useCallback, useEffect, useMemo, useState } from "react"
 import { useAnnotationCapability } from "../hooks"
-import {
-  getAnnotationsByPageIndex,
-  getSelectedAnnotationByPageIndex,
-  TrackedAnnotation,
-} from "../lib"
+import { getAnnotationsByPageIndex, getSelectedAnnotationByPageIndex } from "../lib"
+import type { TrackedAnnotation } from "../lib/custom-types"
 import { isHighlight, isSquiggly, isStrikeout, isUnderline } from "../lib/subtype-predicates"
 import { AnnotationContainter } from "./annotation-container"
-import { SelectionMenu } from "./selection-menu"
+import type { SelectionMenu } from "./selection-menu"
 import { Highlight } from "./text-markup/highlight"
 import { Squiggly } from "./text-markup/squiggly"
 import { Strikeout } from "./text-markup/strikeout"

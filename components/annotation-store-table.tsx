@@ -1,14 +1,7 @@
 "use client"
 
 import useAnnotationStore from "@/hooks/annotation-store/use-annotation-store"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "./shadcn-ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./shadcn-ui/table"
 
 /**
  * This component demonstrates using the synced Zustand store
@@ -17,12 +10,12 @@ import {
  * It does NOT use the annotation plugin directly, but reads from
  * the Zustand store which is synced by SyncWrapper inside PDFContainer.
  */
-export default function ActiveToolTable() {
+export default function AnnotationStoreTable() {
   const { activeToolId, selectedUid, canUndo, canRedo } = useAnnotationStore()
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold">Annotation State (via Zustand)</h2>
+      <h2 className="mb-4 text-lg font-semibold">Annotation Store</h2>
       <Table>
         <TableHeader>
           <TableRow>

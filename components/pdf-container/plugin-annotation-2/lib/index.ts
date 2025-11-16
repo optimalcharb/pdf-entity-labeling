@@ -1,5 +1,6 @@
-export type * from "./custom-types"
+export type { AnnotationEvent } from "./custom-types"
 export * from "./plugin"
 export * from "./plugin-package"
 export * from "./selectors"
 export type { AnnotationState } from "./state"
+export type { AnnotationTool } from "./tools/annotation-tool"

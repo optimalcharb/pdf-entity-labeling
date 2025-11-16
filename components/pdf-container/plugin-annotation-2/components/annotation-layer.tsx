@@ -1,6 +1,6 @@
 import { CSSProperties, HTMLAttributes } from "react"
 import { Annotations } from "./annotations"
-import { SelectionMenu } from "./selection-menu"
+import type { SelectionMenu } from "./selection-menu"
 import { TextMarkupPreview } from "./text-markup/preview"
 
 type AnnotationLayerProps = Omit<HTMLAttributes<HTMLDivElement>, "style"> & {

@@ -2,7 +2,7 @@ import { blendModeToCss, PdfAnnotationSubtype, PdfBlendMode, Rect } from "@embed
 import { useSelectionCapability } from "@embedpdf/plugin-selection/react"
 import { useEffect, useState } from "react"
 import { useAnnotationCapability } from "../../hooks"
-import { AnnotationTool } from "../../lib"
+import type { AnnotationTool } from "../../lib"
 import { Highlight } from "./highlight"
 import { Squiggly } from "./squiggly"
 import { Strikeout } from "./strikeout"
