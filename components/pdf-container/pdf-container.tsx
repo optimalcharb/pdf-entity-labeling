@@ -11,15 +11,16 @@ import {
 import { LoaderPluginPackage } from "@embedpdf/plugin-loader/react"
 import { RenderLayer, RenderPluginPackage } from "@embedpdf/plugin-render/react"
 import { Scroller, ScrollPluginPackage, ScrollStrategy } from "@embedpdf/plugin-scroll/react"
-import { useRef } from "react"
-import { Spinner } from "../shadcn-ui/spinner"
-import { AnnotationLayer, AnnotationPluginPackage } from "./plugin-annotation-2"
-import { Toolbar } from "./toolbar"
-// import { SearchLayer, SearchPluginPackage } from "@embedpdf/plugin-search/react"
+import { SearchLayer, SearchPluginPackage } from "@embedpdf/plugin-search/react"
 import { SelectionLayer, SelectionPluginPackage } from "@embedpdf/plugin-selection/react"
 import { TilingLayer, TilingPluginPackage } from "@embedpdf/plugin-tiling/react"
 import { Viewport, ViewportPluginPackage } from "@embedpdf/plugin-viewport/react"
 import { PinchWrapper, ZoomMode, ZoomPluginPackage } from "@embedpdf/plugin-zoom/react"
+import { useEffect, useRef } from "react"
+import useSyncAnnotationStore from "../../hooks/annotation-store/use-sync-annotation-store"
+import { Spinner } from "../shadcn-ui/spinner"
+import { AnnotationLayer, AnnotationPluginPackage } from "./plugin-annotation-2"
+import Toolbar from "./toolbar"
 
 const logger = new ConsoleLogger()
 
@@ -42,6 +43,11 @@ export default function PDFContainer({ url }: PDFContainerProps) {
 
   if (isLoading || !engine) {
     return <Spinner data-testid="spinner0" />
+  }
+
+  const SyncWrapper = () => {
+    useSyncAnnotationStore()
+    return null
   }
 
   return (
@@ -86,60 +92,63 @@ export default function PDFContainer({ url }: PDFContainerProps) {
             createPluginRegistration(ZoomPluginPackage, {
               defaultZoomLevel: ZoomMode.Automatic,
             }),
-            // createPluginRegistration(SearchPluginPackage),
+            createPluginRegistration(SearchPluginPackage),
           ]}
         >
-          {({ pluginsReady }) => (
-            <GlobalPointerProvider>
-              <Toolbar data-testid="annotation-toolbar" />
-              <Viewport className="h-full w-full flex-1 overflow-auto bg-gray-100 select-none">
-                {!pluginsReady && (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <Spinner data-testid="spinner1" />
-                  </div>
-                )}
-                {pluginsReady && (
-                  <PinchWrapper>
-                    <Scroller
-                      renderPage={({ pageIndex, scale, width, height }) => (
-                        <PagePointerProvider
-                          pageIndex={pageIndex}
-                          scale={scale}
-                          pageWidth={width}
-                          pageHeight={height}
-                          rotation={0}
-                        >
-                          {/* RednerLayer must go first */}
-                          <RenderLayer pageIndex={pageIndex} className="pointer-events-none" />
-                          <TilingLayer
-                            pageIndex={pageIndex}
-                            scale={scale}
-                            className="pointer-events-none"
-                          />
-                          <AnnotationLayer
+          {({ pluginsReady }) => {
+            return (
+              <GlobalPointerProvider>
+                <SyncWrapper />
+                <Toolbar data-testid="annotation-toolbar" />
+                <Viewport className="h-full w-full flex-1 overflow-auto bg-gray-100 select-none">
+                  {!pluginsReady && (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Spinner data-testid="spinner1" />
+                    </div>
+                  )}
+                  {pluginsReady && (
+                    <PinchWrapper>
+                      <Scroller
+                        renderPage={({ pageIndex, scale, width, height }) => (
+                          <PagePointerProvider
                             pageIndex={pageIndex}
                             scale={scale}
                             pageWidth={width}
                             pageHeight={height}
                             rotation={0}
-                            data-testid="annotation-layer"
-                          />
-                          {/* <SearchLayer
-                            pageIndex={pageIndex}
-                            scale={scale}
-                            highlightColor={"#FFFF00"}
-                            activeHighlightColor={"#FFFF00"}
-                          /> */}
-                          {/* SelectionLayer must go last */}
-                          <SelectionLayer pageIndex={pageIndex} scale={scale} />
-                        </PagePointerProvider>
-                      )}
-                    />
-                  </PinchWrapper>
-                )}
-              </Viewport>
-            </GlobalPointerProvider>
-          )}
+                          >
+                            {/* RednerLayer must go first */}
+                            <RenderLayer pageIndex={pageIndex} className="pointer-events-none" />
+                            <TilingLayer
+                              pageIndex={pageIndex}
+                              scale={scale}
+                              className="pointer-events-none"
+                            />
+                            <AnnotationLayer
+                              pageIndex={pageIndex}
+                              scale={scale}
+                              pageWidth={width}
+                              pageHeight={height}
+                              rotation={0}
+                              data-testid="annotation-layer"
+                            />
+                            <SearchLayer
+                              pageIndex={pageIndex}
+                              scale={scale}
+                              highlightColor={"#FFFF00"}
+                              activeHighlightColor={"#FFFF00"}
+                            />
+                            {/* SelectionLayer must go last */}
+                            <SelectionLayer pageIndex={pageIndex} scale={scale} />
+                          </PagePointerProvider>
+                        )}
+                      />
+                    </PinchWrapper>
+                  )}
+                </Viewport>
+              </GlobalPointerProvider>
+            )
+          }}
         </EmbedPDF>
       </div>
     </div>

@@ -15,7 +15,7 @@ type ToolMap = {
  */
 function createToolPredicate<K extends keyof ToolMap>(id: K) {
   // This function returns ANOTHER function, which is the actual type predicate.
-  return (tool: AnnotationTool<any> | undefined): tool is ToolMap[K] => {
+  return (tool: AnnotationTool | undefined): tool is ToolMap[K] => {
     return tool?.id === id
   }
 }

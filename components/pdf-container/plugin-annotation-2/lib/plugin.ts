@@ -22,7 +22,7 @@ import {
 } from "@embedpdf/plugin-interaction-manager"
 import { SelectionCapability, SelectionPlugin } from "@embedpdf/plugin-selection"
 import {
-  AnnotationAction,
+  type AnnotationAction,
   commitPendingChanges,
   createAnnotation,
   deleteAnnotation,
@@ -32,6 +32,7 @@ import {
   selectAnnotation,
   setActiveToolId,
   setAnnotations,
+  setCanUndoRedo,
   setToolDefaults,
 } from "./actions"
 import type {
@@ -65,7 +66,7 @@ export interface AnnotationCapability {
 
   getActiveTool: () => AnnotationTool | null
   getActiveToolId: () => string | null
-  setActiveTool: (toolId: string | null) => void
+  activateTool: (toolId: string | null) => void
   getToolIds: () => string[]
   getTools: () => AnnotationTool[]
   getTool: <T extends AnnotationTool>(toolId: string) => T | undefined
@@ -74,7 +75,7 @@ export interface AnnotationCapability {
   setActiveToolDefaults: (patch: Partial<PdfAnnotationObject>) => void
 
   importAnnotations: (items: PdfAnnotationObject[]) => void
-  // created by Charlie
+  // temp
   exportAnnotationsToJSON: () => any
 
   createAnnotation: (annotation: PdfAnnotationObject) => void
@@ -83,8 +84,6 @@ export interface AnnotationCapability {
   updateAnnotation: (annotationId: string, patch: Partial<PdfAnnotationObject>) => void
   undo: () => void
   redo: () => void
-  canUndo: () => boolean
-  canRedo: () => boolean
 }
 
 // ***PLUGIN CLASS***
@@ -196,7 +195,7 @@ export class AnnotationPlugin extends BasePlugin<
       deselectAnnotation: () => this.dispatch(deselectAnnotation()),
       getActiveTool: () => this.getActiveTool(),
       getActiveToolId: () => this.state.activeToolId,
-      setActiveTool: (toolId) => this.activateToolId(toolId),
+      activateTool: (toolId) => this.activateToolId(toolId),
       getToolIds: () => this.state.tools.map((tool) => tool.id),
       getTool: (toolId) => this.getTool(toolId),
       getTools: () => this.state.tools,
@@ -213,6 +212,7 @@ export class AnnotationPlugin extends BasePlugin<
           const command = this.timeline[this.timelineIndex]
           command?.undo()
           this.timelineIndex--
+          this.dispatch(setCanUndoRedo(this.timelineIndex, this.timeline.length))
         }
       },
       redo: () => {
@@ -220,13 +220,8 @@ export class AnnotationPlugin extends BasePlugin<
           this.timelineIndex++
           const command = this.timeline[this.timelineIndex]
           command?.execute()
+          this.dispatch(setCanUndoRedo(this.timelineIndex, this.timeline.length))
         }
-      },
-      canUndo: () => {
-        return this.timelineIndex > -1
-      },
-      canRedo: () => {
-        return this.timelineIndex < this.timeline.length - 1
       },
     }
   }
@@ -315,6 +310,9 @@ export class AnnotationPlugin extends BasePlugin<
 
     // process all pending events
     this.commit()
+
+    // change state.canUndo, state.canRedo
+    this.dispatch(setCanUndoRedo(this.timelineIndex, this.timeline.length))
   }
 
   private createAnnotation(annotation: PdfAnnotationObject) {

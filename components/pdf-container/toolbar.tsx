@@ -1,5 +1,4 @@
-"use client"
-
+import useAnnotationStore from "@/hooks/annotation-store/use-annotation-store"
 import { useExportCapability } from "@embedpdf/plugin-export/react"
 import { useZoom } from "@embedpdf/plugin-zoom/react"
 import {
@@ -12,42 +11,24 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react"
-import { useEffect, useState } from "react"
 import { useAnnotationCapability } from "./plugin-annotation-2"
 
-export const Toolbar = () => {
+const Toolbar = () => {
   const { provides: annotationApi } = useAnnotationCapability()
   const { provides: exportApi } = useExportCapability()
   const { provides: zoom } = useZoom()
 
-  const [activeTool, setActiveTool] = useState<string | null>(null)
-  const [canDelete, setCanDelete] = useState<boolean>(false)
-  const [canUndo, setCanUndo] = useState(false)
-  const [canRedo, setCanRedo] = useState(false)
-
-  useEffect(() => {
-    if (!annotationApi) return
-    const activeToolUnsub = annotationApi.onActiveToolChange((tool) =>
-      setActiveTool(tool?.id ?? null),
-    )
-    const canDeleteUnsub = annotationApi.onStateChange((state) => setCanDelete(!!state.selectedUid))
-    const canUndoUnsub = annotationApi.const
-    return () => {
-      unsub1()
-      unsub2()
-    }
-  }, [annotationApi])
+  const { activeToolId, selectedUid, canUndo, canRedo } = useAnnotationStore()
 
   const handleDelete = () => {
-    const selection = annotationApi?.getSelectedAnnotation()
-    if (selection) {
-      annotationApi?.deleteAnnotation(selection.object.id)
+    if (selectedUid) {
+      annotationApi?.deleteAnnotation(selectedUid)
     }
   }
 
   const tools = [
-    { id: "highlight", active: activeTool === "highlight", icon: Highlighter },
-    { id: "underline", active: activeTool === "underline", icon: Underline },
+    { id: "highlight", icon: Highlighter },
+    { id: "underline", icon: Underline },
   ]
 
   return (
@@ -55,9 +36,11 @@ export const Toolbar = () => {
       {tools.map((tool) => (
         <button
           key={tool.id}
-          onClick={() => annotationApi?.setActiveTool(activeTool === tool.id ? null : tool.id)}
+          onClick={() => {
+            annotationApi?.activateTool(tool.id === activeToolId ? null : tool.id)
+          }}
           className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-            tool.active ? "bg-blue-500 text-white" : "bg-gray-100 hover:bg-gray-200"
+            tool.id === activeToolId ? "bg-blue-500 text-white" : "bg-gray-100 hover:bg-gray-200"
           }`}
           title={tool.id}
         >
@@ -88,7 +71,7 @@ export const Toolbar = () => {
 
       <button
         onClick={() => annotationApi?.undo()}
-        disabled={!annotationApi?.canUndo()}
+        disabled={!canUndo}
         className="rounded-md bg-gray-100 px-3 py-1 text-sm font-medium transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
         title="Undo"
       >
@@ -96,7 +79,7 @@ export const Toolbar = () => {
       </button>
       <button
         onClick={() => annotationApi?.redo()}
-        disabled={!annotationApi?.canRedo()}
+        disabled={!canRedo}
         className="rounded-md bg-gray-100 px-3 py-1 text-sm font-medium transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
         title="Redo"
       >
@@ -122,7 +105,7 @@ export const Toolbar = () => {
       </button>
       <button
         onClick={handleDelete}
-        disabled={!canDelete}
+        disabled={!selectedUid}
         className="rounded-md bg-red-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-red-300"
         title="Delete Selected Annotation"
       >
@@ -131,3 +114,4 @@ export const Toolbar = () => {
     </div>
   )
 }
+export default Toolbar

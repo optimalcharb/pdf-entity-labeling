@@ -3,6 +3,7 @@ import type { PdfAnnotationObject } from "@embedpdf/models"
 import type { TrackedAnnotation } from "./custom-types"
 import type { AnnotationState } from "./state"
 
+// ***ACTION CONSTANTS***
 export const SET_ANNOTATIONS = "ANNOTATION/SET_ANNOTATIONS"
 export const SELECT_ANNOTATION = "ANNOTATION/SELECT_ANNOTATION"
 export const DESELECT_ANNOTATION = "ANNOTATION/DESELECT_ANNOTATION"
@@ -13,7 +14,9 @@ export const COMMIT_PENDING_CHANGES = "ANNOTATION/COMMIT"
 export const PURGE_ANNOTATION = "ANNOTATION/PURGE_ANNOTATION"
 export const SET_ACTIVE_TOOL_ID = "ANNOTATION/SET_ACTIVE_TOOL_ID"
 export const SET_TOOL_DEFAULTS = "ANNOTATION/SET_TOOL_DEFAULTS"
+export const SET_CAN_UNDO_REDO = "ANNOTATION/SET_CAN_UNDO_REDO"
 
+// ***ACTION INTERFACES***
 export interface SetAnnotationsAction extends Action {
   type: typeof SET_ANNOTATIONS
   payload: Record<number, PdfAnnotationObject[]>
@@ -52,7 +55,12 @@ export interface SetToolDefaultsAction extends Action {
   type: typeof SET_TOOL_DEFAULTS
   payload: { toolId: string; patch: Partial<PdfAnnotationObject> }
 }
+export interface SetCanUndoRedoAction extends Action {
+  type: typeof SET_CAN_UNDO_REDO
+  payload: { timelineIndex: number; timelineLength: number }
+}
 
+// ***ACTION UNION***
 export type AnnotationAction =
   | SetAnnotationsAction
   | SelectAnnotationAction
@@ -64,7 +72,9 @@ export type AnnotationAction =
   | PurgeAnnotationAction
   | SetActiveToolIdAction
   | SetToolDefaultsAction
+  | SetCanUndoRedoAction
 
+// ***ACTION CREATORS***
 export const setAnnotations = (p: Record<number, PdfAnnotationObject[]>): SetAnnotationsAction => ({
   type: SET_ANNOTATIONS,
   payload: p,
@@ -102,7 +112,15 @@ export const setToolDefaults = (
   type: SET_TOOL_DEFAULTS,
   payload: { toolId, patch },
 })
+export const setCanUndoRedo = (
+  timelineIndex: number,
+  timelineLength: number,
+): SetCanUndoRedoAction => ({
+  type: SET_CAN_UNDO_REDO,
+  payload: { timelineIndex, timelineLength },
+})
 
+// ***ACTION REDUCER***
 export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, action) => {
   switch (action.type) {
     case SET_ANNOTATIONS: {
@@ -121,7 +139,7 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
         })
         newPages[pageIndex] = newUidsOnPage
       }
-      return { ...state, pages: newPages, byUid: newByUid }
+      return { ...state, pages: newPages, byUid: newByUid, hasPendingChanges: false }
     }
 
     case SET_ACTIVE_TOOL_ID:
@@ -203,6 +221,12 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
       const { [uid]: _gone, ...rest } = state.byUid
       return { ...state, byUid: rest }
     }
+
+    case SET_CAN_UNDO_REDO:
+      const { timelineIndex, timelineLength } = action.payload
+      const canUndo = timelineIndex > -1
+      const canRedo = timelineIndex < timelineLength - 1
+      return { ...state, canUndo, canRedo }
 
     default:
       return state

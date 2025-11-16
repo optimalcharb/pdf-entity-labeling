@@ -1,10 +1,10 @@
-import { PDFContainer } from "./pdf-container-dynamic"
+import HomePageSynced from "./page-synced"
 
 export default function HomePage() {
   return (
     <main className="py-20">
       <h1>PDF Container</h1>
-      <PDFContainer url="https://snippet.embedpdf.com/ebook.pdf" />
+      <HomePageSynced />
     </main>
   )
 }
