@@ -20,20 +20,23 @@ export const Toolbar = () => {
   const { provides: exportApi } = useExportCapability()
   const { provides: zoom } = useZoom()
 
-  // for testing
   const [activeTool, setActiveTool] = useState<string | null>(null)
-  //
+  const [canDelete, setCanDelete] = useState<boolean>(false)
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
+
   useEffect(() => {
     if (!annotationApi) return
-    const unsub1 = annotationApi.onActiveToolChange((tool: any) => setActiveTool(tool?.id ?? null))
-    // const unsub2 = annotationApi.onStateChange((state: any) => setCanDelete(!!state.selectedUid))
+    const activeToolUnsub = annotationApi.onActiveToolChange((tool) =>
+      setActiveTool(tool?.id ?? null),
+    )
+    const canDeleteUnsub = annotationApi.onStateChange((state) => setCanDelete(!!state.selectedUid))
+    const canUndoUnsub = annotationApi.const
     return () => {
       unsub1()
-      // unsub2()
+      unsub2()
     }
   }, [annotationApi])
-
-  const canDelete = !!annotationApi?.getSelectedAnnotation()
 
   const handleDelete = () => {
     const selection = annotationApi?.getSelectedAnnotation()

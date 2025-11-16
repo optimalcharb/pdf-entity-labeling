@@ -40,7 +40,6 @@ import type {
   GetPageAnnotationsOptions,
   TrackedAnnotation,
 } from "./custom-types"
-import { getSelectedAnnotation } from "./selectors"
 import type { AnnotationState } from "./state"
 import type { AnnotationTool } from "./tools/annotation-tool"
 
@@ -61,7 +60,6 @@ export interface AnnotationCapability {
     options: GetPageAnnotationsOptions,
   ) => Task<PdfAnnotationObject[], PdfErrorReason>
 
-  getSelectedAnnotation: () => TrackedAnnotation | null
   selectAnnotation: (pageIndex: number, annotationId: string) => void
   deselectAnnotation: () => void
 
@@ -194,7 +192,6 @@ export class AnnotationPlugin extends BasePlugin<
       onActiveToolChange: this.activeTool$.on,
       onAnnotationEvent: this.events$.on,
       getPageAnnotations: (options) => this.getPageAnnotations(options),
-      getSelectedAnnotation: () => getSelectedAnnotation(this.state),
       selectAnnotation: (pageIndex, id) => this.dispatch(selectAnnotation(pageIndex, id)),
       deselectAnnotation: () => this.dispatch(deselectAnnotation()),
       getActiveTool: () => this.getActiveTool(),
