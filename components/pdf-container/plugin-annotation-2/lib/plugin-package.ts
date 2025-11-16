@@ -3,8 +3,10 @@ import { AnnotationAction, reducer } from "./actions"
 import { AnnotationPlugin, AnnotationPluginConfig } from "./plugin"
 import { AnnotationState, initialState } from "./state"
 
+// ***ID***
 export const ANNOTATION_PLUGIN_ID = "annotation"
 
+// ***MANIFEST***
 const manifest: PluginManifest<AnnotationPluginConfig> = {
   id: ANNOTATION_PLUGIN_ID,
   name: "Annotation Plugin",
@@ -19,6 +21,7 @@ const manifest: PluginManifest<AnnotationPluginConfig> = {
   },
 }
 
+// ***PLUGIN PACKAGE***
 export const AnnotationPluginPackage: PluginPackage<
   AnnotationPlugin,
   AnnotationPluginConfig,

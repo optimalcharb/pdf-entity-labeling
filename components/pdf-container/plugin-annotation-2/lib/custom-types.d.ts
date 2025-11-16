@@ -29,8 +29,6 @@ export interface GetPageAnnotationsOptions {
 }
 
 export interface Command {
-  /** A function that applies the change. */
   execute(): void
-  /** A function that reverts the change. */
   undo(): void
 }
