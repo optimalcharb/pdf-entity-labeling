@@ -1,6 +1,6 @@
 import useAnnotationStore from "@/hooks/annotation-store/use-annotation-store"
 import { useEffect } from "react"
-import { useAnnotationCapability } from "./plugin-annotation-2"
+import { useAnnotationCapability } from "../pdf-container/plugin-annotation-2"
 
 const AnnotationStoreSync = () => {
   const { provides: annoCapability } = useAnnotationCapability()

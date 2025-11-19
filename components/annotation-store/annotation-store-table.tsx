@@ -1,7 +1,7 @@
 "use client"
 
 import useAnnotationStore from "@/hooks/annotation-store/use-annotation-store"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./shadcn-ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../shadcn-ui/table"
 
 export default function AnnotationStoreTable() {
   const { capability, activeToolId, selectedUid, canUndo, canRedo } = useAnnotationStore()

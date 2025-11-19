@@ -1,6 +1,6 @@
 "use client"
 
-import AnnotationStoreTable from "../components/annotation-store-table"
+import AnnotationStoreTable from "../components/annotation-store/annotation-store-table"
 import PDFContainer from "../components/pdf-container/pdf-container-dynamic"
 
 export default function ClientSideHomePage() {
