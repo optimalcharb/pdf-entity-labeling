@@ -19,9 +19,10 @@ import {
 import {
   InteractionManagerCapability,
   InteractionManagerPlugin,
-} from "@embedpdf/plugin-interaction-manager"
-import { SelectionCapability, SelectionPlugin } from "@embedpdf/plugin-selection"
+} from "@embedpdf/plugin-interaction-manager/react"
+import { SelectionCapability, SelectionPlugin } from "@embedpdf/plugin-selection/react"
 import {
+  AnnotationAction,
   commitPendingChanges,
   createAnnotation,
   deleteAnnotation,
@@ -33,7 +34,6 @@ import {
   setAnnotations,
   setCanUndoRedo,
   setToolDefaults,
-  type AnnotationAction,
 } from "./actions"
 import type {
   AnnotationEvent,
