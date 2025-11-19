@@ -20,7 +20,7 @@ import {
   InteractionManagerCapability,
   InteractionManagerPlugin,
 } from "@embedpdf/plugin-interaction-manager/react"
-import { SelectionCapability, SelectionPlugin } from "@embedpdf/plugin-selection/react"
+import { SelectionCapability, SelectionPlugin } from "../../plugin-selection-2"
 import {
   AnnotationAction,
   commitPendingChanges,
