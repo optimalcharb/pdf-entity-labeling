@@ -11,14 +11,18 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react"
-import { useAnnotationCapability } from "./plugin-annotation-2"
 
 const Toolbar = () => {
-  const { provides: annotationApi } = useAnnotationCapability()
   const { provides: exportApi } = useExportCapability()
   const { provides: zoom } = useZoom()
 
-  const { activeToolId, selectedUid, canUndo, canRedo } = useAnnotationStore()
+  const {
+    capability: annotationApi,
+    activeToolId,
+    selectedUid,
+    canUndo,
+    canRedo,
+  } = useAnnotationStore()
 
   const handleDelete = () => {
     if (selectedUid) {

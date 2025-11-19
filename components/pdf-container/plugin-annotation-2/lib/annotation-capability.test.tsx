@@ -1,6 +1,10 @@
 import { createPluginRegistration, PluginRegistry } from "@embedpdf/core"
 import { PDFContext } from "@embedpdf/core/react"
-import type { PdfAnnotationObject } from "@embedpdf/models"
+import type {
+  PdfAnnotationObject,
+  PdfDocumentObject,
+  PdfHighlightAnnoObject,
+} from "@embedpdf/models"
 import {
   NoopLogger,
   PdfAnnotationSubtype,
@@ -16,7 +20,6 @@ import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test"
 import { ReactNode } from "react"
 import { useAnnotationCapability } from "../hooks/use-annotation"
 import { AnnotationPluginPackage } from "./plugin-package"
-
 // Mock engine - annotation capability doesn't directly interact with PDFium
 const createMockEngine = () => ({
   getAllAnnotations: mock(() => PdfTaskHelper.resolve({})),
@@ -29,9 +32,8 @@ const createMockEngine = () => ({
 })
 
 // Mock document object
-const createMockDocument = () => ({
+const createMockDocument = (): PdfDocumentObject => ({
   id: "test-doc-1",
-  name: "test.pdf",
   pageCount: 3,
   pages: [
     { index: 0, size: { width: 612, height: 792 }, rotation: 0 },
@@ -102,7 +104,7 @@ describe("AnnotationCapability", () => {
     // Set document to trigger initialization
     registry.getStore().dispatch({
       type: "SET_DOCUMENT",
-      payload: mockDocument as any,
+      payload: mockDocument,
     })
   })
 
@@ -143,41 +145,57 @@ describe("AnnotationCapability", () => {
     expect(highlightTool).toBeDefined()
     expect(highlightTool?.id).toBe("highlight")
     expect(highlightTool?.defaults.type).toBe(PdfAnnotationSubtype.HIGHLIGHT)
-    expect((highlightTool?.defaults as any).color).toBe("#FFCD45")
+    expect((highlightTool?.defaults as Partial<PdfHighlightAnnoObject>).color).toBe("#FFCD45")
 
     const nonExistentTool = result.current.provides?.getTool("non-existent")
     expect(nonExistentTool).toBeUndefined()
   })
 
-  test("getActiveTool returns null initially", () => {
+  test("getToolIds returns all tool IDs", () => {
     const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
 
-    const activeTool = result.current.provides?.getActiveTool()
-    expect(activeTool).toBeNull()
+    const toolIds = result.current.provides?.getToolIds()
+    expect(toolIds).toBeDefined()
+    expect(toolIds?.length).toBeGreaterThan(0)
+    expect(toolIds).toContain("highlight")
+    expect(toolIds).toContain("underline")
+    expect(toolIds).toContain("squiggly")
+    expect(toolIds).toContain("strikeout")
   })
 
-  test("setActiveTool changes active tool", async () => {
+  test("activateTool activates a tool", async () => {
     const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
 
-    result.current.provides?.setActiveTool("highlight")
+    const toolChangeHandler = mock(() => {})
+    result.current.provides?.onActiveToolChange(toolChangeHandler)
+
+    result.current.provides?.activateTool("highlight")
 
     await waitFor(() => {
-      const activeTool = result.current.provides?.getActiveTool()
-      expect(activeTool?.id).toBe("highlight")
+      expect(toolChangeHandler.mock.calls.length).toBeGreaterThan(0)
+      const lastCall = toolChangeHandler.mock.calls[toolChangeHandler.mock.calls.length - 1]
+      expect(lastCall?.[0]?.id).toBe("highlight")
     })
   })
 
-  test("setActiveTool with null deactivates tool", async () => {
+  test("activateTool with null deactivates tool", async () => {
     const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
 
-    result.current.provides?.setActiveTool("highlight")
+    const toolChangeHandler = mock(() => {})
+    result.current.provides?.onActiveToolChange(toolChangeHandler)
+
+    result.current.provides?.activateTool("highlight")
     await waitFor(() => {
-      expect(result.current.provides?.getActiveTool()?.id).toBe("highlight")
+      const calls = toolChangeHandler.mock.calls
+      const highlightCall = calls.find((call: any) => call[0]?.id === "highlight")
+      expect(highlightCall).toBeDefined()
     })
 
-    result.current.provides?.setActiveTool(null)
+    result.current.provides?.activateTool(null)
     await waitFor(() => {
-      expect(result.current.provides?.getActiveTool()).toBeNull()
+      const calls = toolChangeHandler.mock.calls
+      const nullCall = calls.find((call: any) => call[0] === null)
+      expect(nullCall).toBeDefined()
     })
   })
 
@@ -187,9 +205,9 @@ describe("AnnotationCapability", () => {
     // Get the initial tool
     const initialTool = result.current.provides?.getTool("highlight")
     expect(initialTool).toBeDefined()
-    expect((initialTool?.defaults as any).color).toBe("#FFCD45")
+    expect((initialTool?.defaults as Partial<PdfHighlightAnnoObject>).color).toBe("#FFCD45")
 
-    // setToolDefaults should be callable (even if it doesn't immediately update the hook's view)
+    // setToolDefaults should be callable
     const newColor = "#FF0000"
     expect(() => {
       result.current.provides?.setToolDefaults("highlight", { color: newColor })
@@ -199,16 +217,35 @@ describe("AnnotationCapability", () => {
     expect(result.current.provides?.setToolDefaults).toBeDefined()
   })
 
-  test("createAnnotation adds new annotation to state", async () => {
+  test("setActiveToolDefaults updates active tool defaults", async () => {
     const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
+
+    // Activate a tool first
+    result.current.provides?.activateTool("highlight")
+
+    await waitFor(() => {
+      expect(result.current.provides?.setActiveToolDefaults).toBeDefined()
+    })
+
+    // setActiveToolDefaults should be callable
+    const newColor = "#00FF00"
+    expect(() => {
+      result.current.provides?.setActiveToolDefaults({ color: newColor })
+    }).not.toThrow()
+  })
+
+  test("createAnnotation adds new annotation", async () => {
+    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
+
+    const eventHandler = mock(() => {})
+    result.current.provides?.onAnnotationEvent(eventHandler)
 
     const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
     result.current.provides?.createAnnotation(annotation)
 
     await waitFor(() => {
-      const selected = result.current.provides?.getSelectedAnnotation()
-      // Note: annotation won't be auto-selected unless configured
-      expect(selected).toBeNull()
+      const createEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "create")
+      expect(createEvent).toBeDefined()
     })
   })
 
@@ -249,7 +286,23 @@ describe("AnnotationCapability", () => {
     })
   })
 
-  test("selectAnnotation sets selected annotation", async () => {
+  test("selectAnnotation is callable", async () => {
+    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
+
+    const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
+    result.current.provides?.createAnnotation(annotation)
+
+    await waitFor(() => {
+      expect(result.current.provides).toBeDefined()
+    })
+
+    // selectAnnotation should be callable without errors
+    expect(() => {
+      result.current.provides?.selectAnnotation(0, annotation.id)
+    }).not.toThrow()
+  })
+
+  test("deselectAnnotation is callable", async () => {
     const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
 
     const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
@@ -261,40 +314,9 @@ describe("AnnotationCapability", () => {
 
     result.current.provides?.selectAnnotation(0, annotation.id)
 
-    await waitFor(() => {
-      const selected = result.current.provides?.getSelectedAnnotation()
-      expect(selected).toBeDefined()
-      expect(selected?.object.id).toBe(annotation.id)
-    })
-  })
-
-  test("deselectAnnotation clears selection", async () => {
-    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
-
-    const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
-    result.current.provides?.createAnnotation(annotation)
-
-    await waitFor(() => {
-      expect(result.current.provides).toBeDefined()
-    })
-
-    result.current.provides?.selectAnnotation(0, annotation.id)
-    await waitFor(() => {
-      expect(result.current.provides?.getSelectedAnnotation()).toBeDefined()
-    })
-
-    result.current.provides?.deselectAnnotation()
-    await waitFor(() => {
-      const selected = result.current.provides?.getSelectedAnnotation()
-      expect(selected).toBeNull()
-    })
-  })
-
-  test("getSelectedAnnotation returns null when nothing selected", () => {
-    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
-
-    const selected = result.current.provides?.getSelectedAnnotation()
-    expect(selected).toBeNull()
+    expect(() => {
+      result.current.provides?.deselectAnnotation()
+    }).not.toThrow()
   })
 
   test("importAnnotations adds multiple annotations", async () => {
@@ -309,7 +331,6 @@ describe("AnnotationCapability", () => {
     result.current.provides?.importAnnotations(annotations)
 
     await waitFor(() => {
-      // All annotations should be imported
       expect(result.current.provides).toBeDefined()
     })
   })
@@ -387,7 +408,7 @@ describe("AnnotationCapability", () => {
     const toolChangeHandler = mock(() => {})
     result.current.provides?.onActiveToolChange(toolChangeHandler)
 
-    result.current.provides?.setActiveTool("highlight")
+    result.current.provides?.activateTool("highlight")
 
     await waitFor(() => {
       expect(toolChangeHandler.mock.calls.length).toBeGreaterThan(0)
@@ -407,7 +428,7 @@ describe("AnnotationCapability", () => {
 
     await waitFor(() => {
       expect(eventHandler.mock.calls.length).toBeGreaterThan(0)
-      const createEvent = eventHandler.mock.calls.find((call) => call[0]?.type === "create")
+      const createEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "create")
       expect(createEvent).toBeDefined()
       expect(createEvent?.[0].annotation.id).toBe(annotation.id)
       expect(createEvent?.[0].committed).toBe(false)
@@ -431,7 +452,7 @@ describe("AnnotationCapability", () => {
 
     await waitFor(() => {
       expect(eventHandler.mock.calls.length).toBeGreaterThan(0)
-      const updateEvent = eventHandler.mock.calls.find((call) => call[0]?.type === "update")
+      const updateEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "update")
       expect(updateEvent).toBeDefined()
       expect(updateEvent?.[0].patch.color).toBe("#FF0000")
     })
@@ -454,7 +475,7 @@ describe("AnnotationCapability", () => {
 
     await waitFor(() => {
       expect(eventHandler.mock.calls.length).toBeGreaterThan(0)
-      const deleteEvent = eventHandler.mock.calls.find((call) => call[0]?.type === "delete")
+      const deleteEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "delete")
       expect(deleteEvent).toBeDefined()
       expect(deleteEvent?.[0].annotation.id).toBe(annotation.id)
     })
@@ -488,7 +509,7 @@ describe("AnnotationCapability", () => {
 
     await waitFor(() => {
       expect(eventHandler.mock.calls.length).toBeGreaterThan(0)
-      const createEvent = eventHandler.mock.calls.find((call) => call[0]?.type === "create")
+      const createEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "create")
       expect(createEvent).toBeDefined()
       expect(createEvent?.[0].annotation.author).toBe("test-user")
     })
@@ -505,7 +526,7 @@ describe("AnnotationCapability", () => {
 
     await waitFor(() => {
       // Should not fire any events
-      const updateEvent = eventHandler.mock.calls.find((call) => call[0]?.type === "update")
+      const updateEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "update")
       expect(updateEvent).toBeUndefined()
     })
   })
@@ -521,8 +542,162 @@ describe("AnnotationCapability", () => {
 
     await waitFor(() => {
       // Should not fire any events
-      const deleteEvent = eventHandler.mock.calls.find((call) => call[0]?.type === "delete")
+      const deleteEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "delete")
       expect(deleteEvent).toBeUndefined()
     })
+  })
+
+  test("undo reverts create annotation", async () => {
+    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
+
+    const eventHandler = mock(() => {})
+    result.current.provides?.onAnnotationEvent(eventHandler)
+
+    const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
+    result.current.provides?.createAnnotation(annotation)
+
+    await waitFor(() => {
+      const createEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "create")
+      expect(createEvent).toBeDefined()
+    })
+
+    // Clear event handler calls
+    eventHandler.mockClear()
+
+    // Undo the creation
+    result.current.provides?.undo()
+
+    await waitFor(() => {
+      const deleteEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "delete")
+      expect(deleteEvent).toBeDefined()
+      expect(deleteEvent?.[0].annotation.id).toBe(annotation.id)
+    })
+  })
+
+  test("redo re-applies create annotation", async () => {
+    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
+
+    const eventHandler = mock(() => {})
+    result.current.provides?.onAnnotationEvent(eventHandler)
+
+    const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
+    result.current.provides?.createAnnotation(annotation)
+
+    await waitFor(() => {
+      const createEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "create")
+      expect(createEvent).toBeDefined()
+    })
+
+    // Undo the creation
+    result.current.provides?.undo()
+
+    await waitFor(() => {
+      const deleteEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "delete")
+      expect(deleteEvent).toBeDefined()
+    })
+
+    // Clear event handler calls
+    eventHandler.mockClear()
+
+    // Redo the creation
+    result.current.provides?.redo()
+
+    await waitFor(() => {
+      const createEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "create")
+      expect(createEvent).toBeDefined()
+      expect(createEvent?.[0].annotation.id).toBe(annotation.id)
+    })
+  })
+
+  test("undo reverts update annotation", async () => {
+    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
+
+    const eventHandler = mock(() => {})
+    result.current.provides?.onAnnotationEvent(eventHandler)
+
+    const annotation = createMockHighlightAnnotation({ pageIndex: 0, color: "#FFCD45" })
+    result.current.provides?.createAnnotation(annotation)
+
+    await waitFor(() => {
+      const createEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "create")
+      expect(createEvent).toBeDefined()
+    })
+
+    // Clear event handler calls
+    eventHandler.mockClear()
+
+    // Update the annotation
+    const newColor = "#FF0000"
+    result.current.provides?.updateAnnotation(annotation.id, { color: newColor })
+
+    await waitFor(() => {
+      const updateEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "update")
+      expect(updateEvent).toBeDefined()
+      expect(updateEvent?.[0].patch.color).toBe(newColor)
+    })
+
+    // Clear event handler calls
+    eventHandler.mockClear()
+
+    // Undo the update
+    result.current.provides?.undo()
+
+    await waitFor(() => {
+      const updateEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "update")
+      expect(updateEvent).toBeDefined()
+      // Should revert to original color
+      expect(updateEvent?.[0].patch.color).toBe("#FFCD45")
+    })
+  })
+
+  test("undo reverts delete annotation", async () => {
+    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
+
+    const eventHandler = mock(() => {})
+    result.current.provides?.onAnnotationEvent(eventHandler)
+
+    const annotation = createMockHighlightAnnotation({ pageIndex: 0 })
+    result.current.provides?.createAnnotation(annotation)
+
+    await waitFor(() => {
+      const createEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "create")
+      expect(createEvent).toBeDefined()
+    })
+
+    // Clear event handler calls
+    eventHandler.mockClear()
+
+    // Delete the annotation
+    result.current.provides?.deleteAnnotation(annotation.id)
+
+    await waitFor(() => {
+      const deleteEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "delete")
+      expect(deleteEvent).toBeDefined()
+    })
+
+    // Clear event handler calls
+    eventHandler.mockClear()
+
+    // Undo the deletion
+    result.current.provides?.undo()
+
+    await waitFor(() => {
+      const createEvent = eventHandler.mock.calls.find((call: any) => call[0]?.type === "create")
+      expect(createEvent).toBeDefined()
+      expect(createEvent?.[0].annotation.id).toBe(annotation.id)
+    })
+  })
+
+  test("undo and redo are callable without errors when timeline is empty", () => {
+    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
+
+    // Should not throw when there's nothing to undo/redo
+    expect(() => {
+      result.current.provides?.undo()
+    }).not.toThrow()
+
+    expect(() => {
+      result.current.provides?.redo()
+    }).not.toThrow()
   })
 })

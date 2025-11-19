@@ -22,7 +22,6 @@ import {
 } from "@embedpdf/plugin-interaction-manager"
 import { SelectionCapability, SelectionPlugin } from "@embedpdf/plugin-selection"
 import {
-  type AnnotationAction,
   commitPendingChanges,
   createAnnotation,
   deleteAnnotation,
@@ -34,6 +33,7 @@ import {
   setAnnotations,
   setCanUndoRedo,
   setToolDefaults,
+  type AnnotationAction,
 } from "./actions"
 import type {
   AnnotationEvent,
@@ -64,8 +64,6 @@ export interface AnnotationCapability {
   selectAnnotation: (pageIndex: number, annotationId: string) => void
   deselectAnnotation: () => void
 
-  getActiveTool: () => AnnotationTool | null
-  getActiveToolId: () => string | null
   activateTool: (toolId: string | null) => void
   getToolIds: () => string[]
   getTools: () => AnnotationTool[]
@@ -76,7 +74,7 @@ export interface AnnotationCapability {
 
   importAnnotations: (items: PdfAnnotationObject[]) => void
   // temp
-  exportAnnotationsToJSON: () => any
+  exportAnnotationsToJSON: () => void
 
   createAnnotation: (annotation: PdfAnnotationObject) => void
   deleteAnnotation: (annotationId: string) => void
@@ -193,8 +191,6 @@ export class AnnotationPlugin extends BasePlugin<
       getPageAnnotations: (options) => this.getPageAnnotations(options),
       selectAnnotation: (pageIndex, id) => this.dispatch(selectAnnotation(pageIndex, id)),
       deselectAnnotation: () => this.dispatch(deselectAnnotation()),
-      getActiveTool: () => this.getActiveTool(),
-      getActiveToolId: () => this.state.activeToolId,
       activateTool: (toolId) => this.activateToolId(toolId),
       getToolIds: () => this.state.tools.map((tool) => tool.id),
       getTool: (toolId) => this.getTool(toolId),
@@ -293,7 +289,6 @@ export class AnnotationPlugin extends BasePlugin<
 
   private processImportItems(items: PdfAnnotationObject[]) {
     for (const annotation of items) {
-      const pageIndex = annotation.pageIndex
       this.dispatch(createAnnotation(annotation))
     }
     this.commit()
@@ -449,8 +444,8 @@ export class AnnotationPlugin extends BasePlugin<
     if (!doc)
       return PdfTaskHelper.reject({ code: PdfErrorCode.NotFound, message: "Document not found" })
 
-    const creations: Task<any, PdfErrorReason>[] = []
-    const updates: Task<any, PdfErrorReason>[] = []
+    const creations: Task<string, PdfErrorReason>[] = []
+    const updates: Task<boolean, PdfErrorReason>[] = []
     const deletions: { ta: TrackedAnnotation; uid: string }[] = []
 
     // 1. Group all pending changes by operation type
@@ -493,12 +488,12 @@ export class AnnotationPlugin extends BasePlugin<
     }
 
     // 2. Create deletion tasks
-    const deletionTasks: Task<any, PdfErrorReason>[] = []
+    const deletionTasks: Task<boolean, PdfErrorReason>[] = []
     for (const { ta, uid } of deletions) {
       const page = doc.pages.find((p) => p.index === ta.object.pageIndex)!
       // Only delete if it was previously synced (i.e., exists in the PDF)
       if (ta.commitState === "deleted" && ta.object.id) {
-        const task = new Task<any, PdfErrorReason>()
+        const task = new Task<boolean, PdfErrorReason>()
         const removeTask = this.engine.removePageAnnotation!(doc, page, ta.object)
         removeTask.wait(() => {
           this.dispatch(purgeAnnotation(uid))
@@ -550,6 +545,5 @@ export class AnnotationPlugin extends BasePlugin<
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    return exportData
   }
 }

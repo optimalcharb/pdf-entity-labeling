@@ -1,22 +1,17 @@
-import { useAnnotationCapability } from "@/components/pdf-container/plugin-annotation-2"
+import useAnnotationStore from "@/hooks/annotation-store/use-annotation-store"
 import { useEffect } from "react"
-import useAnnotationStore from "./use-annotation-store"
+import { useAnnotationCapability } from "./plugin-annotation-2"
 
-const useSyncAnnotationStore = () => {
+const AnnotationStoreSync = () => {
   const { provides: annoCapability } = useAnnotationCapability()
+
   useEffect(() => {
     if (!annoCapability) return
-
-    // debug
-    // console.log("Using Sync Annotation Store")
 
     const store = useAnnotationStore.getState()
 
     // initialize
-    // store.setActiveToolId(annoCapability.getActiveToolId())
-    // store.setSelectedUid(annoCapability.getSelectedUid())
-    // store.setSelectedUid(annoCapability.getCanUndo())
-    // store.setSelectedUid(annoCapability.getCanRedo())
+    store.setCapability(annoCapability)
     store.setActiveToolId(null)
     store.setSelectedUid(null)
     store.setCanUndo(false)
@@ -36,9 +31,11 @@ const useSyncAnnotationStore = () => {
     return () => {
       syncTool()
       syncState()
+      store.setCapability(null)
     }
   }, [annoCapability])
 
   return null
 }
-export default useSyncAnnotationStore
+
+export default AnnotationStoreSync

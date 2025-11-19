@@ -3,15 +3,8 @@
 import useAnnotationStore from "@/hooks/annotation-store/use-annotation-store"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./shadcn-ui/table"
 
-/**
- * This component demonstrates using the synced Zustand store
- * from OUTSIDE the EmbedPDF component tree.
- *
- * It does NOT use the annotation plugin directly, but reads from
- * the Zustand store which is synced by SyncWrapper inside PDFContainer.
- */
 export default function AnnotationStoreTable() {
-  const { activeToolId, selectedUid, canUndo, canRedo } = useAnnotationStore()
+  const { capability, activeToolId, selectedUid, canUndo, canRedo } = useAnnotationStore()
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
@@ -24,6 +17,18 @@ export default function AnnotationStoreTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
+          <TableRow>
+            <TableCell className="font-medium">Capability Active</TableCell>
+            <TableCell>
+              <span
+                className={`rounded px-2 py-1 font-mono text-sm ${
+                  capability ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                }`}
+              >
+                {capability ? "Yes" : "No"}
+              </span>
+            </TableCell>
+          </TableRow>
           <TableRow>
             <TableCell className="font-medium">Active Tool ID</TableCell>
             <TableCell>
@@ -66,6 +71,16 @@ export default function AnnotationStoreTable() {
           </TableRow>
         </TableBody>
       </Table>
+
+      <div className="mt-4">
+        <button
+          onClick={() => capability?.deselectAnnotation()}
+          disabled={!capability}
+          className="rounded bg-gray-100 px-3 py-1 text-sm font-medium hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Test: Deselect All
+        </button>
+      </div>
     </div>
   )
 }

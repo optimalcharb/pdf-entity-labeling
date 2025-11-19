@@ -16,9 +16,9 @@ import { SelectionLayer, SelectionPluginPackage } from "@embedpdf/plugin-selecti
 import { TilingLayer, TilingPluginPackage } from "@embedpdf/plugin-tiling/react"
 import { Viewport, ViewportPluginPackage } from "@embedpdf/plugin-viewport/react"
 import { PinchWrapper, ZoomMode, ZoomPluginPackage } from "@embedpdf/plugin-zoom/react"
-import { useEffect, useRef } from "react"
-import useSyncAnnotationStore from "../../hooks/annotation-store/use-sync-annotation-store"
+import { useRef } from "react"
 import { Spinner } from "../shadcn-ui/spinner"
+import AnnotationStoreSync from "./annotation-store-sync"
 import { AnnotationLayer, AnnotationPluginPackage } from "./plugin-annotation-2"
 import Toolbar from "./toolbar"
 
@@ -43,11 +43,6 @@ export default function PDFContainer({ url }: PDFContainerProps) {
 
   if (isLoading || !engine) {
     return <Spinner data-testid="spinner0" />
-  }
-
-  const SyncWrapper = () => {
-    useSyncAnnotationStore()
-    return null
   }
 
   return (
@@ -98,7 +93,7 @@ export default function PDFContainer({ url }: PDFContainerProps) {
           {({ pluginsReady }) => {
             return (
               <GlobalPointerProvider>
-                <SyncWrapper />
+                <AnnotationStoreSync />
                 <Toolbar data-testid="annotation-toolbar" />
                 <Viewport className="h-full w-full flex-1 overflow-auto bg-gray-100 select-none">
                   {!pluginsReady && (
