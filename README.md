@@ -4,11 +4,13 @@
 
 ### Core functionality
 
-In-browser PDF labeling to enable NER (named entity recognition) model training. The page will display a PDF on the left and a two-column table of entities on the right. The list of entity types are defined by the user on a previous page (so for now, assume the entity type list is hardcoded). The values for the entities are dynamically filled based on what the user highlights. The user can choose the color and whether highlight/underline/squiggly for each entity type.
+In-browser PDF labeling to enable NER (named entity recognition) model training. The page will display a PDF on the left and a two-column table of entities on the right. The list of entity types are defined by the user on a previous page (so for now, assume the entity type list is hardcoded). The values for the entities are dynamically filled based on what the user highlights. The user can choose the color and whether highlight/underline/squiggly for each entity type in the table, as well as delete annotations from the table and use search capability by typing in the table boxes.
 
 ### Enhancements
 
-In the previous page or settings sidebar, the user can decide whether each entity type is required (each PDF must have that entity), unique (each PDF has at most one of that entity), and single-word (whether the entity value can have spaces). Later, I also want an option for highlighting to only select full words. I want undo and redo buttons using plugin-history, a search button and input field using plugin-search, zoom-in and zoom-out buttons using plugin-zoom, and an export button using plugin-export. The current "export annotations to json" and "delete annotation" buttons are temporary for testing. A key upcoming enhancement is better storage import/export of annotations so that they can be easily passed to the table and later preloaded with annotations from a previous session.
+- Page 1: the user can decide whether each entity type is required (each PDF must have that entity), unique (each PDF has at most one of that entity), and single-word (whether the entity value can have spaces).
+- highlighting to only select full words
+- a search button and input field using plugin-search
 
 ## Quickstart
 
@@ -61,44 +63,44 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 
 ### Scripts
 
-| Script | Description |
-|--------|-------------|
-| dev | run site locally |
-| build | build for prod |
-| start | start prod server |
-| tsc | compile types without generating files |
-| lint | check for linting errors |
-| lint:fix | fix some linting errors automatically |
-| prettier | check format |
+| Script       | Description                                                |
+| ------------ | ---------------------------------------------------------- |
+| dev          | run site locally                                           |
+| build        | build for prod                                             |
+| start        | start prod server                                          |
+| tsc          | compile types without generating files                     |
+| lint         | check for linting errors                                   |
+| lint:fix     | fix some linting errors automatically                      |
+| prettier     | check format                                               |
 | prettier:fix | fix format (.vscode/settings.json does this on every save) |
-| prepare | automatically called by install |
-| postinstall | automatically called by install |
-| depcheck | check for unused dependencies |
-| storybook | view storybook workshop |
-| test | run tests using Bun Test Runner |
-| e2e | run playwright end-to-end tests |
-| madge | to be added to package.json to run madge |
-| others | other scripts can be added to package.json |
+| prepare      | automatically called by install                            |
+| postinstall  | automatically called by install                            |
+| depcheck     | check for unused dependencies                              |
+| storybook    | view storybook workshop                                    |
+| test         | run tests using Bun Test Runner                            |
+| e2e          | run playwright end-to-end tests                            |
+| madge        | to be added to package.json to run madge                   |
+| others       | other scripts can be added to package.json                 |
 
 ### Version Control
 
 - DevOps CI/CD: [GitHub Actions](https://github.com/features/actions) with workflows for check and bundle analyzer - currently disabled
 - Changelog generation: [Semantic Release](https://github.com/semantic-release/semantic-release) config by .releaserc and ran by .github/workflows/semantic-release.yml, [Conventional Commits](https://www.conventionalcommits.org/) enforced by [husky](https://github.com/typicode/husky) config by .commitlintrc.json, commit messages must start with a prefix in the table below, the workflow edits CHANGELOG.md on any version bump
 
-| commit prefix | version bump | definition |
-|---------------|--------------|------------|
-| type!: | major (0.0.0 -> 1.0.0) | breaking changes (`feat!:`, `perf!:`, ...) |
-| feat: | minor (0.0.0 -> 0.1.0) | new feature |
-| perf: | patch (0.0.0 -> 0.0.1) | performance improvement |
-| fix: | patch (0.0.0 -> 0.0.1) | bug fix |
-| docs: | none | documentation changes |
-| test: | none | adding or updating tests |
-| ci: | none | CI/CD configuration changes |
-| revert: | none | reverting previous commits |
-| style: | none | formatting without code changes |
-| refactor: | none | reorganizing code without changes |
-| chore: | none | maintenance tasks |
-| build: | none | build system or dependencies |
+| commit prefix | version bump           | definition                                 |
+| ------------- | ---------------------- | ------------------------------------------ |
+| type!:        | major (0.0.0 -> 1.0.0) | breaking changes (`feat!:`, `perf!:`, ...) |
+| feat:         | minor (0.0.0 -> 0.1.0) | new feature                                |
+| perf:         | patch (0.0.0 -> 0.0.1) | performance improvement                    |
+| fix:          | patch (0.0.0 -> 0.0.1) | bug fix                                    |
+| docs:         | none                   | documentation changes                      |
+| test:         | none                   | adding or updating tests                   |
+| ci:           | none                   | CI/CD configuration changes                |
+| revert:       | none                   | reverting previous commits                 |
+| style:        | none                   | formatting without code changes            |
+| refactor:     | none                   | reorganizing code without changes          |
+| chore:        | none                   | maintenance tasks                          |
+| build:        | none                   | build system or dependencies               |
 
 ### Dependency Control
 
@@ -112,7 +114,7 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 
 - State management: currently React only
 - Component workshop: [Storybook](https://storybook.js.org/) using .stories.tsx files
-- Component dependency grapher: [Madge](https://github.com/pahen/madge) - not yet setup, can fix later, here is my draft cmd: npx madge --extensions=js,jsx,ts,tsx ./ --exclude ".*\.config\.(ts|js|mjs)|.next/|.storybook/|node_modules/|storybook-static/|reset\.d\.ts|next-env\.d\.ts" --image graph.svg (need to install gvpr graphviz)
+- Component dependency grapher: [Madge](https://github.com/pahen/madge) - not yet setup, can fix later, here is my draft cmd: npx madge --extensions=js,jsx,ts,tsx ./ --exclude ".\*\.config\.(ts|js|mjs)|.next/|.storybook/|node_modules/|storybook-static/|reset\.d\.ts|next-env\.d\.ts" --image graph.svg (need to install gvpr graphviz)
 
 ## Features
 
