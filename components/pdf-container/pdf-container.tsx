@@ -10,16 +10,17 @@ import {
 } from "@embedpdf/plugin-interaction-manager/react"
 import { LoaderPluginPackage } from "@embedpdf/plugin-loader/react"
 import { RenderLayer, RenderPluginPackage } from "@embedpdf/plugin-render/react"
-import { Scroller, ScrollPluginPackage, ScrollStrategy } from "@embedpdf/plugin-scroll/react"
+import { ScrollPluginPackage, ScrollStrategy, Scroller } from "@embedpdf/plugin-scroll/react"
 import { SearchLayer, SearchPluginPackage } from "@embedpdf/plugin-search/react"
-import { SelectionLayer, SelectionPluginPackage } from "./plugin-selection-2"
+import { ThumbnailPluginPackage } from "@embedpdf/plugin-thumbnail/react"
 import { TilingLayer, TilingPluginPackage } from "@embedpdf/plugin-tiling/react"
 import { Viewport, ViewportPluginPackage } from "@embedpdf/plugin-viewport/react"
 import { PinchWrapper, ZoomMode, ZoomPluginPackage } from "@embedpdf/plugin-zoom/react"
 import { useRef } from "react"
-import AnnotationStoreSync from "../annotation-store/annotation-store-sync"
+import PluginStoreSync from "../plugin-store/components/plugin-store-sync"
 import { Spinner } from "../shadcn-ui/spinner"
 import { AnnotationLayer, AnnotationPluginPackage } from "./plugin-annotation-2"
+import { SelectionLayer, SelectionPluginPackage } from "./plugin-selection-2"
 import Toolbar from "./toolbar"
 
 const logger = new ConsoleLogger()
@@ -78,6 +79,8 @@ export default function PDFContainer({ url }: PDFContainerProps) {
               overlapPx: 2.5,
               extraRings: 0,
             }),
+            // register Thumbnail after Scroll, Render
+            createPluginRegistration(ThumbnailPluginPackage, { width: 100 }),
             createPluginRegistration(SelectionPluginPackage),
             // register Annotation after InteractionManager, Seletion
             createPluginRegistration(AnnotationPluginPackage),
@@ -87,15 +90,16 @@ export default function PDFContainer({ url }: PDFContainerProps) {
             createPluginRegistration(ZoomPluginPackage, {
               defaultZoomLevel: ZoomMode.Automatic,
             }),
+            // register Search after Scroll, Selection
             createPluginRegistration(SearchPluginPackage),
           ]}
         >
           {({ pluginsReady }) => {
             return (
               <GlobalPointerProvider>
-                <AnnotationStoreSync />
+                <PluginStoreSync />
                 <Toolbar data-testid="annotation-toolbar" />
-                <Viewport className="h-full w-full flex-1 overflow-auto bg-gray-100 select-none">
+                <Viewport className="h-full w-full flex-1 overflow-hidden bg-gray-100 select-none">
                   {!pluginsReady && (
                     <div className="flex h-full w-full items-center justify-center">
                       <Spinner data-testid="spinner1" />

@@ -1,12 +1,12 @@
 "use client"
 
-import AnnotationStoreTable from "../components/annotation-store/annotation-store-table"
 import PDFContainer from "../components/pdf-container/pdf-container-dynamic"
+import PluginStoreTable from "../components/plugin-store/components/plugin-store-table"
 
 export default function ClientSideHomePage() {
   return (
     <div className="space-y-4">
-      <AnnotationStoreTable />
+      <PluginStoreTable />
       <PDFContainer url="https://snippet.embedpdf.com/ebook.pdf" />
     </div>
   )
