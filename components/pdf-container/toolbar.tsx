@@ -4,6 +4,7 @@ import { useZoom } from "@embedpdf/plugin-zoom/react"
 import {
   Download,
   Highlighter,
+  Images,
   Redo2,
   Trash2,
   Underline,
@@ -11,10 +12,16 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react"
+import { useSidebar } from "@/components/shadcn-ui/sidebar"
 
-const Toolbar = () => {
+interface ToolbarProps {
+  "data-testid"?: string
+}
+
+const Toolbar = ({ "data-testid": dataTestId }: ToolbarProps) => {
   const { provides: exportApi } = useExportCapability()
   const { provides: zoom } = useZoom()
+  const { toggleSidebar } = useSidebar()
 
   const {
     capability: annotationApi,
@@ -36,7 +43,10 @@ const Toolbar = () => {
   ]
 
   return (
-    <div className="mt-4 mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+    <div
+      className="mt-4 mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-gray-200 bg-white p-2 shadow-sm"
+      data-testid={dataTestId}
+    >
       {tools.map((tool) => (
         <button
           key={tool.id}
@@ -51,6 +61,16 @@ const Toolbar = () => {
           <tool.icon size={18} />
         </button>
       ))}
+
+      <div className="h-6 w-px bg-gray-200" />
+
+      <button
+        onClick={() => toggleSidebar()}
+        className="rounded-md bg-gray-100 px-3 py-1 text-sm font-medium transition-colors hover:bg-gray-200"
+        title="Toggle Thumbnails Sidebar"
+      >
+        <Images size={18} />
+      </button>
 
       <div className="h-6 w-px bg-gray-200" />
 
