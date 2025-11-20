@@ -1,3 +1,3 @@
 export * from "./components"
-export * from "./hooks"
+export { useAnnotationCapability } from "./hooks"
 export * from "./lib"
