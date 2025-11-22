@@ -15,7 +15,7 @@ interface AnnotationContainterProps<T extends PdfAnnotationObject> {
   isSelected: boolean
   style?: CSSProperties
   selectionMenu?: (props: SelectionMenuProps) => JSX.Element
-  onDoubleClick?: (event: any) => void // previously used MouseEvent type from preact, need to import proper mouse event type
+  onDoubleClick?: (event: React.MouseEvent) => void
   zIndex?: number
   selectionOutlineColor?: string
   selectionOutlineWidth?: number
@@ -25,9 +25,10 @@ interface AnnotationContainterProps<T extends PdfAnnotationObject> {
 export function AnnotationContainter<T extends PdfAnnotationObject>({
   scale,
   rotation,
-  pageIndex,
-  pageWidth,
-  pageHeight,
+  // necessary props from Annotations, but not used explicitly in the code
+  pageIndex: _pageIndex,
+  pageWidth: _pageWidth,
+  pageHeight: _pageHeight,
   trackedAnnotation,
   children,
   isSelected,
