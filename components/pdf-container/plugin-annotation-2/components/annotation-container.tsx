@@ -6,17 +6,13 @@ import { SelectionMenuProps } from "./selection-menu"
 
 interface AnnotationContainterProps<T extends PdfAnnotationObject> {
   scale: number
-  pageIndex: number
   rotation: number
-  pageWidth: number
-  pageHeight: number
   trackedAnnotation: TrackedAnnotation<T>
   children: JSX.Element | ((annotation: T) => JSX.Element)
   isSelected: boolean
   style?: CSSProperties
   selectionMenu?: (props: SelectionMenuProps) => JSX.Element
-  onDoubleClick?: (event: any) => void // You'll need to import proper MouseEvent type
-  onSelect: (event: any) => void
+  onDoubleClick?: (event: any) => void // previously used MouseEvent type from preact, need to import proper mouse event type
   zIndex?: number
   selectionOutlineColor?: string
   selectionOutlineWidth?: number
@@ -25,17 +21,13 @@ interface AnnotationContainterProps<T extends PdfAnnotationObject> {
 
 export function AnnotationContainter<T extends PdfAnnotationObject>({
   scale,
-  pageIndex,
   rotation,
-  pageWidth,
-  pageHeight,
   trackedAnnotation,
   children,
   isSelected,
   style = {},
   selectionMenu,
   onDoubleClick,
-  onSelect,
   zIndex = 1,
   selectionOutlineColor = "#007ACC",
   selectionOutlineWidth = 2,
