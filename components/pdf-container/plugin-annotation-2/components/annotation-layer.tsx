@@ -1,4 +1,5 @@
 import { CSSProperties, HTMLAttributes } from "react"
+import { AnnotationMenu } from "./annotation-menu/annotation-menu"
 import { Annotations } from "./annotations"
 import type { SelectionMenu } from "./selection-menu"
 import { TextMarkupPreview } from "./text-markup/preview"
@@ -19,7 +20,7 @@ export function AnnotationLayer({
   style,
   pageIndex,
   scale,
-  selectionMenu,
+  selectionMenu = AnnotationMenu,
   pageWidth,
   pageHeight,
   rotation,

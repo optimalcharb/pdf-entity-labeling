@@ -15,5 +15,6 @@ test.describe("PDF entity labeling site", () => {
     await expect(page.locator('[data-testid="=annotation-layer"]')).toBeDefined()
     await expect(page.locator('[data-testid="=annotations"]')).toBeDefined()
     await expect(page.locator('[data-testid="=text-markup"]')).toBeDefined()
+    await expect(page.locator('[data-testid="annotation-menu"]')).toBeDefined()
   })
 })

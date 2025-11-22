@@ -7,6 +7,9 @@ import { SelectionMenuProps } from "./selection-menu"
 interface AnnotationContainterProps<T extends PdfAnnotationObject> {
   scale: number
   rotation: number
+  pageIndex: number
+  pageWidth: number
+  pageHeight: number
   trackedAnnotation: TrackedAnnotation<T>
   children: JSX.Element | ((annotation: T) => JSX.Element)
   isSelected: boolean
@@ -22,6 +25,9 @@ interface AnnotationContainterProps<T extends PdfAnnotationObject> {
 export function AnnotationContainter<T extends PdfAnnotationObject>({
   scale,
   rotation,
+  pageIndex,
+  pageWidth,
+  pageHeight,
   trackedAnnotation,
   children,
   isSelected,
