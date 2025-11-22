@@ -25,4 +25,5 @@ const usePluginStore = create<PluginStore>((set) => ({
   setSelectCapability: (selectCapability) => set({ selectCapability }),
   setScrollCapability: (scrollCapability) => set({ scrollCapability }),
 }))
+
 export default usePluginStore

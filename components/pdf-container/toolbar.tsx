@@ -111,6 +111,13 @@ const Toolbar = () => {
       >
         <Trash2 size={18} />
       </button>
+      <button
+        onClick={() => annoCapability?.clearAnnotations()}
+        className="rounded-md bg-red-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-red-600"
+        title="Clear All Annotations"
+      >
+        Clear All
+      </button>
     </div>
   )
 }

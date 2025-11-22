@@ -23,6 +23,7 @@ import {
 import { SelectionCapability, SelectionPlugin } from "../../plugin-selection-2"
 import {
   AnnotationAction,
+  clearAnnotations,
   commitPendingChanges,
   createAnnotation,
   deleteAnnotation,
@@ -56,7 +57,7 @@ export interface AnnotationCapability {
   onStateChange: EventHook<AnnotationState>
   onActiveToolChange: EventHook<AnnotationTool | null>
   onAnnotationEvent: EventHook<AnnotationEvent>
-  // use PDFium to get any annotations saved in the PDF, even those not made by this plugin
+  // getPageAnnotations uses PDFium to get any annotations saved in the PDF, even those not made by this plugin
   getPageAnnotations: (
     options: GetPageAnnotationsOptions,
   ) => Task<PdfAnnotationObject[], PdfErrorReason>
@@ -65,21 +66,17 @@ export interface AnnotationCapability {
   deselectAnnotation: () => void
 
   activateTool: (toolId: string | null) => void
-  getToolIds: () => string[]
-  getTools: () => AnnotationTool[]
-  getTool: <T extends AnnotationTool>(toolId: string) => T | undefined
-  // set the props for new annotations created using a tool
-  setToolDefaults: (toolId: string, patch: Partial<PdfAnnotationObject>) => void
+  setToolDefaults: (toolId: string, patch: Partial<PdfAnnotationObject>) => void // set the props for new annotations created using a tool
   setActiveToolDefaults: (patch: Partial<PdfAnnotationObject>) => void
 
-  importAnnotations: (items: PdfAnnotationObject[]) => void
-  // temp
-  exportAnnotationsToJSON: () => void
-
-  createAnnotation: (annotation: PdfAnnotationObject) => void
+  exportAnnotationsToJSON: () => void // temp
+  createAnnotation: (annotation: PdfAnnotationObject) => void // for user-created annotations
+  createAnnotations: (items: PdfAnnotationObject[]) => void // for consumer program to batch create annotations (without adding to timeline)
   deleteAnnotation: (annotationId: string) => void
-  // change the props of an annotation
-  updateAnnotation: (annotationId: string, patch: Partial<PdfAnnotationObject>) => void
+  deleteAnnotations: (annotationIds: string[]) => void // for consumer program to batch delete annotations (without adding to timeline)
+  updateAnnotation: (annotationId: string, patch: Partial<PdfAnnotationObject>) => void // change the props of an annotation
+  updateAnnotations: (items: { id: string; patch: Partial<PdfAnnotationObject> }[]) => void // for consumer program to batch update annotations (without adding to timeline)
+  clearAnnotations: () => void // clear all annotations
   undo: () => void
   redo: () => void
 }
@@ -102,7 +99,7 @@ export class AnnotationPlugin extends BasePlugin<
   private readonly events$ = createBehaviorEmitter<AnnotationEvent>()
 
   private isInitialLoadComplete: boolean = false
-  private importQueue: PdfAnnotationObject[] = []
+  private loadingQueue: PdfAnnotationObject[] = []
 
   private timeline: Command[] = []
   private timelineIndex: number = -1
@@ -192,16 +189,16 @@ export class AnnotationPlugin extends BasePlugin<
       selectAnnotation: (pageIndex, id) => this.dispatch(selectAnnotation(pageIndex, id)),
       deselectAnnotation: () => this.dispatch(deselectAnnotation()),
       activateTool: (toolId) => this.activateToolId(toolId),
-      getToolIds: () => this.state.tools.map((tool) => tool.id),
-      getTool: (toolId) => this.getTool(toolId),
-      getTools: () => this.state.tools,
       setToolDefaults: (toolId, patch) => this.dispatch(setToolDefaults(toolId, patch)),
       setActiveToolDefaults: (patch) =>
         this.state.activeToolId && this.dispatch(setToolDefaults(this.state.activeToolId, patch)),
-      importAnnotations: (items) => this.importAnnotations(items),
+      createAnnotations: (items) => this.createAnnotations(items),
       createAnnotation: (anno) => this.createAnnotation(anno),
       deleteAnnotation: (id) => this.deleteAnnotation(id),
+      deleteAnnotations: (ids) => this.deleteAnnotations(ids),
       updateAnnotation: (id, patch) => this.updateAnnotation(id, patch),
+      updateAnnotations: (items) => this.updateAnnotations(items),
+      clearAnnotations: () => this.clearAllAnnotations(),
       exportAnnotationsToJSON: () => this.exportAnnotationsToJSON(),
       undo: () => {
         if (this.timelineIndex > -1) {
@@ -237,8 +234,8 @@ export class AnnotationPlugin extends BasePlugin<
 
       this.isInitialLoadComplete = true
 
-      if (this.importQueue.length > 0) {
-        this.processImportQueue()
+      if (this.loadingQueue.length > 0) {
+        this.createQueuedAnnotations()
       }
 
       this.events$.emit({
@@ -271,43 +268,44 @@ export class AnnotationPlugin extends BasePlugin<
   }
 
   // consumer capability to batch add annotations
-  private importAnnotations(items: PdfAnnotationObject[]) {
+  private createAnnotations(items: PdfAnnotationObject[]) {
     if (!this.isInitialLoadComplete) {
-      this.importQueue.push(...items)
+      this.loadingQueue.push(...items)
       return
     }
-    this.processImportItems(items)
+    this.batchCreateAnnotations(items)
+  }
+
+  // consumer capability to batch update annotations
+  private updateAnnotations(items: { id: string; patch: Partial<PdfAnnotationObject> }[]) {
+    for (const { id, patch } of items) {
+      this.dispatch(patchAnnotation(id, patch))
+    }
+    this.commit()
+  }
+
+  // consumer capability to batch delete annotations
+  private deleteAnnotations(annotationIds: string[]) {
+    for (const id of annotationIds) {
+      this.dispatch(deleteAnnotation(id))
+    }
+    this.commit()
   }
 
   // internal process to load annotations existing in a PDF
-  private processImportQueue() {
-    if (this.importQueue.length === 0) return
-    const items = [...this.importQueue]
-    this.importQueue = []
-    this.processImportItems(items)
+  private createQueuedAnnotations() {
+    if (this.loadingQueue.length === 0) return
+    const items = [...this.loadingQueue]
+    this.loadingQueue = []
+    this.batchCreateAnnotations(items)
   }
 
-  private processImportItems(items: PdfAnnotationObject[]) {
+  // batchCreate has no undo capability since it is used by consumer programs, not users
+  private batchCreateAnnotations(items: PdfAnnotationObject[]) {
     for (const annotation of items) {
       this.dispatch(createAnnotation(annotation))
     }
     this.commit()
-  }
-
-  private commitWithTimeline(command: Command) {
-    // add to timeline
-    this.timeline.splice(this.timelineIndex + 1)
-    this.timeline.push(command)
-    this.timelineIndex++
-
-    // emit event
-    command.execute()
-
-    // process all pending events
-    this.commit()
-
-    // change state.canUndo, state.canRedo
-    this.dispatch(setCanUndoRedo(this.timelineIndex, this.timeline.length))
   }
 
   private createAnnotation(annotation: PdfAnnotationObject) {
@@ -330,7 +328,7 @@ export class AnnotationPlugin extends BasePlugin<
     const command: Command = {
       execute,
       undo: () => {
-        this.dispatch(deselectAnnotation())
+        if (this.state.selectedUid === id) this.dispatch(deselectAnnotation())
         this.dispatch(deleteAnnotation(id))
         this.events$.emit({
           type: "delete",
@@ -348,7 +346,7 @@ export class AnnotationPlugin extends BasePlugin<
     if (!originalAnnotation) return
 
     const execute = () => {
-      this.dispatch(deselectAnnotation())
+      if (this.state.selectedUid === id) this.dispatch(deselectAnnotation())
       this.dispatch(deleteAnnotation(id))
       this.events$.emit({
         type: "delete",
@@ -411,6 +409,29 @@ export class AnnotationPlugin extends BasePlugin<
     this.commitWithTimeline(command)
   }
 
+  private clearAllAnnotations() {
+    const previousAnnotations: Record<number, PdfAnnotationObject[]> = {}
+    Object.entries(this.state.byPage).forEach(([pageIndex, uids]) => {
+      const pageAnnos = uids
+        .map((uid) => this.state.byUid[uid]?.object)
+        .filter((a): a is PdfAnnotationObject => !!a)
+      if (pageAnnos.length > 0) {
+        previousAnnotations[Number(pageIndex)] = pageAnnos
+      }
+    })
+
+    const command: Command = {
+      execute: () => {
+        this.dispatch(clearAnnotations())
+      },
+      undo: () => {
+        this.dispatch(setAnnotations(previousAnnotations))
+      },
+    }
+    // use same logic to add to timeline but don't call commit
+    this.commitWithTimeline(command, false)
+  }
+
   private getActiveTool(): AnnotationTool | null {
     if (!this.state.activeToolId) return null
     return this.state.tools.find((t) => t.id === this.state.activeToolId) ?? null
@@ -431,8 +452,20 @@ export class AnnotationPlugin extends BasePlugin<
     }
   }
 
-  private getTool<T extends AnnotationTool>(toolId: string): T | undefined {
-    return this.state.tools.find((t) => t.id === toolId) as T | undefined
+  private commitWithTimeline(command: Command, requiresCommit: boolean = true) {
+    // add to timeline
+    this.timeline.splice(this.timelineIndex + 1)
+    this.timeline.push(command)
+    this.timelineIndex++
+
+    // emit event
+    command.execute()
+
+    // process all pending events
+    if (requiresCommit) this.commit()
+
+    // change state.canUndo, state.canRedo
+    this.dispatch(setCanUndoRedo(this.timelineIndex, this.timeline.length))
   }
 
   private commit(): Task<boolean, PdfErrorReason> {
