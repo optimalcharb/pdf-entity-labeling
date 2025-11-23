@@ -51,19 +51,6 @@ export class LoaderPlugin extends BasePlugin<LoaderPluginConfig, LoaderCapabilit
     this.documentLoader = new PDFDocumentLoader()
   }
 
-  protected buildCapability(): LoaderCapability {
-    return {
-      onLoaderEvent: this.loaderHandlers$.on,
-      onDocumentLoaded: this.documentLoadedHandlers$.on,
-      onOpenFileRequest: this.openFileRequest$.on,
-      openFileDialog: () => this.openFileRequest$.emit("open"),
-      loadDocument: (options) => this.loadDocument(options),
-      registerStrategy: (name, strategy) => this.documentLoader.registerStrategy(name, strategy),
-      getDocument: () => this.loadedDocument,
-      addStrategyResolver: (resolver) => this.documentLoader.addStrategyResolver(resolver),
-    }
-  }
-
   async initialize(config: LoaderPluginConfig): Promise<void> {
     // Register any custom strategies provided in config
     if (config.defaultStrategies) {
@@ -74,6 +61,19 @@ export class LoaderPlugin extends BasePlugin<LoaderPluginConfig, LoaderCapabilit
 
     if (config.loadingOptions) {
       this.loadingOptions = config.loadingOptions
+    }
+  }
+
+  protected buildCapability(): LoaderCapability {
+    return {
+      onLoaderEvent: this.loaderHandlers$.on,
+      onDocumentLoaded: this.documentLoadedHandlers$.on,
+      onOpenFileRequest: this.openFileRequest$.on,
+      openFileDialog: () => this.openFileRequest$.emit("open"),
+      loadDocument: (options) => this.loadDocument(options),
+      registerStrategy: (name, strategy) => this.documentLoader.registerStrategy(name, strategy),
+      getDocument: () => this.loadedDocument,
+      addStrategyResolver: (resolver) => this.documentLoader.addStrategyResolver(resolver),
     }
   }
 
