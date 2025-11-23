@@ -19,7 +19,7 @@ import {
 import {
   InteractionManagerCapability,
   InteractionManagerPlugin,
-} from "@embedpdf/plugin-interaction-manager/react"
+} from "../../plugin-interaction-manager-2"
 import { SelectionCapability, SelectionPlugin } from "../../plugin-selection-2"
 import type { AnnotationAction } from "./actions"
 import {

@@ -23,7 +23,8 @@ import {
   InteractionManagerCapability,
   InteractionManagerPlugin,
   PointerEventHandlersWithLifecycle,
-} from "@embedpdf/plugin-interaction-manager/react"
+} from "../../plugin-interaction-manager-2"
+import type { SelectionAction } from "./actions"
 import {
   cachePageGeometry,
   clearSelection,
@@ -34,7 +35,6 @@ import {
   setSlices,
   startSelection,
 } from "./actions"
-import type { SelectionAction } from "./actions"
 import type {
   FormattedSelection,
   RegisterSelectionOnPageOptions,
