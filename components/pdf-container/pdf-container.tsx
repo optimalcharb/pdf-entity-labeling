@@ -4,11 +4,6 @@ import { EmbedPDF } from "@embedpdf/core/react"
 import { usePdfiumEngine } from "@embedpdf/engines/react"
 import { ConsoleLogger } from "@embedpdf/models"
 import { ExportPluginPackage } from "@embedpdf/plugin-export/react"
-import {
-  GlobalPointerProvider,
-  InteractionManagerPluginPackage,
-  PagePointerProvider,
-} from "@embedpdf/plugin-interaction-manager/react"
 import { LoaderPluginPackage } from "@embedpdf/plugin-loader/react"
 import { RenderLayer, RenderPluginPackage } from "@embedpdf/plugin-render/react"
 import { Scroller, ScrollPluginPackage, ScrollStrategy } from "@embedpdf/plugin-scroll/react"
@@ -20,6 +15,11 @@ import { PinchWrapper, ZoomMode, ZoomPluginPackage } from "@embedpdf/plugin-zoom
 import PluginStoreSync from "../plugin-store/components/plugin-store-sync"
 import { Spinner } from "../shadcn-ui/spinner"
 import { AnnotationLayer, AnnotationPluginPackage } from "./plugin-annotation-2"
+import {
+  GlobalPointerProvider,
+  InteractionManagerPluginPackage,
+  PagePointerProvider,
+} from "./plugin-interaction-manager-2"
 import { SelectionLayer, SelectionPluginPackage } from "./plugin-selection-2"
 import Toolbar from "./toolbar"
 
