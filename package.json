@@ -101,6 +101,7 @@
     "@commitlint/cli": "^20.1.0",
     "@commitlint/config-conventional": "^20.0.0",
     "@eslint/eslintrc": "^3.3.1",
+    "@ianvs/prettier-plugin-sort-imports": "^4.7.0",
     "@next/eslint-plugin-next": "15.5.4",
     "@playwright/test": "^1.56.1",
     "@semantic-release/changelog": "^6.0.3",
