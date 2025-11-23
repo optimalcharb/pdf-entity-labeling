@@ -579,4 +579,10 @@ export class AnnotationPlugin extends BasePlugin<
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
   }
+
+  async destroy(): Promise<void> {
+    this.activeTool$.clear()
+    this.events$.clear()
+    super.destroy()
+  }
 }
