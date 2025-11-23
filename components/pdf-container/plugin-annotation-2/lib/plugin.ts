@@ -21,8 +21,8 @@ import {
   InteractionManagerPlugin,
 } from "@embedpdf/plugin-interaction-manager/react"
 import { SelectionCapability, SelectionPlugin } from "../../plugin-selection-2"
+import type { AnnotationAction } from "./actions"
 import {
-  AnnotationAction,
   clearAnnotations,
   commitPendingChanges,
   createAnnotation,

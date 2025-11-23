@@ -29,12 +29,12 @@ import {
   clearSelection,
   endSelection,
   reset,
-  SelectionAction,
   setRects,
   setSelection,
   setSlices,
   startSelection,
 } from "./actions"
+import type { SelectionAction } from "./actions"
 import type {
   FormattedSelection,
   RegisterSelectionOnPageOptions,
