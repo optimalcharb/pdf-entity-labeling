@@ -45,6 +45,7 @@ import * as selector from "./selectors"
 import type { SelectionState } from "./state"
 import { glyphAt, rectsWithinSlice, sliceBounds } from "./utils"
 
+// ***PLUGIN CAPABILITY***
 export interface SelectionCapability {
   /* formatted selection for all pages */
   getFormattedSelection(): FormattedSelection[]
@@ -77,6 +78,7 @@ export interface SelectionCapability {
   getState(): SelectionState
 }
 
+// ***PLUGIN CLASS***
 export class SelectionPlugin extends BasePlugin<
   BasePluginConfig,
   SelectionCapability,
