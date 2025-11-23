@@ -15,7 +15,7 @@ import {
 } from "lucide-react"
 import usePluginStore from "../plugin-store/hooks/use-plugin-store"
 
-const Toolbar = () => {
+const Toolbar = ({ canRotate }: { canRotate: boolean }) => {
   const { provides: exportCapability } = useExportCapability()
   const { provides: zoomCapability } = useZoomCapability()
   const { provides: rotateCapability } = useRotateCapability()
@@ -91,22 +91,26 @@ const Toolbar = () => {
       </button>
 
       <div className="h-6 w-px bg-gray-200" />
-      <button
-        onClick={() => rotateCapability?.rotateBackward()}
-        disabled={!rotateCapability}
-        className="rounded-md bg-gray-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:bg-gray-300"
-        title="Rotate Counter Clockwise"
-      >
-        <RotateCcw size={18} />
-      </button>
-      <button
-        onClick={() => rotateCapability?.rotateForward()}
-        disabled={!rotateCapability}
-        className="rounded-md bg-gray-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:bg-gray-300"
-        title="Rotate Clockwise"
-      >
-        <RotateCw size={18} />
-      </button>
+      {canRotate && (
+        <>
+          <button
+            onClick={() => rotateCapability?.rotateBackward()}
+            disabled={!rotateCapability}
+            className="rounded-md bg-gray-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:bg-gray-300"
+            title="Rotate Counter Clockwise"
+          >
+            <RotateCcw size={18} />
+          </button>
+          <button
+            onClick={() => rotateCapability?.rotateForward()}
+            disabled={!rotateCapability}
+            className="rounded-md bg-gray-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:bg-gray-300"
+            title="Rotate Clockwise"
+          >
+            <RotateCw size={18} />
+          </button>
+        </>
+      )}
       <button
         onClick={() => annoCapability?.exportAnnotationsToJSON?.()}
         className="rounded-md bg-blue-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-blue-600"
