@@ -1,4 +1,4 @@
-export type { AnnotationEvent } from "./custom-types"
+export type { AnnotationEvent, TrackedAnnotation } from "./custom-types"
 export * from "./plugin"
 export * from "./plugin-package"
 export type { AnnotationState } from "./state"

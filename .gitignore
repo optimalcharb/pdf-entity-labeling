@@ -36,6 +36,7 @@ playwright/.cache/
 
 # coding LLMs
 .kilocode/
+.cursor/
 .claude/
 CLAUDE.md
 prompts.txt
@@ -44,3 +45,6 @@ prompts.txt
 .amplify
 amplify_outputs*
 amplifyconfiguration*
+
+# temp
+**/preact-plugin-ui

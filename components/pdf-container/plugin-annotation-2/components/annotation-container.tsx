@@ -1,8 +1,9 @@
 import { PdfAnnotationObject } from "@embedpdf/models"
-import { CounterRotate, useDoublePressProps } from "@embedpdf/utils/react"
 import { CSSProperties, JSX, useEffect, useState } from "react"
-import { TrackedAnnotation } from "../lib/custom-types"
-import { SelectionMenuProps } from "./selection-menu"
+import { useDoublePressProps } from "../../../../hooks/mouse-events/use-double-press-props"
+import { TrackedAnnotation } from "../lib"
+import { CounterRotate } from "./annotation-menu/counter-rotate"
+import { SelectionMenu } from "./selection-menu"
 
 interface AnnotationContainterProps<T extends PdfAnnotationObject> {
   scale: number
@@ -14,8 +15,9 @@ interface AnnotationContainterProps<T extends PdfAnnotationObject> {
   children: JSX.Element | ((annotation: T) => JSX.Element)
   isSelected: boolean
   style?: CSSProperties
-  selectionMenu?: (props: SelectionMenuProps) => JSX.Element
+  selectionMenu?: SelectionMenu
   onDoubleClick?: (event: React.MouseEvent) => void
+  onSelect?: (event: React.MouseEvent) => void
   zIndex?: number
   selectionOutlineColor?: string
   selectionOutlineWidth?: number
@@ -35,6 +37,7 @@ export function AnnotationContainter<T extends PdfAnnotationObject>({
   style = {},
   selectionMenu,
   onDoubleClick,
+  onSelect,
   zIndex = 1,
   selectionOutlineColor = "#007ACC",
   selectionOutlineWidth = 2,
@@ -56,6 +59,7 @@ export function AnnotationContainter<T extends PdfAnnotationObject>({
     <div data-no-interaction>
       <div
         {...doubleProps}
+        onClick={onSelect}
         style={{
           position: "absolute",
           left: currentObject.rect.origin.x * scale,

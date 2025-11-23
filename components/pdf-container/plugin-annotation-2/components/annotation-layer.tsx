@@ -10,8 +10,7 @@ type AnnotationLayerProps = Omit<HTMLAttributes<HTMLDivElement>, "style"> & {
   pageWidth: number
   pageHeight: number
   rotation: number
-  /** Customize selection menu across all annotations on this layer */
-  selectionMenu?: SelectionMenu
+  selectionMenu: SelectionMenu
   style?: CSSProperties
   selectionOutlineColor?: string
 }
