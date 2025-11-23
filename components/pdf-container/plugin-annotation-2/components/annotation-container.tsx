@@ -1,22 +1,23 @@
-import { PdfAnnotationObject } from "@embedpdf/models"
-import { CounterRotate, useDoublePressProps } from "@embedpdf/utils/react"
 import { CSSProperties, JSX, useEffect, useState } from "react"
-import { TrackedAnnotation } from "../lib/custom-types"
-import { SelectionMenuProps } from "./selection-menu"
+import { PdfAnnotationObject } from "@embedpdf/models"
+import { useDoublePressProps } from "../../../../hooks/mouse-events/use-double-press-props"
+import { TrackedAnnotation } from "../lib"
+import { CounterRotate } from "./annotation-menu/counter-rotate"
+import { SelectionMenu } from "./selection-menu"
 
 interface AnnotationContainterProps<T extends PdfAnnotationObject> {
   scale: number
-  pageIndex: number
   rotation: number
+  pageIndex: number
   pageWidth: number
   pageHeight: number
   trackedAnnotation: TrackedAnnotation<T>
   children: JSX.Element | ((annotation: T) => JSX.Element)
   isSelected: boolean
   style?: CSSProperties
-  selectionMenu?: (props: SelectionMenuProps) => JSX.Element
-  onDoubleClick?: (event: any) => void // You'll need to import proper MouseEvent type
-  onSelect: (event: any) => void
+  selectionMenu?: SelectionMenu
+  onDoubleClick?: (event: React.MouseEvent) => void
+  onSelect?: (event: React.MouseEvent) => void
   zIndex?: number
   selectionOutlineColor?: string
   selectionOutlineWidth?: number
@@ -25,10 +26,11 @@ interface AnnotationContainterProps<T extends PdfAnnotationObject> {
 
 export function AnnotationContainter<T extends PdfAnnotationObject>({
   scale,
-  pageIndex,
   rotation,
-  pageWidth,
-  pageHeight,
+  // necessary props from Annotations, but not used explicitly in the code
+  pageIndex: _pageIndex,
+  pageWidth: _pageWidth,
+  pageHeight: _pageHeight,
   trackedAnnotation,
   children,
   isSelected,
@@ -57,6 +59,7 @@ export function AnnotationContainter<T extends PdfAnnotationObject>({
     <div data-no-interaction>
       <div
         {...doubleProps}
+        onClick={onSelect}
         style={{
           position: "absolute",
           left: currentObject.rect.origin.x * scale,

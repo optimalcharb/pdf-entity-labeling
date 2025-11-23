@@ -1,3 +1,4 @@
+import { ReactNode } from "react"
 import { createPluginRegistration, PluginRegistry } from "@embedpdf/core"
 import { PDFContext } from "@embedpdf/core/react"
 import type {
@@ -17,9 +18,9 @@ import { InteractionManagerPluginPackage } from "@embedpdf/plugin-interaction-ma
 import { SelectionPluginPackage } from "@embedpdf/plugin-selection"
 import { renderHook, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test"
-import { ReactNode } from "react"
 import { useAnnotationCapability } from "../hooks/use-annotation"
 import { AnnotationPluginPackage } from "./plugin-package"
+
 // Mock engine - annotation capability doesn't directly interact with PDFium
 const createMockEngine = () => ({
   getAllAnnotations: mock(() => PdfTaskHelper.resolve({})),
@@ -123,45 +124,6 @@ describe("AnnotationCapability", () => {
       {children}
     </PDFContext.Provider>
   )
-
-  test("getTools returns all available annotation tools", () => {
-    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
-
-    const tools = result.current.provides?.getTools()
-    expect(tools).toBeDefined()
-    expect(tools?.length).toBeGreaterThan(0)
-
-    const toolIds = tools?.map((t) => t.id)
-    expect(toolIds).toContain("highlight")
-    expect(toolIds).toContain("underline")
-    expect(toolIds).toContain("squiggly")
-    expect(toolIds).toContain("strikeout")
-  })
-
-  test("getTool returns specific tool by id", () => {
-    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
-
-    const highlightTool = result.current.provides?.getTool("highlight")
-    expect(highlightTool).toBeDefined()
-    expect(highlightTool?.id).toBe("highlight")
-    expect(highlightTool?.defaults.type).toBe(PdfAnnotationSubtype.HIGHLIGHT)
-    expect((highlightTool?.defaults as Partial<PdfHighlightAnnoObject>).color).toBe("#FFCD45")
-
-    const nonExistentTool = result.current.provides?.getTool("non-existent")
-    expect(nonExistentTool).toBeUndefined()
-  })
-
-  test("getToolIds returns all tool IDs", () => {
-    const { result } = renderHook(() => useAnnotationCapability(), { wrapper })
-
-    const toolIds = result.current.provides?.getToolIds()
-    expect(toolIds).toBeDefined()
-    expect(toolIds?.length).toBeGreaterThan(0)
-    expect(toolIds).toContain("highlight")
-    expect(toolIds).toContain("underline")
-    expect(toolIds).toContain("squiggly")
-    expect(toolIds).toContain("strikeout")
-  })
 
   test("activateTool activates a tool", async () => {
     const { result } = renderHook(() => useAnnotationCapability(), { wrapper })

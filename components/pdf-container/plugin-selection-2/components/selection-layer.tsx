@@ -1,5 +1,5 @@
-import { Rect } from "@embedpdf/models"
 import { useEffect, useState } from "react"
+import { Rect } from "@embedpdf/models"
 import { useSelectionPlugin } from "../hooks"
 
 type Props = {

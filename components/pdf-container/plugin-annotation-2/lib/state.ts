@@ -4,7 +4,9 @@ import { initialTools } from "./tools/initial-tools"
 
 // ***PLUGIN STATE***
 export interface AnnotationState {
-  pages: Record<number, string[]>
+  // page index -> annotation uids
+  byPage: Record<number, string[]>
+  // annotation uid -> tracked annotation object
   byUid: Record<string, TrackedAnnotation>
   selectedUid: string | null
   activeToolId: string | null
@@ -16,7 +18,7 @@ export interface AnnotationState {
 
 // ***INITIAL STATE***
 export const initialState: AnnotationState = {
-  pages: {},
+  byPage: {},
   byUid: {},
   selectedUid: null,
   activeToolId: null,

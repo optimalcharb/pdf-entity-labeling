@@ -1,6 +1,7 @@
 import { PdfPageGeometry, Rect } from "@embedpdf/models"
 import type { SelectionRangeX } from "./custom-types"
 
+// ***PLUGIN STATE***
 export interface SelectionState {
   /** page → geometry cache */
   geometry: Record<number, PdfPageGeometry>
@@ -12,6 +13,7 @@ export interface SelectionState {
   selecting: boolean
 }
 
+// ***INITIAL STATE***
 export const initialState: SelectionState = {
   geometry: {},
   rects: {},

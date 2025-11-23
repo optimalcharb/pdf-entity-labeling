@@ -15,6 +15,7 @@ export const PURGE_ANNOTATION = "ANNOTATION/PURGE_ANNOTATION"
 export const SET_ACTIVE_TOOL_ID = "ANNOTATION/SET_ACTIVE_TOOL_ID"
 export const SET_TOOL_DEFAULTS = "ANNOTATION/SET_TOOL_DEFAULTS"
 export const SET_CAN_UNDO_REDO = "ANNOTATION/SET_CAN_UNDO_REDO"
+export const CLEAR_ANNOTATIONS = "ANNOTATION/CLEAR_ANNOTATIONS"
 
 // ***ACTION INTERFACES***
 export interface SetAnnotationsAction extends Action {
@@ -59,6 +60,9 @@ export interface SetCanUndoRedoAction extends Action {
   type: typeof SET_CAN_UNDO_REDO
   payload: { timelineIndex: number; timelineLength: number }
 }
+export interface ClearAnnotationsAction extends Action {
+  type: typeof CLEAR_ANNOTATIONS
+}
 
 // ***ACTION UNION***
 export type AnnotationAction =
@@ -73,6 +77,7 @@ export type AnnotationAction =
   | SetActiveToolIdAction
   | SetToolDefaultsAction
   | SetCanUndoRedoAction
+  | ClearAnnotationsAction
 
 // ***ACTION CREATORS***
 export const setAnnotations = (p: Record<number, PdfAnnotationObject[]>): SetAnnotationsAction => ({
@@ -119,16 +124,17 @@ export const setCanUndoRedo = (
   type: SET_CAN_UNDO_REDO,
   payload: { timelineIndex, timelineLength },
 })
+export const clearAnnotations = (): ClearAnnotationsAction => ({ type: CLEAR_ANNOTATIONS })
 
 // ***ACTION REDUCER***
 export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, action) => {
   switch (action.type) {
     case SET_ANNOTATIONS: {
-      const newPages = { ...state.pages }
+      const newByPage = { ...state.byPage }
       const newByUid = { ...state.byUid }
       for (const [pgStr, list] of Object.entries(action.payload)) {
         const pageIndex = Number(pgStr)
-        const oldUidsOnPage = state.pages[pageIndex] || []
+        const oldUidsOnPage = state.byPage[pageIndex] || []
         for (const uid of oldUidsOnPage) {
           delete newByUid[uid]
         }
@@ -137,9 +143,9 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
           newByUid[uid] = { commitState: "synced", object: a }
           return uid
         })
-        newPages[pageIndex] = newUidsOnPage
+        newByPage[pageIndex] = newUidsOnPage
       }
-      return { ...state, pages: newPages, byUid: newByUid, hasPendingChanges: false }
+      return { ...state, byPage: newByPage, byUid: newByUid, hasPendingChanges: false }
     }
 
     case SET_ACTIVE_TOOL_ID:
@@ -157,7 +163,7 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
       const uid = annotation.id
       return {
         ...state,
-        pages: { ...state.pages, [pageIndex]: [...(state.pages[pageIndex] ?? []), uid] },
+        byPage: { ...state.byPage, [pageIndex]: [...(state.byPage[pageIndex] ?? []), uid] },
         byUid: { ...state.byUid, [uid]: { commitState: "new", object: annotation } },
         hasPendingChanges: true,
       }
@@ -173,9 +179,9 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
       /* keep the object but mark it as deleted */
       return {
         ...state,
-        pages: {
-          ...state.pages,
-          [pageIndex]: (state.pages[pageIndex] ?? []).filter((u) => u !== uid),
+        byPage: {
+          ...state.byPage,
+          [pageIndex]: (state.byPage[pageIndex] ?? []).filter((u) => u !== uid),
         },
         byUid: {
           ...state.byUid,
@@ -227,6 +233,9 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
       const canUndo = timelineIndex > -1
       const canRedo = timelineIndex < timelineLength - 1
       return { ...state, canUndo, canRedo }
+
+    case CLEAR_ANNOTATIONS:
+      return { ...state, selectedUid: null, byUid: {}, byPage: {}, hasPendingChanges: false }
 
     default:
       return state

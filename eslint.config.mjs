@@ -22,7 +22,7 @@ export default [
     ],
   },
   {
-    files: ["**/*.js", "**/*.jsx", "**/*.ts", "**/*.tsx"],
+    files: ["**/*.ts", "**/*.tsx"],
     plugins: {
       import: importPlugin,
       react: reactPlugin,
@@ -56,6 +56,11 @@ export default [
           ignoreDeclarationSort: true,
         },
       ],
+      "@typescript-eslint/explicit-module-boundary-types": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
     },
     settings: {
       react: {
@@ -64,19 +69,10 @@ export default [
       "import/resolver": {
         typescript: {
           alwaysTryTypes: true,
+          bun: true,
+          project: "./tsconfig.json",
         },
       },
-    },
-  },
-  // Next.js config
-  {
-    files: ["**/*.ts", "**/*.tsx"],
-    rules: {
-      "@typescript-eslint/explicit-module-boundary-types": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
-      ],
     },
   },
 ]

@@ -1,5 +1,5 @@
-import usePluginStore from "@/components/plugin-store/hooks/use-plugin-store"
 import { ThumbImg, ThumbnailsPane } from "@embedpdf/plugin-thumbnail/react"
+import usePluginStore from "@/components/plugin-store/hooks/use-plugin-store"
 
 const ThumbnailSidebar = () => {
   const { scrollCapability } = usePluginStore()

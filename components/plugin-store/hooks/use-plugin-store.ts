@@ -1,8 +1,8 @@
+import { ScrollCapability } from "@embedpdf/plugin-scroll"
+import { create } from "zustand"
 import { AnnotationCapability } from "@/components/pdf-container/plugin-annotation-2/lib/plugin"
 import { AnnotationState } from "@/components/pdf-container/plugin-annotation-2/lib/state"
 import { SelectionCapability } from "@/components/pdf-container/plugin-selection-2"
-import { ScrollCapability } from "@embedpdf/plugin-scroll"
-import { create } from "zustand"
 
 interface PluginStore {
   annoCapability: AnnotationCapability | null
@@ -25,4 +25,5 @@ const usePluginStore = create<PluginStore>((set) => ({
   setSelectCapability: (selectCapability) => set({ selectCapability }),
   setScrollCapability: (scrollCapability) => set({ scrollCapability }),
 }))
+
 export default usePluginStore
