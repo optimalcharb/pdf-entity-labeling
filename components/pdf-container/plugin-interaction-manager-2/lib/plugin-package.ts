@@ -1,7 +1,7 @@
 import type { PluginManifest, PluginPackage } from "@embedpdf/core"
 import { InteractionManagerAction, reducer } from "./actions"
 import { InteractionManagerPlugin, InteractionManagerPluginConfig } from "./plugin"
-import { initialState, InteractionManagerState } from "./state"
+import { initialState, type InteractionManagerState } from "./state"
 
 // ***PLUGIN ID***
 export const INTERACTION_MANAGER_PLUGIN_ID = "interaction-manager"

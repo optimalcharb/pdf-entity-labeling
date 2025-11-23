@@ -1,6 +1,6 @@
-import { Action, Reducer } from "@embedpdf/core"
-import { InteractionExclusionRules } from "./custom-types"
-import { InteractionManagerState } from "./state"
+import type { Action, Reducer } from "@embedpdf/core"
+import type { InteractionExclusionRules } from "./custom-types"
+import type { InteractionManagerState } from "./state"
 
 // ***ACTION CONSTANTS***
 export const ACTIVATE_MODE = "INTERACTION/ACTIVATE_MODE"
