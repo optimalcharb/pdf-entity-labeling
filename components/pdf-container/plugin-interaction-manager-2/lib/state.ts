@@ -1,5 +1,6 @@
 import { InteractionExclusionRules } from "./custom-types"
 
+// ***PLUGIN STATE***
 export interface InteractionManagerState {
   /** Mode-id that is currently active (e.g. `"default"` or `"annotationCreation"`). */
   activeMode: string
@@ -13,6 +14,7 @@ export interface InteractionManagerState {
   exclusionRules: InteractionExclusionRules
 }
 
+// ***INITIAL STATE***
 export const initialState: InteractionManagerState = {
   activeMode: "pointerMode",
   defaultMode: "pointerMode",

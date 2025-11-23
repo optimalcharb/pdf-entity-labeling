@@ -3,8 +3,10 @@ import { InteractionManagerAction, reducer } from "./actions"
 import { InteractionManagerPlugin, InteractionManagerPluginConfig } from "./plugin"
 import { initialState, InteractionManagerState } from "./state"
 
+// ***PLUGIN ID***
 export const INTERACTION_MANAGER_PLUGIN_ID = "interaction-manager"
 
+// ***PLUGIN MANIFEST***
 export const manifest: PluginManifest<InteractionManagerPluginConfig> = {
   id: INTERACTION_MANAGER_PLUGIN_ID,
   name: "Interaction Manager Plugin",
@@ -21,6 +23,7 @@ export const manifest: PluginManifest<InteractionManagerPluginConfig> = {
   },
 }
 
+// ***PLUGIN PACKAGE***
 export const InteractionManagerPluginPackage: PluginPackage<
   InteractionManagerPlugin,
   InteractionManagerPluginConfig,
