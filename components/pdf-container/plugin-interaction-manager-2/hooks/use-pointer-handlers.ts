@@ -1,4 +1,4 @@
-import { PointerEventHandlersWithLifecycle } from "../lib"
+import type { PointerEventHandlersWithLifecycle } from "../lib"
 import { useInteractionManagerCapability } from "./use-interaction-manager"
 
 interface UsePointerHandlersOptions {

@@ -36,6 +36,7 @@
 ### Colors
 
 - [TailColors](https://tailcolors.com/)
+- [Hex Color Codes](https://html-color.codes/)
 
 ### Frontend specials
 

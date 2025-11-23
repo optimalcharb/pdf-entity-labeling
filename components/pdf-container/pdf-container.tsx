@@ -2,10 +2,10 @@ import { useRef } from "react"
 import { createPluginRegistration } from "@embedpdf/core"
 import { EmbedPDF } from "@embedpdf/core/react"
 import { usePdfiumEngine } from "@embedpdf/engines/react"
-import { ConsoleLogger } from "@embedpdf/models"
+import { NoopLogger } from "@embedpdf/models"
 import { ExportPluginPackage } from "@embedpdf/plugin-export/react"
 import { RenderLayer, RenderPluginPackage } from "@embedpdf/plugin-render/react"
-import { Scroller, ScrollPluginPackage, ScrollStrategy } from "@embedpdf/plugin-scroll/react"
+import { RotatePluginPackage } from "@embedpdf/plugin-rotate/react"
 import { SearchLayer, SearchPluginPackage } from "@embedpdf/plugin-search/react"
 import { ThumbnailPluginPackage } from "@embedpdf/plugin-thumbnail/react"
 import { TilingLayer, TilingPluginPackage } from "@embedpdf/plugin-tiling/react"
@@ -20,16 +20,19 @@ import {
   PagePointerProvider,
 } from "./plugin-interaction-manager-2"
 import { LoaderPluginPackage } from "./plugin-loader-2"
+import { Scroller, ScrollPluginPackage, ScrollStrategy } from "./plugin-scroll-2"
 import { SelectionLayer, SelectionPluginPackage } from "./plugin-selection-2"
+import RotateWrapper from "./rotate-wrapper"
 import Toolbar from "./toolbar"
 
-const logger = new ConsoleLogger()
+const logger = new NoopLogger() // ConsoleLogger()
 
 interface PDFContainerProps {
   url: string
+  canRotate?: boolean
 }
 
-export default function PDFContainer({ url }: PDFContainerProps) {
+export default function PDFContainer({ url, canRotate = true }: PDFContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const { engine, isLoading, error } = usePdfiumEngine({
     wasmUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/engines/pdfium.wasm`,
@@ -69,10 +72,12 @@ export default function PDFContainer({ url }: PDFContainerProps) {
             createPluginRegistration(ViewportPluginPackage, {
               viewportGap: 5,
             }),
+            // register Scroll after Loader, Viewport
             createPluginRegistration(ScrollPluginPackage, {
               strategy: ScrollStrategy.Vertical,
             }),
             createPluginRegistration(RenderPluginPackage),
+            ...(canRotate ? [createPluginRegistration(RotatePluginPackage)] : []),
             createPluginRegistration(InteractionManagerPluginPackage),
             createPluginRegistration(TilingPluginPackage, {
               tileSize: 768,
@@ -98,7 +103,7 @@ export default function PDFContainer({ url }: PDFContainerProps) {
             return (
               <GlobalPointerProvider>
                 <PluginStoreSync />
-                <Toolbar data-testid="annotation-toolbar" />
+                <Toolbar canRotate={canRotate} data-testid="annotation-toolbar" />
                 <Viewport className="h-full w-full flex-1 overflow-hidden bg-gray-100 select-none">
                   {!pluginsReady && (
                     <div className="flex h-full w-full items-center justify-center">
@@ -108,38 +113,40 @@ export default function PDFContainer({ url }: PDFContainerProps) {
                   {pluginsReady && (
                     <PinchWrapper>
                       <Scroller
-                        renderPage={({ pageIndex, scale, width, height }) => (
-                          <PagePointerProvider
-                            pageIndex={pageIndex}
-                            scale={scale}
-                            pageWidth={width}
-                            pageHeight={height}
-                            rotation={0}
-                          >
-                            {/* RednerLayer must go first */}
-                            <RenderLayer pageIndex={pageIndex} className="pointer-events-none" />
-                            <TilingLayer
-                              pageIndex={pageIndex}
-                              scale={scale}
-                              className="pointer-events-none"
-                            />
-                            <AnnotationLayer
+                        renderPage={({ pageIndex, scale, rotation, width, height }) => (
+                          <RotateWrapper enabled={canRotate} pageSize={{ width, height }}>
+                            <PagePointerProvider
                               pageIndex={pageIndex}
                               scale={scale}
                               pageWidth={width}
                               pageHeight={height}
-                              rotation={0}
-                              data-testid="annotation-layer"
-                            />
-                            <SearchLayer
-                              pageIndex={pageIndex}
-                              scale={scale}
-                              highlightColor={"#FFFF00"}
-                              activeHighlightColor={"#FFFF00"}
-                            />
-                            {/* SelectionLayer must go last */}
-                            <SelectionLayer pageIndex={pageIndex} scale={scale} />
-                          </PagePointerProvider>
+                              rotation={rotation}
+                            >
+                              {/* RenderLayer must go first */}
+                              <RenderLayer pageIndex={pageIndex} className="pointer-events-none" />
+                              <TilingLayer
+                                pageIndex={pageIndex}
+                                scale={scale}
+                                className="pointer-events-none"
+                              />
+                              <AnnotationLayer
+                                pageIndex={pageIndex}
+                                scale={scale}
+                                pageWidth={width}
+                                pageHeight={height}
+                                rotation={rotation}
+                                data-testid="annotation-layer"
+                              />
+                              <SearchLayer
+                                pageIndex={pageIndex}
+                                scale={scale}
+                                highlightColor={"#FFFF00"}
+                                activeHighlightColor={"#FFFF00"}
+                              />
+                              {/* SelectionLayer must go last */}
+                              <SelectionLayer pageIndex={pageIndex} scale={scale} />
+                            </PagePointerProvider>
+                          </RotateWrapper>
                         )}
                       />
                     </PinchWrapper>

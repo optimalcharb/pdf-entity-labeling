@@ -31,6 +31,7 @@
     "@embedpdf/plugin-interaction-manager": "1.4.1",
     "@embedpdf/plugin-loader": "1.4.1",
     "@embedpdf/plugin-render": "1.4.1",
+    "@embedpdf/plugin-rotate": "^1.4.1",
     "@embedpdf/plugin-scroll": "1.4.1",
     "@embedpdf/plugin-search": "1.4.1",
     "@embedpdf/plugin-selection": "1.4.1",

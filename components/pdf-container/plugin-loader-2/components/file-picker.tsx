@@ -3,7 +3,7 @@ import { useLoaderCapability } from "../hooks"
 
 /** Wrap the viewer root */
 export function FilePicker() {
-  const { provides: cap } = useLoaderCapability() // capability
+  const { provides: cap } = useLoaderCapability()
   const inputRef = useRef<HTMLInputElement>(null)
 
   /* ─── listen for “open file” requests ─── */

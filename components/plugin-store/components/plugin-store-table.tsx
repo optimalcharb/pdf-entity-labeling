@@ -1,6 +1,5 @@
 "use client"
 
-import usePluginStore from "@/components/plugin-store/hooks/use-plugin-store"
 import {
   Table,
   TableBody,
@@ -9,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "../../shadcn-ui/table"
+import usePluginStore from "../hooks/use-plugin-store"
 
 export default function PluginStoreTable() {
   const { annoCapability, annoState, selectCapability, scrollCapability } = usePluginStore()
