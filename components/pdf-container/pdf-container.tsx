@@ -6,7 +6,6 @@ import { NoopLogger } from "@embedpdf/models"
 import { ExportPluginPackage } from "@embedpdf/plugin-export/react"
 import { RenderLayer, RenderPluginPackage } from "@embedpdf/plugin-render/react"
 import { RotatePluginPackage } from "@embedpdf/plugin-rotate/react"
-import { Scroller, ScrollPluginPackage, ScrollStrategy } from "@embedpdf/plugin-scroll/react"
 import { SearchLayer, SearchPluginPackage } from "@embedpdf/plugin-search/react"
 import { ThumbnailPluginPackage } from "@embedpdf/plugin-thumbnail/react"
 import { TilingLayer, TilingPluginPackage } from "@embedpdf/plugin-tiling/react"
@@ -21,6 +20,7 @@ import {
   PagePointerProvider,
 } from "./plugin-interaction-manager-2"
 import { LoaderPluginPackage } from "./plugin-loader-2"
+import { Scroller, ScrollPluginPackage, ScrollStrategy } from "./plugin-scroll-2"
 import { SelectionLayer, SelectionPluginPackage } from "./plugin-selection-2"
 import RotateWrapper from "./rotate-wrapper"
 import Toolbar from "./toolbar"
@@ -72,6 +72,7 @@ export default function PDFContainer({ url, canRotate = true }: PDFContainerProp
             createPluginRegistration(ViewportPluginPackage, {
               viewportGap: 5,
             }),
+            // register Scroll after Loader, Viewport
             createPluginRegistration(ScrollPluginPackage, {
               strategy: ScrollStrategy.Vertical,
             }),

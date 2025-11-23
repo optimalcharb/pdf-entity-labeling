@@ -31,7 +31,7 @@ import {
   RegisterAlwaysOptions,
   RegisterHandlersOptions,
 } from "./custom-types"
-import { InteractionManagerState } from "./state"
+import type { InteractionManagerState } from "./state"
 import { mergeHandlers } from "./utils"
 
 // ***PLUGIN CONFIG***

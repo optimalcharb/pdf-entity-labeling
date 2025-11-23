@@ -1,8 +1,8 @@
 import { useEffect } from "react"
-import { useScrollCapability } from "@embedpdf/plugin-scroll/react"
-import usePluginStore from "@/components/plugin-store/hooks/use-plugin-store"
 import { useAnnotationCapability } from "../../pdf-container/plugin-annotation-2"
+import { useScrollCapability } from "../../pdf-container/plugin-scroll-2"
 import { useSelectionCapability } from "../../pdf-container/plugin-selection-2"
+import usePluginStore from "../hooks/use-plugin-store"
 
 const PluginStoreSync = () => {
   const { provides: annoCapability } = useAnnotationCapability()
@@ -36,5 +36,4 @@ const PluginStoreSync = () => {
 
   return null
 }
-
 export default PluginStoreSync
