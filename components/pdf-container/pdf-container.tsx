@@ -4,7 +4,6 @@ import { EmbedPDF } from "@embedpdf/core/react"
 import { usePdfiumEngine } from "@embedpdf/engines/react"
 import { ConsoleLogger } from "@embedpdf/models"
 import { ExportPluginPackage } from "@embedpdf/plugin-export/react"
-import { LoaderPluginPackage } from "@embedpdf/plugin-loader/react"
 import { RenderLayer, RenderPluginPackage } from "@embedpdf/plugin-render/react"
 import { Scroller, ScrollPluginPackage, ScrollStrategy } from "@embedpdf/plugin-scroll/react"
 import { SearchLayer, SearchPluginPackage } from "@embedpdf/plugin-search/react"
@@ -20,6 +19,7 @@ import {
   InteractionManagerPluginPackage,
   PagePointerProvider,
 } from "./plugin-interaction-manager-2"
+import { LoaderPluginPackage } from "./plugin-loader-2"
 import { SelectionLayer, SelectionPluginPackage } from "./plugin-selection-2"
 import Toolbar from "./toolbar"
 
