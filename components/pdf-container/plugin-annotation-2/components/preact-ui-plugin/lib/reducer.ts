@@ -1,5 +1,4 @@
-import { Reducer } from '@embedpdf/core';
-import { UIPluginState } from './types';
+import { Reducer } from "@embedpdf/core"
 import {
   UI_HIDE_COMMAND_MENU,
   UI_INIT_COMPONENTS,
@@ -8,7 +7,8 @@ import {
   UI_TOGGLE_PANEL,
   UI_UPDATE_COMPONENT_STATE,
   UIPluginAction,
-} from './actions';
+} from "./actions"
+import { UIPluginState } from "./types"
 
 export const initialState: UIPluginState = {
   panel: {},
@@ -21,7 +21,7 @@ export const initialState: UIPluginState = {
   custom: {},
   floating: {},
   commandMenu: {},
-};
+}
 
 export const uiReducer: Reducer<UIPluginState, UIPluginAction> = (state = initialState, action) => {
   switch (action.type) {
@@ -29,22 +29,22 @@ export const uiReducer: Reducer<UIPluginState, UIPluginAction> = (state = initia
       return {
         ...state,
         ...action.payload,
-      };
+      }
     case UI_TOGGLE_PANEL: {
-      const prevPanel = state.panel[action.payload.id] || {};
-      const { open: nextOpen, visibleChild: nextVisibleChild } = action.payload;
-      const prevVisibleChild = prevPanel.visibleChild;
+      const prevPanel = state.panel[action.payload.id] || {}
+      const { open: nextOpen, visibleChild: nextVisibleChild } = action.payload
+      const prevVisibleChild = prevPanel.visibleChild
 
-      let open = prevPanel.open;
-      let visibleChild = prevPanel.visibleChild;
+      let open = prevPanel.open
+      let visibleChild = prevPanel.visibleChild
 
       if (nextVisibleChild === prevVisibleChild) {
         // Toggle open if visibleChild is the same
-        open = nextOpen !== undefined ? nextOpen : !prevPanel.open;
+        open = nextOpen !== undefined ? nextOpen : !prevPanel.open
       } else {
         // Only change visibleChild, keep open as is
-        visibleChild = nextVisibleChild;
-        open = true;
+        visibleChild = nextVisibleChild
+        open = true
       }
 
       return {
@@ -57,7 +57,7 @@ export const uiReducer: Reducer<UIPluginState, UIPluginAction> = (state = initia
             visibleChild,
           },
         },
-      };
+      }
     }
     case UI_SET_HEADER_VISIBLE:
       return {
@@ -70,7 +70,7 @@ export const uiReducer: Reducer<UIPluginState, UIPluginAction> = (state = initia
             visibleChild: action.payload.visibleChild,
           },
         },
-      };
+      }
     case UI_SHOW_COMMAND_MENU:
       return {
         ...state,
@@ -84,7 +84,7 @@ export const uiReducer: Reducer<UIPluginState, UIPluginAction> = (state = initia
             flatten: action.payload.flatten,
           },
         },
-      };
+      }
     case UI_HIDE_COMMAND_MENU:
       return {
         ...state,
@@ -99,20 +99,20 @@ export const uiReducer: Reducer<UIPluginState, UIPluginAction> = (state = initia
             flatten: false,
           },
         },
-      };
+      }
     case UI_UPDATE_COMPONENT_STATE: {
-      const { componentType, componentId, patch } = action.payload;
+      const { componentType, componentId, patch } = action.payload
 
       // if the slice or the component is unknown → ignore
-      if (!state[componentType] || !state[componentType][componentId]) return state;
+      if (!state[componentType] || !state[componentType][componentId]) return state
 
-      const current = state[componentType][componentId] as Record<string, any>;
+      const current = state[componentType][componentId] as Record<string, any>
 
       // keep only keys that already exist
-      const filteredPatch = Object.fromEntries(Object.entries(patch).filter(([k]) => k in current));
+      const filteredPatch = Object.fromEntries(Object.entries(patch).filter(([k]) => k in current))
 
       // no allowed keys? -> no-op
-      if (Object.keys(filteredPatch).length === 0) return state;
+      if (Object.keys(filteredPatch).length === 0) return state
 
       return {
         ...state,
@@ -123,9 +123,9 @@ export const uiReducer: Reducer<UIPluginState, UIPluginAction> = (state = initia
             ...filteredPatch,
           },
         },
-      };
+      }
     }
     default:
-      return state;
+      return state
   }
-};
+}

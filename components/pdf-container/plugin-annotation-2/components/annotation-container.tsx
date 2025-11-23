@@ -1,5 +1,5 @@
-import { PdfAnnotationObject } from "@embedpdf/models"
 import { CSSProperties, JSX, useEffect, useState } from "react"
+import { PdfAnnotationObject } from "@embedpdf/models"
 import { useDoublePressProps } from "../../../../hooks/mouse-events/use-double-press-props"
 import { TrackedAnnotation } from "../lib"
 import { CounterRotate } from "./annotation-menu/counter-rotate"

@@ -1,5 +1,5 @@
-import { Spinner } from "@/components/shadcn-ui/spinner"
 import dynamic from "next/dynamic"
+import { Spinner } from "@/components/shadcn-ui/spinner"
 
 // Dynamically import PDFContainer with no SSR and custom loading state
 const PDFContainer = dynamic(() => import("@/components/pdf-container/pdf-container"), {

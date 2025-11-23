@@ -1,3 +1,4 @@
+import { ReactNode } from "react"
 import { createPluginRegistration, PluginRegistry } from "@embedpdf/core"
 import { PDFContext } from "@embedpdf/core/react"
 import type {
@@ -17,9 +18,9 @@ import { InteractionManagerPluginPackage } from "@embedpdf/plugin-interaction-ma
 import { SelectionPluginPackage } from "@embedpdf/plugin-selection"
 import { renderHook, waitFor } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test"
-import { ReactNode } from "react"
 import { useAnnotationCapability } from "../hooks/use-annotation"
 import { AnnotationPluginPackage } from "./plugin-package"
+
 // Mock engine - annotation capability doesn't directly interact with PDFium
 const createMockEngine = () => ({
   getAllAnnotations: mock(() => PdfTaskHelper.resolve({})),

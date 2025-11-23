@@ -1,5 +1,5 @@
 import { useEffect, useState } from "preact/hooks"
-import { UIComponent, childrenFunctionOptions } from "../lib"
+import { childrenFunctionOptions, UIComponent } from "../lib"
 
 export function ComponentWrapper({
   component,

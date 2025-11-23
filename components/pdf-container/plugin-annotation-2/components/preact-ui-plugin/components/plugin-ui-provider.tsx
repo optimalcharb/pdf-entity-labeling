@@ -1,27 +1,27 @@
-import { ReactNode } from '@framework';
-import { useUICapability } from '../hooks';
-import { ComponentWrapper } from './component-wrapper';
-import { UIComponent } from '@embedpdf/plugin-ui';
+import { UIComponent } from "@embedpdf/plugin-ui"
+import { ReactNode } from "@framework"
+import { useUICapability } from "../hooks"
+import { ComponentWrapper } from "./component-wrapper"
 
 /**
  * Interface for UI components organized by type/location
  */
 export interface UIComponentsMap {
   headers: {
-    top: ReactNode[];
-    bottom: ReactNode[];
-    left: ReactNode[];
-    right: ReactNode[];
-  };
+    top: ReactNode[]
+    bottom: ReactNode[]
+    left: ReactNode[]
+    right: ReactNode[]
+  }
   panels: {
-    left: ReactNode[];
-    right: ReactNode[];
-  };
+    left: ReactNode[]
+    right: ReactNode[]
+  }
   floating: {
-    insideScroller: ReactNode[];
-    outsideScroller: ReactNode[];
-  };
-  commandMenu: ReactNode | null;
+    insideScroller: ReactNode[]
+    outsideScroller: ReactNode[]
+  }
+  commandMenu: ReactNode | null
 }
 
 /**
@@ -31,7 +31,7 @@ export interface PluginUIProviderProps {
   /**
    * Render function that receives UI components
    */
-  children: (components: UIComponentsMap) => ReactNode;
+  children: (components: UIComponentsMap) => ReactNode
 }
 
 /**
@@ -41,36 +41,36 @@ export interface PluginUIProviderProps {
  * It uses the render props pattern for maximum flexibility.
  */
 export function PluginUIProvider({ children }: PluginUIProviderProps) {
-  const { provides: uiProvides } = useUICapability();
+  const { provides: uiProvides } = useUICapability()
 
   // Helper function to wrap UIComponents as JSX elements
   const wrapComponents = (components: UIComponent<any>[]): ReactNode[] => {
     return components.map((component) => (
       <ComponentWrapper key={component.props.id} component={component} />
-    ));
-  };
+    ))
+  }
 
   // Collect and wrap all components from UI plugin
   const componentMap: UIComponentsMap = {
     headers: {
-      top: wrapComponents(uiProvides?.getHeadersByPlacement('top') || []),
-      bottom: wrapComponents(uiProvides?.getHeadersByPlacement('bottom') || []),
-      left: wrapComponents(uiProvides?.getHeadersByPlacement('left') || []),
-      right: wrapComponents(uiProvides?.getHeadersByPlacement('right') || []),
+      top: wrapComponents(uiProvides?.getHeadersByPlacement("top") || []),
+      bottom: wrapComponents(uiProvides?.getHeadersByPlacement("bottom") || []),
+      left: wrapComponents(uiProvides?.getHeadersByPlacement("left") || []),
+      right: wrapComponents(uiProvides?.getHeadersByPlacement("right") || []),
     },
     panels: {
-      left: wrapComponents(uiProvides?.getPanelsByLocation('left') || []),
-      right: wrapComponents(uiProvides?.getPanelsByLocation('right') || []),
+      left: wrapComponents(uiProvides?.getPanelsByLocation("left") || []),
+      right: wrapComponents(uiProvides?.getPanelsByLocation("right") || []),
     },
     floating: {
-      insideScroller: wrapComponents(uiProvides?.getFloatingComponents('inside') || []),
-      outsideScroller: wrapComponents(uiProvides?.getFloatingComponents('outside') || []),
+      insideScroller: wrapComponents(uiProvides?.getFloatingComponents("inside") || []),
+      outsideScroller: wrapComponents(uiProvides?.getFloatingComponents("outside") || []),
     },
     commandMenu: uiProvides?.getCommandMenu() ? (
       <ComponentWrapper component={uiProvides.getCommandMenu()!} />
     ) : null,
-  };
+  }
 
   // Let the consumer determine the layout structure through the render prop
-  return children(componentMap);
+  return children(componentMap)
 }

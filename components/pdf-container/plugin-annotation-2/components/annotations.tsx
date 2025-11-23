@@ -1,7 +1,7 @@
+import { MouseEvent, TouchEvent, useCallback, useEffect, useMemo, useState } from "react"
 import { blendModeToCss, PdfAnnotationObject, PdfBlendMode } from "@embedpdf/models"
 import { PointerEventHandlers } from "@embedpdf/plugin-interaction-manager"
 import { usePointerHandlers } from "@embedpdf/plugin-interaction-manager/react"
-import { MouseEvent, TouchEvent, useCallback, useEffect, useMemo, useState } from "react"
 import { useSelectionCapability } from "../../plugin-selection-2"
 import { useAnnotationCapability } from "../hooks"
 import type { AnnotationState, TrackedAnnotation } from "../lib"

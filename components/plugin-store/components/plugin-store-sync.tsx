@@ -1,6 +1,6 @@
-import usePluginStore from "@/components/plugin-store/hooks/use-plugin-store"
-import { useScrollCapability } from "@embedpdf/plugin-scroll/react"
 import { useEffect } from "react"
+import { useScrollCapability } from "@embedpdf/plugin-scroll/react"
+import usePluginStore from "@/components/plugin-store/hooks/use-plugin-store"
 import { useAnnotationCapability } from "../../pdf-container/plugin-annotation-2"
 import { useSelectionCapability } from "../../pdf-container/plugin-selection-2"
 
