@@ -10,8 +10,8 @@ import {
 } from "@embedpdf/core"
 import { PdfDocumentObject } from "@embedpdf/models"
 import { LoaderEvent } from "./custom-types"
-import { PDFDocumentLoader, StrategyResolver } from "./loader"
-import { PDFLoadingOptions, PDFLoadingStrategy } from "./loader/strategies/loading-strategy"
+import { PDFDocumentLoader, StrategyResolver } from "./document-loader"
+import { PDFLoadingOptions, PDFLoadingStrategy } from "./strategies/loading-strategy"
 
 // ***PLUGIN CONFIG***
 export interface LoaderPluginConfig extends BasePluginConfig {
