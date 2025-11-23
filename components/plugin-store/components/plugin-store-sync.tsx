@@ -26,7 +26,7 @@ const PluginStoreSync = () => {
 
     return () => {
       syncState()
-      // clear capabilities when unmounting
+      // clear store values when unmounting
       store.setAnnoCapability(null)
       store.setAnnoState(null)
       store.setSelectCapability(null)
