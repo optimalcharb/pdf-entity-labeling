@@ -24,7 +24,7 @@ export interface SetAnnotationsAction extends Action {
 }
 export interface SelectAnnotationAction extends Action {
   type: typeof SELECT_ANNOTATION
-  payload: { pageIndex: number; id: string }
+  payload: { id: string }
 }
 export interface DeselectAnnotationAction extends Action {
   type: typeof DESELECT_ANNOTATION
@@ -86,9 +86,9 @@ export const setAnnotations = (
   type: SET_ANNOTATIONS,
   payload: p,
 })
-export const selectAnnotation = (pageIndex: number, id: string): SelectAnnotationAction => ({
+export const selectAnnotation = (id: string): SelectAnnotationAction => ({
   type: SELECT_ANNOTATION,
-  payload: { pageIndex, id },
+  payload: { id },
 })
 export const deselectAnnotation = (): DeselectAnnotationAction => ({ type: DESELECT_ANNOTATION })
 export const createAnnotation = (

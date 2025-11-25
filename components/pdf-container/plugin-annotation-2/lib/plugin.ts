@@ -8,6 +8,7 @@ import {
 } from "@embedpdf/core"
 import {
   PdfAnnotationObject,
+  PdfAnnotationSubtype,
   PdfDocumentObject,
   PdfErrorCode,
   PdfErrorReason,
@@ -59,7 +60,7 @@ export interface AnnotationCapability {
     pageIndex: number
   }) => Task<PdfAnnotationObject[], PdfErrorReason>
 
-  selectAnnotation: (pageIndex: number, annotationId: string) => void
+  selectAnnotation: (annotationId: string) => void
   deselectAnnotation: () => void
 
   activateTool: (toolId: string | null) => void
@@ -169,7 +170,7 @@ export class AnnotationPlugin extends BasePlugin<
             this.activateToolId(null)
           }
           if (this.config.selectAfterCreate) {
-            this.dispatch(selectAnnotation(selection.pageIndex, annotationId))
+            this.dispatch(selectAnnotation(annotationId))
           }
         }, ignore)
       }
@@ -184,7 +185,7 @@ export class AnnotationPlugin extends BasePlugin<
       onActiveToolChange: this.activeTool$.on,
       onAnnotationEvent: this.events$.on,
       getPageAnnotations: (options) => this.getPageAnnotations(options),
-      selectAnnotation: (pageIndex, id) => this.dispatch(selectAnnotation(pageIndex, id)),
+      selectAnnotation: (id) => this.dispatch(selectAnnotation(id)),
       deselectAnnotation: () => this.dispatch(deselectAnnotation()),
       activateTool: (toolId) => this.activateToolId(toolId),
       setToolDefaults: (toolId, patch) => this.dispatch(setToolDefaults(toolId, patch)),
@@ -228,14 +229,40 @@ export class AnnotationPlugin extends BasePlugin<
   private getAllAnnotations(doc: PdfDocumentObject) {
     const task = this.engine.getAllAnnotations(doc)
     task.wait((annotations) => {
-      // filter annotations (PdfAnnotationObjects that are PdfTextMarkupAnnotationObjects)
-      this.dispatch(setAnnotations(annotations))
+      /**
+       * annotations is Record<number, PdfAnnotationObject[]>
+       * textMarkupAnnotations is filtered to only PdfTextMarkupAnnotationObjects
+       * other annotation types are not rendered
+       */
+      const textMarkupAnnotations: Record<number, PdfTextMarkupAnnotationObject[]> = {}
 
-      this.isInitialLoadComplete = true
+      for (const pageIndex in annotations) {
+        const pageIndexNum = Number(pageIndex)
+        const pageAnnotations = annotations[pageIndexNum]
+        if (!pageAnnotations) continue
+        const textMarkupPageAnnotations: PdfTextMarkupAnnotationObject[] = []
+
+        for (const annotation of pageAnnotations) {
+          if (
+            annotation.type === PdfAnnotationSubtype.HIGHLIGHT ||
+            annotation.type === PdfAnnotationSubtype.UNDERLINE ||
+            annotation.type === PdfAnnotationSubtype.SQUIGGLY ||
+            annotation.type === PdfAnnotationSubtype.STRIKEOUT
+          ) {
+            textMarkupPageAnnotations.push(annotation as PdfTextMarkupAnnotationObject)
+          }
+        }
+
+        textMarkupAnnotations[pageIndexNum] = textMarkupPageAnnotations
+      }
+
+      this.dispatch(setAnnotations(textMarkupAnnotations))
 
       if (this.loadingQueue.length > 0) {
         this.createQueuedAnnotations()
       }
+
+      this.isInitialLoadComplete = true
 
       this.events$.emit({
         type: "loaded",
