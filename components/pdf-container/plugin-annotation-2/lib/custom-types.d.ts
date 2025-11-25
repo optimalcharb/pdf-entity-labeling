@@ -1,31 +1,34 @@
-import type { PdfAnnotationObject } from "@embedpdf/models"
+import type { PdfTextMarkupAnnotationObject } from "./pdf-text-markup-annotation-object"
 
 export type AnnotationEvent =
   | {
       type: "create"
-      annotation: PdfAnnotationObject
+      annotation: PdfTextMarkupAnnotationObject
       pageIndex: number
       committed: boolean
     }
   | {
       type: "update"
-      annotation: PdfAnnotationObject
+      annotation: PdfTextMarkupAnnotationObject
       pageIndex: number
-      patch: Partial<PdfAnnotationObject>
+      patch: Partial<PdfTextMarkupAnnotationObject>
       committed: boolean
     }
-  | { type: "delete"; annotation: PdfAnnotationObject; pageIndex: number; committed: boolean }
+  | {
+      type: "delete"
+      annotation: PdfTextMarkupAnnotationObject
+      pageIndex: number
+      committed: boolean
+    }
   | { type: "loaded"; total: number }
 
 export type CommitState = "new" | "dirty" | "deleted" | "synced" | "ignored"
 
-export interface TrackedAnnotation<A extends PdfAnnotationObject = PdfAnnotationObject> {
+export interface TrackedAnnotation<
+  A extends PdfTextMarkupAnnotationObject = PdfTextMarkupAnnotationObject,
+> {
   commitState: CommitState
   object: A
-}
-
-export interface GetPageAnnotationsOptions {
-  pageIndex: number
 }
 
 export interface Command {

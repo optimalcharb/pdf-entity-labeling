@@ -20,7 +20,7 @@ function createToolPredicate<K extends keyof ToolMap>(id: K) {
   }
 }
 
-// Export the generated predicates for common tools.
+// Export the generated predicates
 export const isHighlightTool = createToolPredicate("highlight")
 export const isSquigglyTool = createToolPredicate("squiggly")
 export const isUnderlineTool = createToolPredicate("underline")

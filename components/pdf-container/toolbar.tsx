@@ -1,3 +1,4 @@
+import { PdfAnnotationSubtype } from "@embedpdf/models"
 import { useExportCapability } from "@embedpdf/plugin-export/react"
 import { useRotateCapability } from "@embedpdf/plugin-rotate/react"
 import { useZoomCapability } from "@embedpdf/plugin-zoom/react"
@@ -14,6 +15,7 @@ import {
   ZoomOut,
 } from "lucide-react"
 import usePluginStore from "../plugin-store/hooks/use-plugin-store"
+import type { PdfTextMarkupAnnotationObject } from "./plugin-annotation-2"
 
 const Toolbar = ({ canRotate }: { canRotate: boolean }) => {
   const { provides: exportCapability } = useExportCapability()
@@ -140,6 +142,22 @@ const Toolbar = ({ canRotate }: { canRotate: boolean }) => {
         title="Clear All Annotations"
       >
         Clear All
+      </button>
+      <button
+        onClick={() => {
+          let patch: Partial<PdfTextMarkupAnnotationObject> = {}
+          patch.color = "red"
+          patch.opacity = 0.5
+          patch.type = PdfAnnotationSubtype.HIGHLIGHT
+          if (!annoState) return
+          if (!annoState.byUid) return
+          const allAnnoUids = Object.keys(annoState.byUid)
+          annoCapability?.updateAnnotations(allAnnoUids.map((id: string) => ({ id, patch })))
+        }}
+        className="rounded-md bg-red-500 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-red-300"
+        title="Turn all annotations into red highlights"
+      >
+        Red Highlights
       </button>
     </div>
   )

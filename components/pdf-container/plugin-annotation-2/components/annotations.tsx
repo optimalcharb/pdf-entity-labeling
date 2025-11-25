@@ -1,9 +1,10 @@
 import { MouseEvent, TouchEvent, useCallback, useEffect, useMemo, useState } from "react"
-import { blendModeToCss, PdfAnnotationObject, PdfBlendMode } from "@embedpdf/models"
+import { blendModeToCss, PdfBlendMode } from "@embedpdf/models"
 import { PointerEventHandlers, usePointerHandlers } from "../../plugin-interaction-manager-2"
 import { useSelectionCapability } from "../../plugin-selection-2"
 import { useAnnotationCapability } from "../hooks"
 import type { AnnotationState, TrackedAnnotation } from "../lib"
+import type { PdfTextMarkupAnnotationObject } from "../lib/pdf-text-markup-annotation-object"
 import { isHighlight, isSquiggly, isStrikeout, isUnderline } from "../lib/subtype-predicates"
 import { AnnotationContainter } from "./annotation-container"
 import type { SelectionMenu } from "./selection-menu"
@@ -13,16 +14,18 @@ import { Strikeout } from "./text-markup/strikeout"
 import { Underline } from "./text-markup/underline"
 
 const getAnnotationsByPageIndex = (s: AnnotationState, page: number) =>
-  (s.byPage[page] ?? []).map((uid) => s.byUid[uid]) as TrackedAnnotation<PdfAnnotationObject>[]
+  (s.byPage[page] ?? []).map(
+    (uid) => s.byUid[uid],
+  ) as TrackedAnnotation<PdfTextMarkupAnnotationObject>[]
 
 const getSelectedAnnotationByPageIndex = (
   s: AnnotationState,
   pageIndex: number,
-): TrackedAnnotation<PdfAnnotationObject> | null => {
+): TrackedAnnotation<PdfTextMarkupAnnotationObject> | null => {
   if (!s.selectedUid) return null
   const pageUids = s.byPage[pageIndex] ?? []
   if (pageUids.includes(s.selectedUid)) {
-    return s.byUid[s.selectedUid] as TrackedAnnotation<PdfAnnotationObject>
+    return s.byUid[s.selectedUid] as TrackedAnnotation<PdfTextMarkupAnnotationObject>
   }
   return null
 }

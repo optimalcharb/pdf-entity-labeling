@@ -1,11 +1,11 @@
 import { CSSProperties, JSX, useEffect, useState } from "react"
-import { PdfAnnotationObject } from "@embedpdf/models"
 import { useDoublePressProps } from "../../../../hooks/mouse-events/use-double-press-props"
 import { TrackedAnnotation } from "../lib"
+import type { PdfTextMarkupAnnotationObject } from "../lib/pdf-text-markup-annotation-object"
 import { CounterRotate } from "./annotation-menu/counter-rotate"
 import { SelectionMenu } from "./selection-menu"
 
-interface AnnotationContainterProps<T extends PdfAnnotationObject> {
+interface AnnotationContainterProps<T extends PdfTextMarkupAnnotationObject> {
   scale: number
   rotation: number
   pageIndex: number
@@ -24,7 +24,7 @@ interface AnnotationContainterProps<T extends PdfAnnotationObject> {
   selectionOutlineOffset?: number
 }
 
-export function AnnotationContainter<T extends PdfAnnotationObject>({
+export function AnnotationContainter<T extends PdfTextMarkupAnnotationObject>({
   scale,
   rotation,
   // necessary props from Annotations, but not used explicitly in the code

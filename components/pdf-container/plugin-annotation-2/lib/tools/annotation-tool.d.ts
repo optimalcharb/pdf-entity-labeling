@@ -1,4 +1,4 @@
-import type { PdfAnnotationObject } from "@embedpdf/models"
+import type { PdfTextMarkupAnnotationObject } from "../pdf-text-markup-annotation-object"
 
 export type AnnotationTool = {
   id: string
@@ -8,5 +8,5 @@ export type AnnotationTool = {
     cursor?: string
     textSelection?: boolean
   }
-  defaults: Partial<PdfAnnotationObject>
+  defaults: Partial<PdfTextMarkupAnnotationObject>
 }
