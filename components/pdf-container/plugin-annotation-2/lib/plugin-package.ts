@@ -13,7 +13,7 @@ const manifest: PluginManifest<AnnotationPluginConfig> = {
   version: "1.0.0",
   provides: ["annotation"],
   requires: ["interaction-manager", "selection"],
-  optional: ["history"],
+  optional: [],
   defaultConfig: {
     annotationAuthor: "test",
     deactivateToolAfterCreate: false,
