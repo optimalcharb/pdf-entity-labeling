@@ -5,7 +5,7 @@ export const initialTools = [
   {
     id: "highlight" as const,
     interaction: {
-      exclusive: false,
+      exclusive: true,
       textSelection: true,
       mode: "highlight",
       cursor: "text",
@@ -20,7 +20,7 @@ export const initialTools = [
   {
     id: "underline" as const,
     interaction: {
-      exclusive: false,
+      exclusive: true,
       textSelection: true,
       mode: "underline",
       cursor: "text",
@@ -34,7 +34,7 @@ export const initialTools = [
   {
     id: "strikeout" as const,
     interaction: {
-      exclusive: false,
+      exclusive: true,
       textSelection: true,
       mode: "strikeout",
       cursor: "text",
@@ -48,7 +48,7 @@ export const initialTools = [
   {
     id: "squiggly" as const,
     interaction: {
-      exclusive: false,
+      exclusive: true,
       textSelection: true,
       mode: "squiggly",
       cursor: "text",

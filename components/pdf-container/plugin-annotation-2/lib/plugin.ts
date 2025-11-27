@@ -67,7 +67,7 @@ export interface AnnotationCapability {
   setToolDefaults: (toolId: string, patch: Partial<PdfTextMarkupAnnotationObject>) => void // set the props for new annotations created using a tool
   setActiveToolDefaults: (patch: Partial<PdfTextMarkupAnnotationObject>) => void
 
-  exportAnnotationsToJSON: () => void // temp
+  exportAnnotationsToJSON: () => void // temp for testing
   createAnnotation: (annotation: PdfTextMarkupAnnotationObject) => void // for user-created annotations
   createAnnotations: (items: PdfTextMarkupAnnotationObject[]) => void // for consumer program to batch create annotations (without adding to timeline)
   deleteAnnotation: (annotationId: string) => void

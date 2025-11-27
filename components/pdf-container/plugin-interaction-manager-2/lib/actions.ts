@@ -1,4 +1,4 @@
-import type { Action, Reducer } from "@embedpdf/core"
+import { Action, Reducer } from "@embedpdf/core"
 import type { InteractionExclusionRules } from "./custom-types"
 import type { InteractionManagerState } from "./state"
 
