@@ -1,9 +1,9 @@
 import { CSSProperties, JSX, useEffect, useState } from "react"
 import { useDoublePressProps } from "../../../../hooks/mouse-events/use-double-press-props"
-import { TrackedAnnotation } from "../lib"
+import type { TrackedAnnotation } from "../lib"
 import type { PdfTextMarkupAnnotationObject } from "../lib/pdf-text-markup-annotation-object"
 import { CounterRotate } from "./annotation-menu/counter-rotate"
-import { SelectionMenu } from "./selection-menu"
+import type { SelectionMenu } from "./selection-menu"
 
 interface AnnotationContainterProps<T extends PdfTextMarkupAnnotationObject> {
   scale: number

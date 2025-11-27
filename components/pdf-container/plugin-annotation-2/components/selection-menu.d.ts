@@ -1,7 +1,7 @@
 import { JSX } from "react"
 import { Rect } from "@embedpdf/models"
-import { MenuWrapperProps } from "@embedpdf/utils/react"
-import { TrackedAnnotation } from "../lib"
+import type { MenuWrapperProps } from "@embedpdf/utils/react"
+import type { TrackedAnnotation } from "../lib"
 
 export interface SelectionMenuProps {
   annotation: TrackedAnnotation
