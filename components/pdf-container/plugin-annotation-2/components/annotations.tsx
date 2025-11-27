@@ -75,7 +75,7 @@ export function Annotations(annotationsProps: AnnotationsProps) {
     (e: MouseEvent | TouchEvent, annotation: TrackedAnnotation) => {
       e.stopPropagation()
       if (annotationProvides && selectionProvides) {
-        annotationProvides.selectAnnotation(pageIndex, annotation.object.id)
+        annotationProvides.selectAnnotation(annotation.object.id)
         selectionProvides.clear()
         if (annotation.object.id !== editingId) {
           setEditingId(null)
