@@ -11,6 +11,7 @@ export interface AnnotationState {
   activeColor: string
   activeOpacity: number
   activeSubtype: PdfAnnotationSubtype | null
+  activeEntityType: string
   hasPendingChanges: boolean
   canUndo: boolean
   canRedo: boolean
@@ -24,6 +25,7 @@ export const initialState: AnnotationState = {
   activeColor: "#FFCD45",
   activeOpacity: 0.5,
   activeSubtype: null,
+  activeEntityType: "",
   hasPendingChanges: false,
   canUndo: false,
   canRedo: false,

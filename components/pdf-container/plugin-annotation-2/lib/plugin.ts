@@ -64,6 +64,7 @@ export interface AnnotationCapability {
     color?: string
     opacity?: number
     subtype?: PdfAnnotationSubtype | null
+    entityType?: string
   }) => void
 
   exportAnnotationsToJSON: () => void // temp for testing
@@ -128,7 +129,7 @@ export class AnnotationPlugin extends BasePlugin<
     this.selection?.enableForMode("annotation")
 
     this.selection?.onEndSelection(() => {
-      const { activeSubtype, activeColor, activeOpacity } = this.state
+      const { activeSubtype, activeColor, activeOpacity, activeEntityType } = this.state
       if (!activeSubtype) return
 
       const formattedSelection = this.selection?.getFormattedSelection()
@@ -148,8 +149,9 @@ export class AnnotationPlugin extends BasePlugin<
             pageIndex: selection.pageIndex,
             created: new Date(),
             id: annotationId,
+            contents: text.join("\n"),
             custom: {
-              text: text.join("\n"),
+              entityType: activeEntityType,
             },
           } as PdfTextMarkupAnnotationObject)
 

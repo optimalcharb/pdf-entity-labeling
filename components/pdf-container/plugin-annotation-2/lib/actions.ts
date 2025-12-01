@@ -55,6 +55,7 @@ export interface SetCreateAnnotationDefaultsAction extends Action {
     color?: string
     opacity?: number
     subtype?: PdfAnnotationSubtype | null
+    entityType?: string
   }
 }
 export interface SetCanUndoRedoAction extends Action {
@@ -114,6 +115,7 @@ export const setCreateAnnotationDefaults = (defaults: {
   color?: string
   opacity?: number
   subtype?: PdfAnnotationSubtype | null
+  entityType?: string
 }): SetCreateAnnotationDefaultsAction => ({
   type: SET_CREATE_ANNOTATION_DEFAULTS,
   payload: defaults,
@@ -158,6 +160,7 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
           action.payload.subtype !== undefined && isValidActiveSubtype(action.payload.subtype)
             ? action.payload.subtype
             : state.activeSubtype,
+        activeEntityType: action.payload.entityType ?? state.activeEntityType,
       }
 
     case SELECT_ANNOTATION:
