@@ -7,15 +7,15 @@ import {
   SET_DOCUMENT,
 } from "@embedpdf/core"
 import {
-  ignore,
   PdfAnnotationObject,
+  PdfAnnotationSubtype,
   PdfDocumentObject,
   PdfErrorCode,
   PdfErrorReason,
   PdfTaskHelper,
   Task,
-  uuidV4,
 } from "@embedpdf/models"
+import { uuidV4 } from "@/lib/misc/uuid"
 import {
   InteractionManagerCapability,
   InteractionManagerPlugin,
@@ -31,19 +31,15 @@ import {
   patchAnnotation,
   purgeAnnotation,
   selectAnnotation,
-  setActiveToolId,
   setAnnotations,
   setCanUndoRedo,
-  setToolDefaults,
+  setCreateAnnotationDefaults,
 } from "./actions"
-import type {
-  AnnotationEvent,
-  Command,
-  GetPageAnnotationsOptions,
-  TrackedAnnotation,
-} from "./custom-types"
+import type { AnnotationEvent, Command, TrackedAnnotation } from "./custom-types"
+import type { PdfTextMarkupAnnotationObject } from "./pdf-text-markup-annotation-object"
 import type { AnnotationState } from "./state"
-import type { AnnotationTool } from "./tools/annotation-tool"
+
+function ignore() {}
 
 // ***PLUGIN CONFIG***
 export interface AnnotationPluginConfig extends BasePluginConfig {
@@ -55,27 +51,30 @@ export interface AnnotationPluginConfig extends BasePluginConfig {
 // ***PLUGIN CAPABILITY***
 export interface AnnotationCapability {
   onStateChange: EventHook<AnnotationState>
-  onActiveToolChange: EventHook<AnnotationTool | null>
   onAnnotationEvent: EventHook<AnnotationEvent>
   // getPageAnnotations uses PDFium to get any annotations saved in the PDF, even those not made by this plugin
-  getPageAnnotations: (
-    options: GetPageAnnotationsOptions,
-  ) => Task<PdfAnnotationObject[], PdfErrorReason>
+  getPageAnnotations: (options: {
+    pageIndex: number
+  }) => Task<PdfAnnotationObject[], PdfErrorReason>
 
-  selectAnnotation: (pageIndex: number, annotationId: string) => void
+  selectAnnotation: (annotationId: string) => void
   deselectAnnotation: () => void
 
-  activateTool: (toolId: string | null) => void
-  setToolDefaults: (toolId: string, patch: Partial<PdfAnnotationObject>) => void // set the props for new annotations created using a tool
-  setActiveToolDefaults: (patch: Partial<PdfAnnotationObject>) => void
+  setCreateAnnotationDefaults: (defaults: {
+    color?: string
+    opacity?: number
+    subtype?: PdfAnnotationSubtype | null
+  }) => void
 
-  exportAnnotationsToJSON: () => void // temp
-  createAnnotation: (annotation: PdfAnnotationObject) => void // for user-created annotations
-  createAnnotations: (items: PdfAnnotationObject[]) => void // for consumer program to batch create annotations (without adding to timeline)
+  exportAnnotationsToJSON: () => void // temp for testing
+  createAnnotation: (annotation: PdfTextMarkupAnnotationObject) => void // for user-created annotations
+  createAnnotations: (items: PdfTextMarkupAnnotationObject[]) => void // for consumer program to batch create annotations (without adding to timeline)
   deleteAnnotation: (annotationId: string) => void
   deleteAnnotations: (annotationIds: string[]) => void // for consumer program to batch delete annotations (without adding to timeline)
-  updateAnnotation: (annotationId: string, patch: Partial<PdfAnnotationObject>) => void // change the props of an annotation
-  updateAnnotations: (items: { id: string; patch: Partial<PdfAnnotationObject> }[]) => void // for consumer program to batch update annotations (without adding to timeline)
+  updateAnnotation: (annotationId: string, patch: Partial<PdfTextMarkupAnnotationObject>) => void // change the props of an annotation
+  updateAnnotations: (
+    items: { id: string; patch: Partial<PdfTextMarkupAnnotationObject> }[],
+  ) => void // for consumer program to batch update annotations (without adding to timeline)
   clearAnnotations: () => void // clear all annotations
   undo: () => void
   redo: () => void
@@ -95,11 +94,10 @@ export class AnnotationPlugin extends BasePlugin<
   private readonly interactionManager: InteractionManagerCapability | null
   private readonly selection: SelectionCapability | null
 
-  private readonly activeTool$ = createBehaviorEmitter<AnnotationTool | null>(null)
   private readonly events$ = createBehaviorEmitter<AnnotationEvent>()
 
   private isInitialLoadComplete: boolean = false
-  private loadingQueue: PdfAnnotationObject[] = []
+  private loadingQueue: PdfTextMarkupAnnotationObject[] = []
 
   private timeline: Command[] = []
   private timelineIndex: number = -1
@@ -120,20 +118,18 @@ export class AnnotationPlugin extends BasePlugin<
   }
 
   async initialize(): Promise<void> {
-    // Register interaction modes for all tools defined in the initial state
-    this.state.tools.forEach((tool) => this.registerInteractionForTool(tool))
-
-    this.interactionManager?.onModeChange((s) => {
-      const newToolId =
-        this.state.tools.find((t) => (t.interaction.mode ?? t.id) === s.activeMode)?.id ?? null
-      if (newToolId !== this.state.activeToolId) {
-        this.dispatch(setActiveToolId(newToolId))
-      }
+    // Register a single interaction mode for annotations
+    this.interactionManager?.registerMode({
+      id: "annotation",
+      scope: "page",
+      exclusive: false,
+      cursor: "text",
     })
+    this.selection?.enableForMode("annotation")
 
     this.selection?.onEndSelection(() => {
-      const activeTool = this.getActiveTool()
-      if (!activeTool || !activeTool.interaction.textSelection) return
+      const { activeSubtype, activeColor, activeOpacity } = this.state
+      if (!activeSubtype) return
 
       const formattedSelection = this.selection?.getFormattedSelection()
       const selectionText = this.selection?.getSelectedText()
@@ -142,9 +138,11 @@ export class AnnotationPlugin extends BasePlugin<
       for (const selection of formattedSelection) {
         selectionText.wait((text) => {
           const annotationId = uuidV4()
-          // Create an annotation using the defaults from the active text tool
+          // Create an annotation using the active state properties
           this.createAnnotation({
-            ...activeTool.defaults,
+            type: activeSubtype,
+            color: activeColor,
+            opacity: activeOpacity,
             rect: selection.rect,
             segmentRects: selection.segmentRects,
             pageIndex: selection.pageIndex,
@@ -153,13 +151,13 @@ export class AnnotationPlugin extends BasePlugin<
             custom: {
               text: text.join("\n"),
             },
-          } as PdfAnnotationObject)
+          } as PdfTextMarkupAnnotationObject)
 
           if (this.config.deactivateToolAfterCreate) {
-            this.activateToolId(null)
+            this.dispatch(setCreateAnnotationDefaults({ subtype: null }))
           }
           if (this.config.selectAfterCreate) {
-            this.dispatch(selectAnnotation(selection.pageIndex, annotationId))
+            this.dispatch(selectAnnotation(annotationId))
           }
         }, ignore)
       }
@@ -168,30 +166,15 @@ export class AnnotationPlugin extends BasePlugin<
     })
   }
 
-  private registerInteractionForTool(tool: AnnotationTool) {
-    this.interactionManager?.registerMode({
-      id: tool.interaction.mode ?? tool.id,
-      scope: "page",
-      exclusive: tool.interaction.exclusive,
-      cursor: tool.interaction.cursor,
-    })
-    if (tool.interaction.textSelection) {
-      this.selection?.enableForMode(tool.interaction.mode ?? tool.id)
-    }
-  }
-
   protected buildCapability(): AnnotationCapability {
     return {
       onStateChange: this.state$.on,
-      onActiveToolChange: this.activeTool$.on,
       onAnnotationEvent: this.events$.on,
       getPageAnnotations: (options) => this.getPageAnnotations(options),
-      selectAnnotation: (pageIndex, id) => this.dispatch(selectAnnotation(pageIndex, id)),
+      selectAnnotation: (id) => this.dispatch(selectAnnotation(id)),
       deselectAnnotation: () => this.dispatch(deselectAnnotation()),
-      activateTool: (toolId) => this.activateToolId(toolId),
-      setToolDefaults: (toolId, patch) => this.dispatch(setToolDefaults(toolId, patch)),
-      setActiveToolDefaults: (patch) =>
-        this.state.activeToolId && this.dispatch(setToolDefaults(this.state.activeToolId, patch)),
+      setCreateAnnotationDefaults: (defaults) =>
+        this.dispatch(setCreateAnnotationDefaults(defaults)),
       createAnnotations: (items) => this.createAnnotations(items),
       createAnnotation: (anno) => this.createAnnotation(anno),
       deleteAnnotation: (id) => this.deleteAnnotation(id),
@@ -221,22 +204,53 @@ export class AnnotationPlugin extends BasePlugin<
 
   override onStoreUpdated(prev: AnnotationState, next: AnnotationState): void {
     this.state$.emit(next)
-    // If the active tool ID changes, or the tools array itself changes, emit the new active tool
-    if (prev.activeToolId !== next.activeToolId || prev.tools !== next.tools) {
-      this.activeTool$.emit(this.getActiveTool())
+    // Change interaction mode when activeSubtype changes between null and non-null
+    if (!prev.activeSubtype || !next.activeSubtype) {
+      if (next.activeSubtype) {
+        this.interactionManager?.activate("annotation")
+      } else {
+        this.interactionManager?.activateDefaultMode()
+      }
     }
   }
 
   private getAllAnnotations(doc: PdfDocumentObject) {
     const task = this.engine.getAllAnnotations(doc)
     task.wait((annotations) => {
-      this.dispatch(setAnnotations(annotations))
+      /**
+       * annotations is Record<number, PdfAnnotationObject[]>
+       * textMarkupAnnotations is filtered to only PdfTextMarkupAnnotationObjects
+       * other annotation types are not rendered
+       */
+      const textMarkupAnnotations: Record<number, PdfTextMarkupAnnotationObject[]> = {}
 
-      this.isInitialLoadComplete = true
+      for (const pageIndex in annotations) {
+        const pageIndexNum = Number(pageIndex)
+        const pageAnnotations = annotations[pageIndexNum]
+        if (!pageAnnotations) continue
+        const textMarkupPageAnnotations: PdfTextMarkupAnnotationObject[] = []
+
+        for (const annotation of pageAnnotations) {
+          if (
+            annotation.type === PdfAnnotationSubtype.HIGHLIGHT ||
+            annotation.type === PdfAnnotationSubtype.UNDERLINE ||
+            annotation.type === PdfAnnotationSubtype.SQUIGGLY ||
+            annotation.type === PdfAnnotationSubtype.STRIKEOUT
+          ) {
+            textMarkupPageAnnotations.push(annotation as PdfTextMarkupAnnotationObject)
+          }
+        }
+
+        textMarkupAnnotations[pageIndexNum] = textMarkupPageAnnotations
+      }
+
+      this.dispatch(setAnnotations(textMarkupAnnotations))
 
       if (this.loadingQueue.length > 0) {
         this.createQueuedAnnotations()
       }
+
+      this.isInitialLoadComplete = true
 
       this.events$.emit({
         type: "loaded",
@@ -248,9 +262,9 @@ export class AnnotationPlugin extends BasePlugin<
     }, ignore)
   }
 
-  private getPageAnnotations(
-    options: GetPageAnnotationsOptions,
-  ): Task<PdfAnnotationObject[], PdfErrorReason> {
+  private getPageAnnotations(options: {
+    pageIndex: number
+  }): Task<PdfAnnotationObject[], PdfErrorReason> {
     const { pageIndex } = options
     const doc = this.coreState.core.document
 
@@ -268,7 +282,7 @@ export class AnnotationPlugin extends BasePlugin<
   }
 
   // consumer capability to batch add annotations
-  private createAnnotations(items: PdfAnnotationObject[]) {
+  private createAnnotations(items: PdfTextMarkupAnnotationObject[]) {
     if (!this.isInitialLoadComplete) {
       this.loadingQueue.push(...items)
       return
@@ -277,8 +291,12 @@ export class AnnotationPlugin extends BasePlugin<
   }
 
   // consumer capability to batch update annotations
-  private updateAnnotations(items: { id: string; patch: Partial<PdfAnnotationObject> }[]) {
+  private updateAnnotations(
+    items: { id: string; patch: Partial<PdfTextMarkupAnnotationObject> }[],
+  ) {
     for (const { id, patch } of items) {
+      patch.modified = new Date()
+      patch.author = patch.author ?? this.config.annotationAuthor
       this.dispatch(patchAnnotation(id, patch))
     }
     this.commit()
@@ -301,25 +319,28 @@ export class AnnotationPlugin extends BasePlugin<
   }
 
   // batchCreate has no undo capability since it is used by consumer programs, not users
-  private batchCreateAnnotations(items: PdfAnnotationObject[]) {
+  private batchCreateAnnotations(items: PdfTextMarkupAnnotationObject[]) {
     for (const annotation of items) {
+      annotation.created = new Date()
+      annotation.author = annotation.author ?? this.config.annotationAuthor
       this.dispatch(createAnnotation(annotation))
     }
     this.commit()
   }
 
-  private createAnnotation(annotation: PdfAnnotationObject) {
+  private createAnnotation(annotation: PdfTextMarkupAnnotationObject) {
     const id = annotation.id
     const pageIndex = annotation.pageIndex
-    const newAnnotation = {
+    const annotationModified = {
       ...annotation,
+      created: new Date(),
       author: annotation.author ?? this.config.annotationAuthor,
     }
     const execute = () => {
-      this.dispatch(createAnnotation(newAnnotation))
+      this.dispatch(createAnnotation(annotationModified))
       this.events$.emit({
         type: "create",
-        annotation: newAnnotation,
+        annotation: annotationModified,
         pageIndex,
         committed: false,
       })
@@ -332,7 +353,7 @@ export class AnnotationPlugin extends BasePlugin<
         this.dispatch(deleteAnnotation(id))
         this.events$.emit({
           type: "delete",
-          annotation: newAnnotation,
+          annotation: annotationModified,
           pageIndex,
           committed: false,
         })
@@ -371,27 +392,32 @@ export class AnnotationPlugin extends BasePlugin<
     this.commitWithTimeline(command)
   }
 
-  private updateAnnotation(id: string, patch: Partial<PdfAnnotationObject>) {
+  private updateAnnotation(id: string, patch: Partial<PdfTextMarkupAnnotationObject>) {
     const originalAnnotation = this.state.byUid[id]?.object
     if (!originalAnnotation) return
-    const patchWithAuthor = {
+    if (patch.id !== id) patch.id = id // id is immutable
+    const patchModified = {
       ...patch,
+      modified: new Date(),
       author: patch.author ?? this.config.annotationAuthor,
     }
 
     const execute = () => {
-      this.dispatch(patchAnnotation(id, patch))
+      this.dispatch(patchAnnotation(id, patchModified))
       this.events$.emit({
         type: "update",
         annotation: originalAnnotation,
         pageIndex: originalAnnotation.pageIndex,
-        patch: patchWithAuthor,
+        patch: patchModified,
         committed: false,
       })
     }
 
     const undoPatch = Object.fromEntries(
-      Object.keys(patch).map((key) => [key, originalAnnotation[key as keyof PdfAnnotationObject]]),
+      Object.keys(patch).map((key) => [
+        key,
+        originalAnnotation[key as keyof PdfTextMarkupAnnotationObject],
+      ]),
     )
     const command: Command = {
       execute,
@@ -410,11 +436,11 @@ export class AnnotationPlugin extends BasePlugin<
   }
 
   private clearAllAnnotations() {
-    const previousAnnotations: Record<number, PdfAnnotationObject[]> = {}
+    const previousAnnotations: Record<number, PdfTextMarkupAnnotationObject[]> = {}
     Object.entries(this.state.byPage).forEach(([pageIndex, uids]) => {
       const pageAnnos = uids
         .map((uid) => this.state.byUid[uid]?.object)
-        .filter((a): a is PdfAnnotationObject => !!a)
+        .filter((a): a is PdfTextMarkupAnnotationObject => !!a)
       if (pageAnnos.length > 0) {
         previousAnnotations[Number(pageIndex)] = pageAnnos
       }
@@ -430,26 +456,6 @@ export class AnnotationPlugin extends BasePlugin<
     }
     // use same logic to add to timeline but don't call commit
     this.commitWithTimeline(command, false)
-  }
-
-  private getActiveTool(): AnnotationTool | null {
-    if (!this.state.activeToolId) return null
-    return this.state.tools.find((t) => t.id === this.state.activeToolId) ?? null
-  }
-
-  /**
-   * 1. Activates tool in InteractionManager
-   * 2. callback for InteractionManager?.onModeChange in initialize() dispatches setActiveToolId action
-   * 3. reducer changes this.state.activeToolId
-   */
-  private activateToolId(toolId: string | null): void {
-    if (toolId === this.state.activeToolId) return
-    const tool = this.state.tools.find((t) => t.id === toolId)
-    if (tool) {
-      this.interactionManager?.activate(tool.interaction.mode ?? tool.id)
-    } else {
-      this.interactionManager?.activateDefaultMode()
-    }
   }
 
   private commitWithTimeline(command: Command, requiresCommit: boolean = true) {
@@ -581,7 +587,6 @@ export class AnnotationPlugin extends BasePlugin<
   }
 
   async destroy(): Promise<void> {
-    this.activeTool$.clear()
     this.events$.clear()
     super.destroy()
   }

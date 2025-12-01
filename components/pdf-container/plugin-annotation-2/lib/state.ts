@@ -1,6 +1,5 @@
+import { PdfAnnotationSubtype } from "@embedpdf/models"
 import type { TrackedAnnotation } from "./custom-types"
-import type { AnnotationTool } from "./tools/annotation-tool"
-import { initialTools } from "./tools/initial-tools"
 
 // ***PLUGIN STATE***
 export interface AnnotationState {
@@ -9,8 +8,9 @@ export interface AnnotationState {
   // annotation uid -> tracked annotation object
   byUid: Record<string, TrackedAnnotation>
   selectedUid: string | null
-  activeToolId: string | null
-  tools: AnnotationTool[]
+  activeColor: string
+  activeOpacity: number
+  activeSubtype: PdfAnnotationSubtype | null
   hasPendingChanges: boolean
   canUndo: boolean
   canRedo: boolean
@@ -21,8 +21,9 @@ export const initialState: AnnotationState = {
   byPage: {},
   byUid: {},
   selectedUid: null,
-  activeToolId: null,
-  tools: initialTools,
+  activeColor: "#FFCD45",
+  activeOpacity: 0.5,
+  activeSubtype: null,
   hasPendingChanges: false,
   canUndo: false,
   canRedo: false,

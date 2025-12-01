@@ -19,7 +19,7 @@ import {
   setDefaultMode,
   setExclusionRules,
 } from "./actions"
-import {
+import type {
   CursorClaim,
   HandlerSet,
   InteractionExclusionRules,

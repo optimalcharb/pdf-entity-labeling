@@ -61,10 +61,10 @@ export default function PluginStoreTable() {
             </TableCell>
           </TableRow>
           <TableRow>
-            <TableCell className="font-medium">Active Tool ID</TableCell>
+            <TableCell className="font-medium">Active Subtype</TableCell>
             <TableCell>
               <span className="rounded bg-blue-100 px-2 py-1 font-mono text-sm">
-                {annoState?.activeToolId ?? "null"}
+                {annoState?.activeSubtype ?? "null"}
               </span>
             </TableCell>
           </TableRow>
@@ -100,6 +100,18 @@ export default function PluginStoreTable() {
               </span>
             </TableCell>
           </TableRow>
+          {/* <TableRow>
+            <TableCell className="font-medium">byUid</TableCell>
+            <TableCell>
+              <span
+                className={`rounded px-2 py-1 font-mono text-sm ${
+                  annoState?.byUid ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                }`}
+              >
+                <pre>{JSON.stringify(annoState?.byUid, null, 2)}</pre>
+              </span>
+            </TableCell>
+          </TableRow> */}
         </TableBody>
       </Table>
 

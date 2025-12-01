@@ -1,28 +1,30 @@
 import { MouseEvent, TouchEvent, useCallback, useEffect, useMemo, useState } from "react"
-import { blendModeToCss, PdfAnnotationObject, PdfBlendMode } from "@embedpdf/models"
+import { blendModeToCss, PdfBlendMode } from "@embedpdf/models"
 import { PointerEventHandlers, usePointerHandlers } from "../../plugin-interaction-manager-2"
 import { useSelectionCapability } from "../../plugin-selection-2"
 import { useAnnotationCapability } from "../hooks"
 import type { AnnotationState, TrackedAnnotation } from "../lib"
+import type { PdfTextMarkupAnnotationObject } from "../lib/pdf-text-markup-annotation-object"
 import { isHighlight, isSquiggly, isStrikeout, isUnderline } from "../lib/subtype-predicates"
 import { AnnotationContainter } from "./annotation-container"
-import type { SelectionMenu } from "./selection-menu"
 import { Highlight } from "./text-markup/highlight"
 import { Squiggly } from "./text-markup/squiggly"
 import { Strikeout } from "./text-markup/strikeout"
 import { Underline } from "./text-markup/underline"
 
 const getAnnotationsByPageIndex = (s: AnnotationState, page: number) =>
-  (s.byPage[page] ?? []).map((uid) => s.byUid[uid]) as TrackedAnnotation<PdfAnnotationObject>[]
+  (s.byPage[page] ?? []).map(
+    (uid) => s.byUid[uid],
+  ) as TrackedAnnotation<PdfTextMarkupAnnotationObject>[]
 
 const getSelectedAnnotationByPageIndex = (
   s: AnnotationState,
   pageIndex: number,
-): TrackedAnnotation<PdfAnnotationObject> | null => {
+): TrackedAnnotation<PdfTextMarkupAnnotationObject> | null => {
   if (!s.selectedUid) return null
   const pageUids = s.byPage[pageIndex] ?? []
   if (pageUids.includes(s.selectedUid)) {
-    return s.byUid[s.selectedUid] as TrackedAnnotation<PdfAnnotationObject>
+    return s.byUid[s.selectedUid] as TrackedAnnotation<PdfTextMarkupAnnotationObject>
   }
   return null
 }
@@ -33,12 +35,11 @@ interface AnnotationsProps {
   rotation: number
   pageWidth: number
   pageHeight: number
-  selectionMenu?: SelectionMenu
   selectionOutlineColor?: string
 }
 
 export function Annotations(annotationsProps: AnnotationsProps) {
-  const { pageIndex, scale, selectionMenu } = annotationsProps
+  const { pageIndex, scale } = annotationsProps
   const { provides: annotationProvides } = useAnnotationCapability()
   const { provides: selectionProvides } = useSelectionCapability()
   const [annotations, setAnnotations] = useState<TrackedAnnotation[]>([])
@@ -72,7 +73,7 @@ export function Annotations(annotationsProps: AnnotationsProps) {
     (e: MouseEvent | TouchEvent, annotation: TrackedAnnotation) => {
       e.stopPropagation()
       if (annotationProvides && selectionProvides) {
-        annotationProvides.selectAnnotation(pageIndex, annotation.object.id)
+        annotationProvides.selectAnnotation(annotation.object.id)
         selectionProvides.clear()
         if (annotation.object.id !== editingId) {
           setEditingId(null)
@@ -97,7 +98,6 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
-              selectionMenu={selectionMenu}
               onSelect={(e) => handleClick(e, annotation)}
               zIndex={0}
               style={{
@@ -118,7 +118,6 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
-              selectionMenu={selectionMenu}
               onSelect={(e) => handleClick(e, annotation)}
               zIndex={0}
               style={{
@@ -139,7 +138,6 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
-              selectionMenu={selectionMenu}
               onSelect={(e) => handleClick(e, annotation)}
               zIndex={0}
               style={{
@@ -160,7 +158,6 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
-              selectionMenu={selectionMenu}
               onSelect={(e) => handleClick(e, annotation)}
               zIndex={0}
               style={{

@@ -1,4 +1,4 @@
-import { InteractionExclusionRules } from "./custom-types"
+import type { InteractionExclusionRules } from "./custom-types"
 
 // ***PLUGIN STATE***
 export interface InteractionManagerState {

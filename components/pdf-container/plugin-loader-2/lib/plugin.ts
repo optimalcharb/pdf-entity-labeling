@@ -9,7 +9,7 @@ import {
   setDocument,
 } from "@embedpdf/core"
 import { PdfDocumentObject } from "@embedpdf/models"
-import { LoaderEvent } from "./custom-types"
+import type { LoaderEvent } from "./custom-types"
 import { PDFDocumentLoader, StrategyResolver } from "./document-loader"
 import { PDFLoadingOptions, PDFLoadingStrategy } from "./strategies/loading-strategy"
 

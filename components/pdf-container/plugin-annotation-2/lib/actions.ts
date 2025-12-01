@@ -1,7 +1,9 @@
 import type { Action, Reducer } from "@embedpdf/core"
-import type { PdfAnnotationObject } from "@embedpdf/models"
+import { PdfAnnotationSubtype } from "@embedpdf/models"
 import type { TrackedAnnotation } from "./custom-types"
+import type { PdfTextMarkupAnnotationObject } from "./pdf-text-markup-annotation-object"
 import type { AnnotationState } from "./state"
+import { isValidActiveSubtype } from "./subtype-predicates"
 
 // ***ACTION CONSTANTS***
 export const SET_ANNOTATIONS = "ANNOTATION/SET_ANNOTATIONS"
@@ -12,30 +14,29 @@ export const PATCH_ANNOTATION = "ANNOTATION/PATCH_ANNOTATION"
 export const DELETE_ANNOTATION = "ANNOTATION/DELETE_ANNOTATION"
 export const COMMIT_PENDING_CHANGES = "ANNOTATION/COMMIT"
 export const PURGE_ANNOTATION = "ANNOTATION/PURGE_ANNOTATION"
-export const SET_ACTIVE_TOOL_ID = "ANNOTATION/SET_ACTIVE_TOOL_ID"
-export const SET_TOOL_DEFAULTS = "ANNOTATION/SET_TOOL_DEFAULTS"
+export const SET_CREATE_ANNOTATION_DEFAULTS = "ANNOTATION/SET_CREATE_ANNOTATION_DEFAULTS"
 export const SET_CAN_UNDO_REDO = "ANNOTATION/SET_CAN_UNDO_REDO"
 export const CLEAR_ANNOTATIONS = "ANNOTATION/CLEAR_ANNOTATIONS"
 
 // ***ACTION INTERFACES***
 export interface SetAnnotationsAction extends Action {
   type: typeof SET_ANNOTATIONS
-  payload: Record<number, PdfAnnotationObject[]>
+  payload: Record<number, PdfTextMarkupAnnotationObject[]>
 }
 export interface SelectAnnotationAction extends Action {
   type: typeof SELECT_ANNOTATION
-  payload: { pageIndex: number; id: string }
+  payload: { id: string }
 }
 export interface DeselectAnnotationAction extends Action {
   type: typeof DESELECT_ANNOTATION
 }
 export interface CreateAnnotationAction extends Action {
   type: typeof CREATE_ANNOTATION
-  payload: { annotation: PdfAnnotationObject }
+  payload: { annotation: PdfTextMarkupAnnotationObject }
 }
 export interface PatchAnnotationAction extends Action {
   type: typeof PATCH_ANNOTATION
-  payload: { id: string; patch: Partial<PdfAnnotationObject> }
+  payload: { id: string; patch: Partial<PdfTextMarkupAnnotationObject> }
 }
 export interface DeleteAnnotationAction extends Action {
   type: typeof DELETE_ANNOTATION
@@ -48,13 +49,13 @@ export interface PurgeAnnotationAction extends Action {
   type: typeof PURGE_ANNOTATION
   payload: { uid: string }
 }
-export interface SetActiveToolIdAction extends Action {
-  type: typeof SET_ACTIVE_TOOL_ID
-  payload: string | null
-}
-export interface SetToolDefaultsAction extends Action {
-  type: typeof SET_TOOL_DEFAULTS
-  payload: { toolId: string; patch: Partial<PdfAnnotationObject> }
+export interface SetCreateAnnotationDefaultsAction extends Action {
+  type: typeof SET_CREATE_ANNOTATION_DEFAULTS
+  payload: {
+    color?: string
+    opacity?: number
+    subtype?: PdfAnnotationSubtype | null
+  }
 }
 export interface SetCanUndoRedoAction extends Action {
   type: typeof SET_CAN_UNDO_REDO
@@ -74,28 +75,31 @@ export type AnnotationAction =
   | DeleteAnnotationAction
   | CommitAction
   | PurgeAnnotationAction
-  | SetActiveToolIdAction
-  | SetToolDefaultsAction
+  | SetCreateAnnotationDefaultsAction
   | SetCanUndoRedoAction
   | ClearAnnotationsAction
 
 // ***ACTION CREATORS***
-export const setAnnotations = (p: Record<number, PdfAnnotationObject[]>): SetAnnotationsAction => ({
+export const setAnnotations = (
+  p: Record<number, PdfTextMarkupAnnotationObject[]>,
+): SetAnnotationsAction => ({
   type: SET_ANNOTATIONS,
   payload: p,
 })
-export const selectAnnotation = (pageIndex: number, id: string): SelectAnnotationAction => ({
+export const selectAnnotation = (id: string): SelectAnnotationAction => ({
   type: SELECT_ANNOTATION,
-  payload: { pageIndex, id },
+  payload: { id },
 })
 export const deselectAnnotation = (): DeselectAnnotationAction => ({ type: DESELECT_ANNOTATION })
-export const createAnnotation = (annotation: PdfAnnotationObject): CreateAnnotationAction => ({
+export const createAnnotation = (
+  annotation: PdfTextMarkupAnnotationObject,
+): CreateAnnotationAction => ({
   type: CREATE_ANNOTATION,
   payload: { annotation },
 })
 export const patchAnnotation = (
   id: string,
-  patch: Partial<PdfAnnotationObject>,
+  patch: Partial<PdfTextMarkupAnnotationObject>,
 ): PatchAnnotationAction => ({ type: PATCH_ANNOTATION, payload: { id, patch } })
 export const deleteAnnotation = (id: string): DeleteAnnotationAction => ({
   type: DELETE_ANNOTATION,
@@ -106,16 +110,13 @@ export const purgeAnnotation = (uid: string): PurgeAnnotationAction => ({
   type: PURGE_ANNOTATION,
   payload: { uid },
 })
-export const setActiveToolId = (id: string | null): SetActiveToolIdAction => ({
-  type: SET_ACTIVE_TOOL_ID,
-  payload: id,
-})
-export const setToolDefaults = (
-  toolId: string,
-  patch: Partial<PdfAnnotationObject>,
-): SetToolDefaultsAction => ({
-  type: SET_TOOL_DEFAULTS,
-  payload: { toolId, patch },
+export const setCreateAnnotationDefaults = (defaults: {
+  color?: string
+  opacity?: number
+  subtype?: PdfAnnotationSubtype | null
+}): SetCreateAnnotationDefaultsAction => ({
+  type: SET_CREATE_ANNOTATION_DEFAULTS,
+  payload: defaults,
 })
 export const setCanUndoRedo = (
   timelineIndex: number,
@@ -148,8 +149,16 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
       return { ...state, byPage: newByPage, byUid: newByUid, hasPendingChanges: false }
     }
 
-    case SET_ACTIVE_TOOL_ID:
-      return { ...state, activeToolId: action.payload }
+    case SET_CREATE_ANNOTATION_DEFAULTS:
+      return {
+        ...state,
+        activeColor: action.payload.color ?? state.activeColor,
+        activeOpacity: action.payload.opacity ?? state.activeOpacity,
+        activeSubtype:
+          action.payload.subtype !== undefined && isValidActiveSubtype(action.payload.subtype)
+            ? action.payload.subtype
+            : state.activeSubtype,
+      }
 
     case SELECT_ANNOTATION:
       return { ...state, selectedUid: action.payload.id }

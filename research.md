@@ -13,7 +13,7 @@
 - [@embedpdf/models pdf.ts](https://github.com/embedpdf/embed-pdf-viewer/blob/feature/multi-view/packages/models/src/pdf.ts#L1992)
 - [@embedpdf/snippet example component](https://github.com/embedpdf/embed-pdf-viewer/blob/main/snippet/src/components/app.tsx)
 - [EmbedPDF React Docs](https://www.embedpdf.com/docs/react/understanding-plugins)
-- [PDFium JS docs](https://github.com/naptha/tesseract.js)
+- [PDFium JS docs](https://www.embedpdf.com/docs/pdfium/introduction)
 
 ### Generic Components
 
@@ -25,6 +25,7 @@
 - [Coss = Origin UI](https://coss.com/origin)
 - [mui/material-ui](https://github.com/mui/material-ui)
 - [headlessui/react/menu](https://headlessui.com/react/menu)
+- [square-ui](https://github.com/ln-dev7/square-ui)
 - [brillout/awesome-react-components](https://github.com/brillout/awesome-react-components?tab=readme-ov-file#ui-components)
 
 ### Icons
@@ -52,6 +53,7 @@
 - [vercel/platforms](https://github.com/vercel/platforms)
 - [enszrlu/NextStep](https://github.com/enszrlu/NextStep/)
 - [chatbot assistant](https://ai-sdk.dev/elements/examples/chatbot)
+- [openstatusHQ/data-table-filters](https://github.com/openstatusHQ/data-table-filters)
 
 ### LLMs to code JS
 
@@ -63,6 +65,10 @@
 - [vercel/next-forge](https://github.com/vercel/next-forge)
 - [Next.js SaaS Starter](https://vercel.com/templates/authentication/next-js-saas-starter)
 - [Blazity/next-enterprise](https://github.com/Blazity/next-enterprise/tree/main)
+- [ln-dev7/square-ui](https://github.com/ln-dev7/square-ui)
+- [arhamkhnz/next-shadcn-admin-dashboard](https://github.com/arhamkhnz/next-shadcn-admin-dashboard)
+- [cruip/open-react-template](https://github.com/cruip/open-react-template)
+- *Tanstack* [jackytea/tanstack-starter](https://github.com/jackytea/tanstack-starter)
 
 ### Auth
 
@@ -184,6 +190,11 @@
 
 - [public-apis/public-apis](https://github.com/public-apis/public-apis)
 
+## Billing
+
+- [Stripe](https://stripe.com/)
+- self-hosted alternative [Lago](https://getlago.com/docs/welcome)
+
 ### AWS
 
 - Cloudwatch [aws-samples/aws-real-user-monitoring-amplifyapps](https://github.com/aws-samples/aws-real-user-monitoring-amplifyapps)
@@ -193,6 +204,7 @@
 
 - [React Email AWS SES](https://react-email.mintlify.dev/docs/integrations/aws-ses)
 - [Resend](https://resend.com/docs/send-with-nextjs)
+- dashboard [freeresend](https://github.com/eibrahim/freeresend)
 
 ### PDF pre-saved text extraction
 
@@ -201,9 +213,9 @@
 - [pymupdf/PyMuPDF4LLM](https://github.com/pymupdf/PyMuPDF4LLM)
 - [PyMuPDF4LLM docs](https://pymupdf.readthedocs.io/en/latest/pymupdf4llm/index.html)
 - [PyMuPDF4LLM API](https://pymupdf.readthedocs.io/en/latest/pymupdf4llm/api.html#pymupdf4llm-api)
-- [pdfplumber](LINK)
-- [Pymupdf](LINK)
-- [PyPDF2](LINK)
+- [pdfplumber](https://github.com/jsvine/pdfplumber)
+- [Pymupdf](https://github.com/pymupdf/PyMuPDF)
+- [PyPDF2](https://github.com/mstamy2/PyPDF2)
 
 ### Private Data Sources
 
@@ -213,7 +225,7 @@
 - Google Drive
 - Azure Blob
 - S3
-- GCP equivalent of S3
+- GCS
 
 ### Need to research
 

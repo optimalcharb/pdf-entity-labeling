@@ -33,3 +33,16 @@ export function isSquiggly(
 ): a is TrackedAnnotation<AnnoOf<PdfAnnotationSubtype.SQUIGGLY>> {
   return a.object.type === PdfAnnotationSubtype.SQUIGGLY
 }
+
+/* ------------------------------------------------------------------ */
+/* 3. Just checking the subtype, not an annotation object             */
+/* ------------------------------------------------------------------ */
+export function isValidActiveSubtype(subtype: PdfAnnotationSubtype | null): boolean {
+  if (subtype === null) return true
+  return [
+    PdfAnnotationSubtype.HIGHLIGHT,
+    PdfAnnotationSubtype.UNDERLINE,
+    PdfAnnotationSubtype.SQUIGGLY,
+    PdfAnnotationSubtype.STRIKEOUT,
+  ].includes(subtype)
+}

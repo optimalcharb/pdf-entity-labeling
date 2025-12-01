@@ -1,21 +1,20 @@
 import { CSSProperties, JSX, useEffect, useState } from "react"
-import { PdfAnnotationObject } from "@embedpdf/models"
 import { useDoublePressProps } from "../../../../hooks/mouse-events/use-double-press-props"
-import { TrackedAnnotation } from "../lib"
+import type { TrackedAnnotation } from "../lib"
+import type { PdfTextMarkupAnnotationObject } from "../lib/pdf-text-markup-annotation-object"
+import { AnnotationMenu } from "./annotation-menu/annotation-menu"
 import { CounterRotate } from "./annotation-menu/counter-rotate"
-import { SelectionMenu } from "./selection-menu"
 
-interface AnnotationContainterProps<T extends PdfAnnotationObject> {
+interface AnnotationContainterProps {
   scale: number
   rotation: number
   pageIndex: number
   pageWidth: number
   pageHeight: number
-  trackedAnnotation: TrackedAnnotation<T>
-  children: JSX.Element | ((annotation: T) => JSX.Element)
+  trackedAnnotation: TrackedAnnotation<PdfTextMarkupAnnotationObject>
+  children: JSX.Element | ((annotation: PdfTextMarkupAnnotationObject) => JSX.Element)
   isSelected: boolean
   style?: CSSProperties
-  selectionMenu?: SelectionMenu
   onDoubleClick?: (event: React.MouseEvent) => void
   onSelect?: (event: React.MouseEvent) => void
   zIndex?: number
@@ -24,7 +23,7 @@ interface AnnotationContainterProps<T extends PdfAnnotationObject> {
   selectionOutlineOffset?: number
 }
 
-export function AnnotationContainter<T extends PdfAnnotationObject>({
+export function AnnotationContainter({
   scale,
   rotation,
   // necessary props from Annotations, but not used explicitly in the code
@@ -35,7 +34,6 @@ export function AnnotationContainter<T extends PdfAnnotationObject>({
   children,
   isSelected,
   style = {},
-  selectionMenu,
   onDoubleClick,
   onSelect,
   zIndex = 1,
@@ -43,8 +41,8 @@ export function AnnotationContainter<T extends PdfAnnotationObject>({
   selectionOutlineWidth = 2,
   selectionOutlineOffset = 1,
   ...props
-}: AnnotationContainterProps<T>): JSX.Element {
-  const [preview, setPreview] = useState<T>(trackedAnnotation.object)
+}: AnnotationContainterProps): JSX.Element {
+  const [preview, setPreview] = useState<PdfTextMarkupAnnotationObject>(trackedAnnotation.object)
   const currentObject = preview
     ? { ...trackedAnnotation.object, ...preview }
     : trackedAnnotation.object
@@ -96,15 +94,14 @@ export function AnnotationContainter<T extends PdfAnnotationObject>({
         }}
         rotation={rotation}
       >
-        {({ rect, menuWrapperProps }) =>
-          selectionMenu &&
-          selectionMenu({
-            annotation: trackedAnnotation,
-            selected: isSelected,
-            rect,
-            menuWrapperProps,
-          })
-        }
+        {({ rect, menuWrapperProps }) => (
+          <AnnotationMenu
+            annotation={trackedAnnotation}
+            selected={isSelected}
+            rect={rect}
+            menuWrapperProps={menuWrapperProps}
+          />
+        )}
       </CounterRotate>
     </div>
   )
