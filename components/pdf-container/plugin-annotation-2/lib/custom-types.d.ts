@@ -1,3 +1,4 @@
+import type { PdfAnnotationObject } from "@embedpdf/models"
 import type { PdfTextMarkupAnnotationObject } from "./pdf-text-markup-annotation-object"
 
 export type AnnotationEvent =
@@ -24,9 +25,7 @@ export type AnnotationEvent =
 
 export type CommitState = "new" | "dirty" | "deleted" | "synced" | "ignored"
 
-export interface TrackedAnnotation<
-  A extends PdfTextMarkupAnnotationObject = PdfTextMarkupAnnotationObject,
-> {
+export interface TrackedAnnotation<A extends PdfAnnotationObject = PdfTextMarkupAnnotationObject> {
   commitState: CommitState
   object: A
 }
