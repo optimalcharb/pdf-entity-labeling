@@ -7,7 +7,6 @@ import type { AnnotationState, TrackedAnnotation } from "../lib"
 import type { PdfTextMarkupAnnotationObject } from "../lib/pdf-text-markup-annotation-object"
 import { isHighlight, isSquiggly, isStrikeout, isUnderline } from "../lib/subtype-predicates"
 import { AnnotationContainter } from "./annotation-container"
-import type { SelectionMenu } from "./selection-menu"
 import { Highlight } from "./text-markup/highlight"
 import { Squiggly } from "./text-markup/squiggly"
 import { Strikeout } from "./text-markup/strikeout"
@@ -36,12 +35,11 @@ interface AnnotationsProps {
   rotation: number
   pageWidth: number
   pageHeight: number
-  selectionMenu?: SelectionMenu
   selectionOutlineColor?: string
 }
 
 export function Annotations(annotationsProps: AnnotationsProps) {
-  const { pageIndex, scale, selectionMenu } = annotationsProps
+  const { pageIndex, scale } = annotationsProps
   const { provides: annotationProvides } = useAnnotationCapability()
   const { provides: selectionProvides } = useSelectionCapability()
   const [annotations, setAnnotations] = useState<TrackedAnnotation[]>([])
@@ -100,7 +98,6 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
-              selectionMenu={selectionMenu}
               onSelect={(e) => handleClick(e, annotation)}
               zIndex={0}
               style={{
@@ -121,7 +118,6 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
-              selectionMenu={selectionMenu}
               onSelect={(e) => handleClick(e, annotation)}
               zIndex={0}
               style={{
@@ -142,7 +138,6 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
-              selectionMenu={selectionMenu}
               onSelect={(e) => handleClick(e, annotation)}
               zIndex={0}
               style={{
@@ -163,7 +158,6 @@ export function Annotations(annotationsProps: AnnotationsProps) {
               key={annotation.object.id}
               trackedAnnotation={annotation}
               isSelected={isSelected}
-              selectionMenu={selectionMenu}
               onSelect={(e) => handleClick(e, annotation)}
               zIndex={0}
               style={{

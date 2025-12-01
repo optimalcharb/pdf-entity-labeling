@@ -2,8 +2,8 @@ import { CSSProperties, JSX, useEffect, useState } from "react"
 import { useDoublePressProps } from "../../../../hooks/mouse-events/use-double-press-props"
 import type { TrackedAnnotation } from "../lib"
 import type { PdfTextMarkupAnnotationObject } from "../lib/pdf-text-markup-annotation-object"
+import { AnnotationMenu } from "./annotation-menu/annotation-menu"
 import { CounterRotate } from "./annotation-menu/counter-rotate"
-import type { SelectionMenu } from "./selection-menu"
 
 interface AnnotationContainterProps<T extends PdfTextMarkupAnnotationObject> {
   scale: number
@@ -15,7 +15,6 @@ interface AnnotationContainterProps<T extends PdfTextMarkupAnnotationObject> {
   children: JSX.Element | ((annotation: T) => JSX.Element)
   isSelected: boolean
   style?: CSSProperties
-  selectionMenu?: SelectionMenu
   onDoubleClick?: (event: React.MouseEvent) => void
   onSelect?: (event: React.MouseEvent) => void
   zIndex?: number
@@ -35,7 +34,6 @@ export function AnnotationContainter<T extends PdfTextMarkupAnnotationObject>({
   children,
   isSelected,
   style = {},
-  selectionMenu,
   onDoubleClick,
   onSelect,
   zIndex = 1,
@@ -96,15 +94,14 @@ export function AnnotationContainter<T extends PdfTextMarkupAnnotationObject>({
         }}
         rotation={rotation}
       >
-        {({ rect, menuWrapperProps }) =>
-          selectionMenu &&
-          selectionMenu({
-            annotation: trackedAnnotation,
-            selected: isSelected,
-            rect,
-            menuWrapperProps,
-          })
-        }
+        {({ rect, menuWrapperProps }) => (
+          <AnnotationMenu
+            annotation={trackedAnnotation}
+            selected={isSelected}
+            rect={rect}
+            menuWrapperProps={menuWrapperProps}
+          />
+        )}
       </CounterRotate>
     </div>
   )

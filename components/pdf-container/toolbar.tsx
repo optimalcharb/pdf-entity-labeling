@@ -31,8 +31,20 @@ const Toolbar = ({ canRotate }: { canRotate: boolean }) => {
   }
 
   const tools = [
-    { id: "highlight", icon: Highlighter },
-    { id: "underline", icon: Underline },
+    {
+      id: "highlight",
+      subtype: PdfAnnotationSubtype.HIGHLIGHT,
+      icon: Highlighter,
+      opacity: 0.5,
+      color: "#FBB338",
+    },
+    {
+      id: "underline",
+      subtype: PdfAnnotationSubtype.UNDERLINE,
+      icon: Underline,
+      opacity: 1,
+      color: "#F51F1F",
+    },
   ]
 
   return (
@@ -41,10 +53,20 @@ const Toolbar = ({ canRotate }: { canRotate: boolean }) => {
         <button
           key={tool.id}
           onClick={() => {
-            annoCapability?.activateTool(tool.id === annoState?.activeToolId ? null : tool.id)
+            if (annoState?.activeSubtype !== tool.subtype) {
+              annoCapability?.setCreateAnnotationDefaults({
+                subtype: tool.subtype,
+                opacity: tool.opacity,
+                color: tool.color,
+              })
+            } else {
+              annoCapability?.setCreateAnnotationDefaults({
+                subtype: null,
+              })
+            }
           }}
           className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-            tool.id === annoState?.activeToolId
+            tool.subtype === annoState?.activeSubtype
               ? "bg-blue-500 text-white"
               : "bg-gray-100 hover:bg-gray-200"
           }`}

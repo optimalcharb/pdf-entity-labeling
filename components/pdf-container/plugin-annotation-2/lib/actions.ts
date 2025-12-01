@@ -1,4 +1,5 @@
 import type { Action, Reducer } from "@embedpdf/core"
+import { PdfAnnotationSubtype } from "@embedpdf/models"
 import type { TrackedAnnotation } from "./custom-types"
 import type { PdfTextMarkupAnnotationObject } from "./pdf-text-markup-annotation-object"
 import type { AnnotationState } from "./state"
@@ -12,8 +13,7 @@ export const PATCH_ANNOTATION = "ANNOTATION/PATCH_ANNOTATION"
 export const DELETE_ANNOTATION = "ANNOTATION/DELETE_ANNOTATION"
 export const COMMIT_PENDING_CHANGES = "ANNOTATION/COMMIT"
 export const PURGE_ANNOTATION = "ANNOTATION/PURGE_ANNOTATION"
-export const SET_ACTIVE_TOOL_ID = "ANNOTATION/SET_ACTIVE_TOOL_ID"
-export const SET_TOOL_DEFAULTS = "ANNOTATION/SET_TOOL_DEFAULTS"
+export const SET_CREATE_ANNOTATION_DEFAULTS = "ANNOTATION/SET_CREATE_ANNOTATION_DEFAULTS"
 export const SET_CAN_UNDO_REDO = "ANNOTATION/SET_CAN_UNDO_REDO"
 export const CLEAR_ANNOTATIONS = "ANNOTATION/CLEAR_ANNOTATIONS"
 
@@ -48,13 +48,13 @@ export interface PurgeAnnotationAction extends Action {
   type: typeof PURGE_ANNOTATION
   payload: { uid: string }
 }
-export interface SetActiveToolIdAction extends Action {
-  type: typeof SET_ACTIVE_TOOL_ID
-  payload: string | null
-}
-export interface SetToolDefaultsAction extends Action {
-  type: typeof SET_TOOL_DEFAULTS
-  payload: { toolId: string; patch: Partial<PdfTextMarkupAnnotationObject> }
+export interface SetCreateAnnotationDefaultsAction extends Action {
+  type: typeof SET_CREATE_ANNOTATION_DEFAULTS
+  payload: {
+    color?: string
+    opacity?: number
+    subtype?: PdfAnnotationSubtype | null
+  }
 }
 export interface SetCanUndoRedoAction extends Action {
   type: typeof SET_CAN_UNDO_REDO
@@ -74,8 +74,7 @@ export type AnnotationAction =
   | DeleteAnnotationAction
   | CommitAction
   | PurgeAnnotationAction
-  | SetActiveToolIdAction
-  | SetToolDefaultsAction
+  | SetCreateAnnotationDefaultsAction
   | SetCanUndoRedoAction
   | ClearAnnotationsAction
 
@@ -110,16 +109,13 @@ export const purgeAnnotation = (uid: string): PurgeAnnotationAction => ({
   type: PURGE_ANNOTATION,
   payload: { uid },
 })
-export const setActiveToolId = (id: string | null): SetActiveToolIdAction => ({
-  type: SET_ACTIVE_TOOL_ID,
-  payload: id,
-})
-export const setToolDefaults = (
-  toolId: string,
-  patch: Partial<PdfTextMarkupAnnotationObject>,
-): SetToolDefaultsAction => ({
-  type: SET_TOOL_DEFAULTS,
-  payload: { toolId, patch },
+export const setCreateAnnotationDefaults = (defaults: {
+  color?: string
+  opacity?: number
+  subtype?: PdfAnnotationSubtype | null
+}): SetCreateAnnotationDefaultsAction => ({
+  type: SET_CREATE_ANNOTATION_DEFAULTS,
+  payload: defaults,
 })
 export const setCanUndoRedo = (
   timelineIndex: number,
@@ -152,8 +148,14 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
       return { ...state, byPage: newByPage, byUid: newByUid, hasPendingChanges: false }
     }
 
-    case SET_ACTIVE_TOOL_ID:
-      return { ...state, activeToolId: action.payload }
+    case SET_CREATE_ANNOTATION_DEFAULTS:
+      return {
+        ...state,
+        activeColor: action.payload.color ?? state.activeColor,
+        activeOpacity: action.payload.opacity ?? state.activeOpacity,
+        activeSubtype:
+          action.payload.subtype !== undefined ? action.payload.subtype : state.activeSubtype,
+      }
 
     case SELECT_ANNOTATION:
       return { ...state, selectedUid: action.payload.id }

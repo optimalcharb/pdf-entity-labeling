@@ -31,15 +31,13 @@ import {
   patchAnnotation,
   purgeAnnotation,
   selectAnnotation,
-  setActiveToolId,
   setAnnotations,
   setCanUndoRedo,
-  setToolDefaults,
+  setCreateAnnotationDefaults,
 } from "./actions"
 import type { AnnotationEvent, Command, TrackedAnnotation } from "./custom-types"
 import type { PdfTextMarkupAnnotationObject } from "./pdf-text-markup-annotation-object"
 import type { AnnotationState } from "./state"
-import type { AnnotationTool } from "./tools/annotation-tool"
 
 function ignore() {}
 
@@ -53,7 +51,6 @@ export interface AnnotationPluginConfig extends BasePluginConfig {
 // ***PLUGIN CAPABILITY***
 export interface AnnotationCapability {
   onStateChange: EventHook<AnnotationState>
-  onActiveToolChange: EventHook<AnnotationTool | null>
   onAnnotationEvent: EventHook<AnnotationEvent>
   // getPageAnnotations uses PDFium to get any annotations saved in the PDF, even those not made by this plugin
   getPageAnnotations: (options: {
@@ -63,9 +60,11 @@ export interface AnnotationCapability {
   selectAnnotation: (annotationId: string) => void
   deselectAnnotation: () => void
 
-  activateTool: (toolId: string | null) => void
-  setToolDefaults: (toolId: string, patch: Partial<PdfTextMarkupAnnotationObject>) => void // set the props for new annotations created using a tool
-  setActiveToolDefaults: (patch: Partial<PdfTextMarkupAnnotationObject>) => void
+  setCreateAnnotationDefaults: (defaults: {
+    color?: string
+    opacity?: number
+    subtype?: PdfAnnotationSubtype | null
+  }) => void
 
   exportAnnotationsToJSON: () => void // temp for testing
   createAnnotation: (annotation: PdfTextMarkupAnnotationObject) => void // for user-created annotations
@@ -95,7 +94,6 @@ export class AnnotationPlugin extends BasePlugin<
   private readonly interactionManager: InteractionManagerCapability | null
   private readonly selection: SelectionCapability | null
 
-  private readonly activeTool$ = createBehaviorEmitter<AnnotationTool | null>(null)
   private readonly events$ = createBehaviorEmitter<AnnotationEvent>()
 
   private isInitialLoadComplete: boolean = false
@@ -120,31 +118,18 @@ export class AnnotationPlugin extends BasePlugin<
   }
 
   async initialize(): Promise<void> {
-    // Register interaction modes for all tools defined in the initial state
-    const registerInteractionForTool = (tool: AnnotationTool) => {
-      this.interactionManager?.registerMode({
-        id: tool.interaction.mode ?? tool.id,
-        scope: "page",
-        exclusive: tool.interaction.exclusive,
-        cursor: tool.interaction.cursor,
-      })
-      if (tool.interaction.textSelection) {
-        this.selection?.enableForMode(tool.interaction.mode ?? tool.id)
-      }
-    }
-    this.state.tools.forEach(registerInteractionForTool)
-
-    this.interactionManager?.onModeChange((s) => {
-      const newToolId =
-        this.state.tools.find((t) => (t.interaction.mode ?? t.id) === s.activeMode)?.id ?? null
-      if (newToolId !== this.state.activeToolId) {
-        this.dispatch(setActiveToolId(newToolId))
-      }
+    // Register a single interaction mode for annotations
+    this.interactionManager?.registerMode({
+      id: "annotation",
+      scope: "page",
+      exclusive: false,
+      cursor: "text",
     })
+    this.selection?.enableForMode("annotation")
 
     this.selection?.onEndSelection(() => {
-      const activeTool = this.getActiveTool()
-      if (!activeTool || !activeTool.interaction.textSelection) return
+      const { activeSubtype, activeColor, activeOpacity } = this.state
+      if (!activeSubtype) return
 
       const formattedSelection = this.selection?.getFormattedSelection()
       const selectionText = this.selection?.getSelectedText()
@@ -153,9 +138,11 @@ export class AnnotationPlugin extends BasePlugin<
       for (const selection of formattedSelection) {
         selectionText.wait((text) => {
           const annotationId = uuidV4()
-          // Create an annotation using the defaults from the active text tool
+          // Create an annotation using the active state properties
           this.createAnnotation({
-            ...activeTool.defaults,
+            type: activeSubtype,
+            color: activeColor,
+            opacity: activeOpacity,
             rect: selection.rect,
             segmentRects: selection.segmentRects,
             pageIndex: selection.pageIndex,
@@ -167,7 +154,7 @@ export class AnnotationPlugin extends BasePlugin<
           } as PdfTextMarkupAnnotationObject)
 
           if (this.config.deactivateToolAfterCreate) {
-            this.activateToolId(null)
+            this.dispatch(setCreateAnnotationDefaults({ subtype: null }))
           }
           if (this.config.selectAfterCreate) {
             this.dispatch(selectAnnotation(annotationId))
@@ -182,15 +169,12 @@ export class AnnotationPlugin extends BasePlugin<
   protected buildCapability(): AnnotationCapability {
     return {
       onStateChange: this.state$.on,
-      onActiveToolChange: this.activeTool$.on,
       onAnnotationEvent: this.events$.on,
       getPageAnnotations: (options) => this.getPageAnnotations(options),
       selectAnnotation: (id) => this.dispatch(selectAnnotation(id)),
       deselectAnnotation: () => this.dispatch(deselectAnnotation()),
-      activateTool: (toolId) => this.activateToolId(toolId),
-      setToolDefaults: (toolId, patch) => this.dispatch(setToolDefaults(toolId, patch)),
-      setActiveToolDefaults: (patch) =>
-        this.state.activeToolId && this.dispatch(setToolDefaults(this.state.activeToolId, patch)),
+      setCreateAnnotationDefaults: (defaults) =>
+        this.dispatch(setCreateAnnotationDefaults(defaults)),
       createAnnotations: (items) => this.createAnnotations(items),
       createAnnotation: (anno) => this.createAnnotation(anno),
       deleteAnnotation: (id) => this.deleteAnnotation(id),
@@ -220,9 +204,13 @@ export class AnnotationPlugin extends BasePlugin<
 
   override onStoreUpdated(prev: AnnotationState, next: AnnotationState): void {
     this.state$.emit(next)
-    // If the active tool ID changes, or the tools array itself changes, emit the new active tool
-    if (prev.activeToolId !== next.activeToolId || prev.tools !== next.tools) {
-      this.activeTool$.emit(this.getActiveTool())
+    // Change interaction mode when activeSubtype changes between null and non-null
+    if (!prev.activeSubtype || !next.activeSubtype) {
+      if (next.activeSubtype) {
+        this.interactionManager?.activate("annotation")
+      } else {
+        this.interactionManager?.activateDefaultMode()
+      }
     }
   }
 
@@ -470,26 +458,6 @@ export class AnnotationPlugin extends BasePlugin<
     this.commitWithTimeline(command, false)
   }
 
-  private getActiveTool(): AnnotationTool | null {
-    if (!this.state.activeToolId) return null
-    return this.state.tools.find((t) => t.id === this.state.activeToolId) ?? null
-  }
-
-  /**
-   * 1. Activates tool in InteractionManager
-   * 2. callback for InteractionManager?.onModeChange in initialize() dispatches setActiveToolId action
-   * 3. reducer changes this.state.activeToolId
-   */
-  private activateToolId(toolId: string | null): void {
-    if (toolId === this.state.activeToolId) return
-    const tool = this.state.tools.find((t) => t.id === toolId)
-    if (tool) {
-      this.interactionManager?.activate(tool.interaction.mode ?? tool.id)
-    } else {
-      this.interactionManager?.activateDefaultMode()
-    }
-  }
-
   private commitWithTimeline(command: Command, requiresCommit: boolean = true) {
     // add to timeline
     this.timeline.splice(this.timelineIndex + 1)
@@ -619,7 +587,6 @@ export class AnnotationPlugin extends BasePlugin<
   }
 
   async destroy(): Promise<void> {
-    this.activeTool$.clear()
     this.events$.clear()
     super.destroy()
   }

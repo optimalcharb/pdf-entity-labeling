@@ -1,7 +1,5 @@
 import { CSSProperties, HTMLAttributes } from "react"
-import { AnnotationMenu } from "./annotation-menu/annotation-menu"
 import { Annotations } from "./annotations"
-import type { SelectionMenu } from "./selection-menu"
 import { TextMarkupPreview } from "./text-markup/preview"
 
 type AnnotationLayerProps = Omit<HTMLAttributes<HTMLDivElement>, "style"> & {
@@ -10,7 +8,6 @@ type AnnotationLayerProps = Omit<HTMLAttributes<HTMLDivElement>, "style"> & {
   pageWidth: number
   pageHeight: number
   rotation: number
-  selectionMenu?: SelectionMenu
   style?: CSSProperties
   selectionOutlineColor?: string
 }
@@ -19,7 +16,6 @@ export function AnnotationLayer({
   style,
   pageIndex,
   scale,
-  selectionMenu = AnnotationMenu,
   pageWidth,
   pageHeight,
   rotation,
@@ -34,7 +30,6 @@ export function AnnotationLayer({
       {...props}
     >
       <Annotations
-        selectionMenu={selectionMenu}
         pageIndex={pageIndex}
         scale={scale}
         rotation={rotation}

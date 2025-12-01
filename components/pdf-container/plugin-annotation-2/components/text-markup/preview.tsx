@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import { blendModeToCss, PdfAnnotationSubtype, PdfBlendMode, Rect } from "@embedpdf/models"
 import { useSelectionCapability } from "../../../plugin-selection-2"
 import { useAnnotationCapability } from "../../hooks"
-import type { AnnotationTool } from "../../lib"
 import { Highlight } from "./highlight"
 import { Squiggly } from "./squiggly"
 import { Strikeout } from "./strikeout"
@@ -18,7 +17,9 @@ export function TextMarkupPreview({ pageIndex, scale }: TextMarkupPreviewProps) 
   const { provides: annotationProvides } = useAnnotationCapability()
   const [rects, setRects] = useState<Array<Rect>>([])
   const [boundingRect, setBoundingRect] = useState<Rect | null>(null)
-  const [activeTool, setActiveTool] = useState<AnnotationTool | null>(null)
+  const [activeSubtype, setActiveSubtype] = useState<PdfAnnotationSubtype | null>(null)
+  const [activeColor, setActiveColor] = useState<string>("red")
+  const [activeOpacity, setActiveOpacity] = useState<number>(0.5)
 
   useEffect(() => {
     if (!selectionProvides) return
@@ -33,27 +34,31 @@ export function TextMarkupPreview({ pageIndex, scale }: TextMarkupPreviewProps) 
   useEffect(() => {
     if (!annotationProvides) return
 
-    const off = annotationProvides.onActiveToolChange(setActiveTool)
+    const off = annotationProvides.onStateChange((state) => {
+      setActiveSubtype(state.activeSubtype)
+      setActiveColor(state.activeColor)
+      setActiveOpacity(state.activeOpacity)
+    })
     return off
   }, [annotationProvides])
 
   if (!boundingRect) return null
-  if (!activeTool || !activeTool.defaults) return null
+  if (!activeSubtype) return null
 
-  switch (activeTool.defaults.type) {
+  switch (activeSubtype) {
     case PdfAnnotationSubtype.UNDERLINE:
       return (
         <div
           style={{
-            mixBlendMode: blendModeToCss(activeTool.defaults?.blendMode ?? PdfBlendMode.Normal),
+            mixBlendMode: blendModeToCss(PdfBlendMode.Normal),
             pointerEvents: "none",
             position: "absolute",
             inset: 0,
           }}
         >
           <Underline
-            color={activeTool.defaults?.color}
-            opacity={activeTool.defaults?.opacity}
+            color={activeColor}
+            opacity={activeOpacity}
             segmentRects={rects}
             scale={scale}
           />
@@ -63,15 +68,15 @@ export function TextMarkupPreview({ pageIndex, scale }: TextMarkupPreviewProps) 
       return (
         <div
           style={{
-            mixBlendMode: blendModeToCss(activeTool.defaults?.blendMode ?? PdfBlendMode.Multiply),
+            mixBlendMode: blendModeToCss(PdfBlendMode.Multiply),
             pointerEvents: "none",
             position: "absolute",
             inset: 0,
           }}
         >
           <Highlight
-            color={activeTool.defaults?.color}
-            opacity={activeTool.defaults?.opacity}
+            color={activeColor}
+            opacity={activeOpacity}
             segmentRects={rects}
             scale={scale}
           />
@@ -81,15 +86,15 @@ export function TextMarkupPreview({ pageIndex, scale }: TextMarkupPreviewProps) 
       return (
         <div
           style={{
-            mixBlendMode: blendModeToCss(activeTool.defaults?.blendMode ?? PdfBlendMode.Normal),
+            mixBlendMode: blendModeToCss(PdfBlendMode.Normal),
             pointerEvents: "none",
             position: "absolute",
             inset: 0,
           }}
         >
           <Strikeout
-            color={activeTool.defaults?.color}
-            opacity={activeTool.defaults?.opacity}
+            color={activeColor}
+            opacity={activeOpacity}
             segmentRects={rects}
             scale={scale}
           />
@@ -99,15 +104,15 @@ export function TextMarkupPreview({ pageIndex, scale }: TextMarkupPreviewProps) 
       return (
         <div
           style={{
-            mixBlendMode: blendModeToCss(activeTool.defaults?.blendMode ?? PdfBlendMode.Normal),
+            mixBlendMode: blendModeToCss(PdfBlendMode.Normal),
             pointerEvents: "none",
             position: "absolute",
             inset: 0,
           }}
         >
           <Squiggly
-            color={activeTool.defaults?.color}
-            opacity={activeTool.defaults?.opacity}
+            color={activeColor}
+            opacity={activeOpacity}
             segmentRects={rects}
             scale={scale}
           />
