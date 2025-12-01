@@ -3,6 +3,7 @@ import { PdfAnnotationSubtype } from "@embedpdf/models"
 import type { TrackedAnnotation } from "./custom-types"
 import type { PdfTextMarkupAnnotationObject } from "./pdf-text-markup-annotation-object"
 import type { AnnotationState } from "./state"
+import { isValidActiveSubtype } from "./subtype-predicates"
 
 // ***ACTION CONSTANTS***
 export const SET_ANNOTATIONS = "ANNOTATION/SET_ANNOTATIONS"
@@ -154,7 +155,9 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
         activeColor: action.payload.color ?? state.activeColor,
         activeOpacity: action.payload.opacity ?? state.activeOpacity,
         activeSubtype:
-          action.payload.subtype !== undefined ? action.payload.subtype : state.activeSubtype,
+          action.payload.subtype !== undefined && isValidActiveSubtype(action.payload.subtype)
+            ? action.payload.subtype
+            : state.activeSubtype,
       }
 
     case SELECT_ANNOTATION:
