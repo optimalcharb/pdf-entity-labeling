@@ -53,6 +53,7 @@
 - [vercel/platforms](https://github.com/vercel/platforms)
 - [enszrlu/NextStep](https://github.com/enszrlu/NextStep/)
 - [chatbot assistant](https://ai-sdk.dev/elements/examples/chatbot)
+- [openstatusHQ/data-table-filters](https://github.com/openstatusHQ/data-table-filters)
 
 ### LLMs to code JS
 
@@ -66,6 +67,8 @@
 - [Blazity/next-enterprise](https://github.com/Blazity/next-enterprise/tree/main)
 - [ln-dev7/square-ui](https://github.com/ln-dev7/square-ui)
 - [arhamkhnz/next-shadcn-admin-dashboard](https://github.com/arhamkhnz/next-shadcn-admin-dashboard)
+- [cruip/open-react-template](https://github.com/cruip/open-react-template)
+- *Tanstack* [jackytea/tanstack-starter](https://github.com/jackytea/tanstack-starter)
 
 ### Auth
 
