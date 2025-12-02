@@ -147,7 +147,6 @@ export class AnnotationPlugin extends BasePlugin<
             rect: selection.rect,
             segmentRects: selection.segmentRects,
             pageIndex: selection.pageIndex,
-            created: new Date(),
             id: annotationId,
             contents: text.join("\n"),
             custom: {
