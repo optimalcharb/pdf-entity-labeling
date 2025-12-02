@@ -103,48 +103,6 @@ The AnnotationPlugin creates text markup annotations (highlight, underline, stri
 6. AnnotationPlugin creates annotation with tool defaults and selection geometry
 7. Optional: Tool is deactivated and/or annotation is selected based on config
 
-## Tools, Interaction props, and annotation creation
-
-### AnnotationTool Type
-
-Each tool defines:
-
-- `id`: Unique identifier for the tool
-- `interaction`: Configuration for how the tool interacts with the PDF
-  - `mode`: Interaction mode ID (defaults to tool id if not specified)
-  - `exclusive`: Whether this mode prevents other modes from being active
-  - `cursor`: CSS cursor style when the tool is active
-  - `textSelection`: Whether text selection is enabled for this mode
-- `defaults`: Default `PdfTextMarkupAnnotationObject` properties applied to new annotations
-
-### Initial Tools
-
-Defined in `tools/initial-tools.ts`, the plugin ships with four built-in tools:
-
-1. **Highlight**: Yellow highlight with 60% opacity and multiply blend mode
-2. **Underline**: Red underline with 100% opacity
-3. **Strikeout**: Red strikeout with 100% opacity  
-4. **Squiggly**: Red squiggly underline with 100% opacity
-
-All tools have `exclusive: false` and `textSelection: true`, meaning they can coexist with other modes and enable text selection.
-
-### Tool Lifecycle
-
-1. **Registration**: Tools are registered during `initialize()` by calling `interactionManager.registerMode()` and `selection.enableForMode()`
-2. **Activation**: Calling `activateTool(toolId)` triggers the InteractionManager to switch modes
-3. **Creation**: When text is selected with an active tool, an annotation is created with:
-   - Tool defaults (type, color, opacity, blendMode)
-   - Selection geometry (rect, segmentRects, pageIndex)
-   - Metadata (id, created date, author, custom text)
-4. **Deactivation**: Optionally auto-deactivates after creation based on `deactivateToolAfterCreate` config
-
-### Customization
-
-Consumers can modify tool defaults at runtime via:
-
-- `setToolDefaults(toolId, patch)`: Update defaults for a specific tool
-- `setActiveToolDefaults(patch)`: Update defaults for the currently active tool
-
 ## Capability Functions (exposed to all consumers with plugin-store)
 
 The `AnnotationCapability` interface exposes the plugin's public API. All capability functions are built in `buildCapability()` and accessible via the plugin store.
@@ -219,10 +177,13 @@ The `AnnotationState` interface defines the plugin's centralized state structure
 interface AnnotationState {
   byPage: Record<number, string[]>         // page index → annotation uids
   byUid: Record<string, TrackedAnnotation> // annotation uid → tracked annotation
+  byEntityType: Record<string, string[]>   // entity type → annotation uids
   selectedUid: string | null               // currently selected annotation uid
-  activeToolId: string | null              // currently active tool id
-  tools: AnnotationTool[]                  // available annotation tools
   hasPendingChanges: boolean               // true if uncommitted changes exist
+  activeColor: string                      // default color for new annotations
+  activeOpacity: number                    // default opacity for new annotations
+  activeSubtype: PdfAnnotationSubtype | null // default subtype (tool) for new annotations
+  activeEntityType: string                 // default entity type for new annotations
   canUndo: boolean                         // true if undo is possible
   canRedo: boolean                         // true if redo is possible
 }
@@ -232,27 +193,26 @@ interface AnnotationState {
 
 - `byPage`: Maps page indices to arrays of annotation UIDs for fast page-based lookups
 - `byUid`: Maps annotation UIDs to `TrackedAnnotation` objects containing commit state and annotation data
+- `byEntityType`: Maps entity types to arrays of annotation UIDs for fast entity-based lookups
 
 ### Selection
 
 - `selectedUid`: ID of the currently selected annotation (null if none selected)
 
-### Tools
-
-- `activeToolId`: ID of the currently active tool (null if no tool active)
-- `tools`: Array of available annotation tools with their defaults and interaction configs
-
 ### Commit Tracking
 
 - `hasPendingChanges`: Indicates if there are uncommitted changes (used to trigger commit operations)
 
+### Active Create Annotation Defaults
+
+- `activeColor`: Default color for new annotations
+- `activeOpacity`: Default opacity for new annotations
+- `activeSubtype`: Default annotation subtype (tool)
+- `activeEntityType`: Default entity type string
+
 ### Timeline Tracking
 
 - `canUndo`/`canRedo`: Flags controlled by timeline position, can be used to enable/disable undo/redo buttons
-
-### Initial State
-
-Defined in `state.ts`, all collections start empty except `tools` which is initialized with the four built-in tools (highlight, underline, strikeout, squiggly).
 
 ### State Access
 
@@ -274,7 +234,6 @@ The `AnnotationPlugin` class maintains several private properties for internal s
 ### Behavior Emitters
 
 - `state$`: Emits state changes to subscribers (powers `onStateChange` hook)
-- `activeTool$`: Emits active tool changes (powers `onActiveToolChange` hook)
 - `events$`: Emits annotation events (powers `onAnnotationEvent` hook)
 
 ### Plugin Dependencies
@@ -298,8 +257,6 @@ During initialization, the plugin fetches all annotations from the PDF. Any anno
 
 Each user action (not batch operations) creates a `Command` with `execute()` and `undo()` methods. The timeline enables full undo/redo support for annotation operations.
 
-### Command Pattern
-
 Commands are objects implementing:
 
 ```ts
@@ -310,6 +267,8 @@ interface Command {
 ```
 
 When a command is added to the timeline, any commands after the current index are discarded (standard undo/redo behavior).
+
+Only Capability Functions intended for users (not consumer programs) are added to the timeline which is a list of commands. This allows for undo/redo functionality.
 
 ## Plugin Class Methods (not exposed to consumers)
 
@@ -409,19 +368,6 @@ The `AnnotationPlugin` class implements several private and protected methods:
 - Stores previous state for undo
 - Adds to timeline but doesn't commit (allows undo without requiring commit)
 
-### Tool Management Methods
-
-**`getActiveTool(): AnnotationTool | null`**
-
-- Returns the currently active tool from state
-- Returns null if no tool is active
-
-**`activateToolId(toolId): void`**
-
-- Activates a tool via InteractionManager
-- If null, activates default mode
-- InteractionManager's mode change callback updates state
-
 ### Commit Operations
 
 **`commitWithTimeline(command, requiresCommit = true): void`**
@@ -440,14 +386,13 @@ The `AnnotationPlugin` class implements several private and protected methods:
 - Emits committed events for each annotation
 - Returns task that resolves when all operations complete
 
-### Utility Methods
+### Temporary Utility Methods
 
 **`exportAnnotationsToJSON(): void`**
 
 - Exports all annotations to JSON file
 - Includes metadata (author, timestamp, count)
 - Downloads file via blob URL
-- Used for development/testing purposes
 
 ## Actions (not exposed to consumers)
 
@@ -471,15 +416,13 @@ The reducer is a pure function that handles each action type:
 
 **CLEAR_ANNOTATIONS**: Resets byPage and byUid to empty, clears selection and hasPendingChanges
 
-**SET_CAN_UNDO_REDO**: Updates canUndo/canRedo flags based on timeline position
+**SET_CREATE_ANNOTATION_DEFAULTS**: Updates activeColor, activeOpacity, activeSubtype, and activeEntityType
 
-**SET_ACTIVE_TOOL_ID**: Updates activeToolId
+**SET_CAN_UNDO_REDO**: Updates canUndo/canRedo flags based on timeline position
 
 **SELECT_ANNOTATION**: Sets selectedUid
 
 **DESELECT_ANNOTATION**: Clears selectedUid
-
-**SET_TOOL_DEFAULTS**: Finds tool in array and merges patch into its defaults
 
 ### Immutability
 
@@ -489,7 +432,3 @@ All state updates create new objects using spread operators, ensuring the previo
 - Easy debugging via state history
 - Efficient change detection in React components
 - Reliable undo/redo functionality
-
-## Commands, Timeline, and Undo/Redo
-
-Only CapabilityFunctions intended for users (not consumer programs) are added to the timeline which is a list of commands. This allows for undo/redo functionality.
