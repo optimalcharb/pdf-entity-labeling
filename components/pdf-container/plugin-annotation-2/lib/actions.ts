@@ -55,6 +55,7 @@ export interface SetCreateAnnotationDefaultsAction extends Action {
     color?: string
     opacity?: number
     subtype?: PdfAnnotationSubtype | null
+    entityType?: string
   }
 }
 export interface SetCanUndoRedoAction extends Action {
@@ -114,6 +115,7 @@ export const setCreateAnnotationDefaults = (defaults: {
   color?: string
   opacity?: number
   subtype?: PdfAnnotationSubtype | null
+  entityType?: string
 }): SetCreateAnnotationDefaultsAction => ({
   type: SET_CREATE_ANNOTATION_DEFAULTS,
   payload: defaults,
@@ -146,7 +148,25 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
         })
         newByPage[pageIndex] = newUidsOnPage
       }
-      return { ...state, byPage: newByPage, byUid: newByUid, hasPendingChanges: false }
+
+      const newByEntityType: Record<string, string[]> = {}
+      for (const uid in newByUid) {
+        const anno = newByUid[uid]?.object
+        const et = anno?.custom?.entityType
+        if (et) {
+          const list = newByEntityType[et] || []
+          list.push(uid)
+          newByEntityType[et] = list
+        }
+      }
+
+      return {
+        ...state,
+        byPage: newByPage,
+        byUid: newByUid,
+        byEntityType: newByEntityType,
+        hasPendingChanges: false,
+      }
     }
 
     case SET_CREATE_ANNOTATION_DEFAULTS:
@@ -158,6 +178,7 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
           action.payload.subtype !== undefined && isValidActiveSubtype(action.payload.subtype)
             ? action.payload.subtype
             : state.activeSubtype,
+        activeEntityType: action.payload.entityType ?? state.activeEntityType,
       }
 
     case SELECT_ANNOTATION:
@@ -170,10 +191,17 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
       const { annotation } = action.payload
       const pageIndex = annotation.pageIndex
       const uid = annotation.id
+      const entityType = annotation.custom?.entityType
+      const newByEntityType = { ...state.byEntityType }
+      if (entityType) {
+        newByEntityType[entityType] = [...(newByEntityType[entityType] || []), uid]
+      }
+
       return {
         ...state,
         byPage: { ...state.byPage, [pageIndex]: [...(state.byPage[pageIndex] ?? []), uid] },
         byUid: { ...state.byUid, [uid]: { commitState: "new", object: annotation } },
+        byEntityType: newByEntityType,
         hasPendingChanges: true,
       }
     }
@@ -186,6 +214,13 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
       const pageIndex = annotation.pageIndex
 
       /* keep the object but mark it as deleted */
+      const entityType = annotation.custom?.entityType
+      const newByEntityType = { ...state.byEntityType }
+      if (entityType && newByEntityType[entityType]) {
+        newByEntityType[entityType] = newByEntityType[entityType]?.filter((u) => u !== uid) ?? []
+        if (newByEntityType[entityType]?.length === 0) delete newByEntityType[entityType]
+      }
+
       return {
         ...state,
         byPage: {
@@ -196,6 +231,7 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
           ...state.byUid,
           [uid]: { ...state.byUid[uid], commitState: "deleted" } as TrackedAnnotation,
         },
+        byEntityType: newByEntityType,
         hasPendingChanges: true,
       }
     }
@@ -204,6 +240,27 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
       const { id, patch } = action.payload
       const prev = state.byUid[id]
       if (!prev) return state
+
+      let newByEntityType = state.byEntityType
+
+      if ("custom" in patch) {
+        const oldEntityType = prev.object.custom?.entityType
+        const newEntityType = patch.custom?.entityType
+
+        if (oldEntityType !== newEntityType) {
+          newByEntityType = { ...state.byEntityType }
+          // Remove from old
+          if (oldEntityType && newByEntityType[oldEntityType]) {
+            newByEntityType[oldEntityType] =
+              newByEntityType[oldEntityType]?.filter((u) => u !== id) ?? []
+            if (newByEntityType[oldEntityType]?.length === 0) delete newByEntityType[oldEntityType]
+          }
+          // Add to new
+          if (newEntityType) {
+            newByEntityType[newEntityType] = [...(newByEntityType[newEntityType] || []), id]
+          }
+        }
+      }
 
       return {
         ...state,
@@ -215,6 +272,7 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
             object: { ...prev.object, ...patch },
           } as TrackedAnnotation,
         },
+        byEntityType: newByEntityType,
         hasPendingChanges: true,
       }
     }
@@ -244,7 +302,14 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
       return { ...state, canUndo, canRedo }
 
     case CLEAR_ANNOTATIONS:
-      return { ...state, selectedUid: null, byUid: {}, byPage: {}, hasPendingChanges: false }
+      return {
+        ...state,
+        selectedUid: null,
+        byUid: {},
+        byPage: {},
+        byEntityType: {},
+        hasPendingChanges: false,
+      }
 
     default:
       return state

@@ -11,7 +11,10 @@ import {
 import usePluginStore from "../hooks/use-plugin-store"
 
 export default function PluginStoreTable() {
-  const { annoCapability, annoState, selectCapability, scrollCapability } = usePluginStore()
+  const {
+    annoCapability,
+    annoState, // selectCapability, scrollCapability
+  } = usePluginStore()
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
@@ -36,7 +39,7 @@ export default function PluginStoreTable() {
               </span>
             </TableCell>
           </TableRow>
-          <TableRow>
+          {/* <TableRow>
             <TableCell className="font-medium">selectCapability Active</TableCell>
             <TableCell>
               <span
@@ -59,7 +62,7 @@ export default function PluginStoreTable() {
                 {scrollCapability ? "Yes" : "No"}
               </span>
             </TableCell>
-          </TableRow>
+          </TableRow> */}
           <TableRow>
             <TableCell className="font-medium">Active Subtype</TableCell>
             <TableCell>
@@ -76,7 +79,7 @@ export default function PluginStoreTable() {
               </span>
             </TableCell>
           </TableRow>
-          <TableRow>
+          {/* <TableRow>
             <TableCell className="font-medium">Can Undo</TableCell>
             <TableCell>
               <span
@@ -99,7 +102,7 @@ export default function PluginStoreTable() {
                 {annoState?.canRedo?.toString() ?? "false"}
               </span>
             </TableCell>
-          </TableRow>
+          </TableRow> */}
           {/* <TableRow>
             <TableCell className="font-medium">byUid</TableCell>
             <TableCell>
@@ -121,7 +124,7 @@ export default function PluginStoreTable() {
           disabled={!annoCapability}
           className="rounded bg-gray-100 px-3 py-1 text-sm font-medium hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Test: Deselect All
+          Deselect
         </button>
       </div>
     </div>
