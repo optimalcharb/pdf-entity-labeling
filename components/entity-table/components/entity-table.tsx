@@ -1,4 +1,12 @@
 import { useEffect } from "react"
+import { Subtype } from "@/components/pdf-container/plugin-annotation-2"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn-ui/select"
 import {
   Table,
   TableBody,
@@ -8,7 +16,6 @@ import {
   TableRow,
 } from "@/components/shadcn-ui/table"
 import usePluginStore from "../../plugin-store/hooks/use-plugin-store"
-// import type { EntityType } from "../entity-type"
 import useEntityTypeStore from "../hooks/use-entity-type-store"
 import initialEntityTypes from "../initial-entity-types"
 
@@ -20,7 +27,7 @@ const EntityTable = () => {
   const { annoState, annoCapability } = usePluginStore()
 
   // entityTypesByName is a record of name -> EntityType
-  const { byName: entityTypesByName, setByName } = useEntityTypeStore()
+  const { byName: entityTypesByName, setByName, patchEntityType } = useEntityTypeStore()
 
   // set initial entity types
   useEffect(() => {
@@ -67,7 +74,31 @@ const EntityTable = () => {
 
           return (
             <TableRow key={name}>
-              <TableCell>{entityType.subtype}</TableCell>
+              <TableCell>
+                <Select
+                  value={entityType.subtype}
+                  onValueChange={(value) => {
+                    patchEntityType(name, {
+                      subtype: value as Subtype,
+                    })
+                    if (annoState?.activeEntityType === name) {
+                      annoCapability?.setCreateAnnotationDefaults({
+                        subtype: value as Subtype,
+                      })
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-[130px]">
+                    <SelectValue placeholder="Select subtype" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="highlight">Highlight</SelectItem>
+                    <SelectItem value="underline">Underline</SelectItem>
+                    <SelectItem value="squiggly">Squiggly</SelectItem>
+                    <SelectItem value="strikeout">Strikeout</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TableCell>
               <TableCell>{entityType.color}</TableCell>
               <TableCell>{name}</TableCell>
               <TableCell
