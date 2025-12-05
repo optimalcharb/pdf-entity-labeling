@@ -78,9 +78,11 @@ const EntityTable = () => {
                 <Select
                   value={entityType.subtype}
                   onValueChange={(value) => {
+                    // change EntityTypeStore so next activation will use new subtype
                     patchEntityType(name, {
                       subtype: value as Subtype,
                     })
+                    // change PluginStore so activeSubtype matches the change
                     if (annoState?.activeEntityType === name) {
                       annoCapability?.setCreateAnnotationDefaults({
                         subtype: value as Subtype,
@@ -89,7 +91,7 @@ const EntityTable = () => {
                   }}
                 >
                   <SelectTrigger className="w-[130px]">
-                    <SelectValue placeholder="Select subtype" />
+                    <SelectValue placeholder={entityType.subtype} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="highlight">Highlight</SelectItem>
