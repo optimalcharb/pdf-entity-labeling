@@ -38,6 +38,7 @@ import {
 import type { AnnotationEvent, Command, TrackedAnnotation } from "./custom-types"
 import type { PdfTextMarkupAnnotationObject } from "./pdf-text-markup-annotation-object"
 import type { AnnotationState } from "./state"
+import { Subtype, subtypeToEnum } from "./state"
 
 function ignore() {}
 
@@ -63,7 +64,7 @@ export interface AnnotationCapability {
   setCreateAnnotationDefaults: (defaults: {
     color?: string
     opacity?: number
-    subtype?: PdfAnnotationSubtype | null
+    subtype?: Subtype | null
     entityType?: string
   }) => void
 
@@ -141,7 +142,7 @@ export class AnnotationPlugin extends BasePlugin<
           const annotationId = uuidV4()
           // Create an annotation using the active state properties
           this.createAnnotation({
-            type: activeSubtype,
+            type: subtypeToEnum(activeSubtype),
             color: activeColor,
             opacity: activeOpacity,
             rect: selection.rect,

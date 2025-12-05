@@ -51,10 +51,9 @@ const EntityTable = () => {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
           <TableHead>Subtype</TableHead>
           <TableHead>Color</TableHead>
-          <TableHead>Opacity</TableHead>
+          <TableHead>Name</TableHead>
           <TableHead>EntityValue</TableHead>
         </TableRow>
       </TableHeader>
@@ -68,10 +67,9 @@ const EntityTable = () => {
 
           return (
             <TableRow key={name}>
-              <TableCell>{name}</TableCell>
               <TableCell>{entityType.subtype}</TableCell>
               <TableCell>{entityType.color}</TableCell>
-              <TableCell>{entityType.opacity}</TableCell>
+              <TableCell>{name}</TableCell>
               <TableCell
                 className={!annotationText ? "cursor-pointer" : ""}
                 onClick={() => {

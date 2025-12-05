@@ -1,39 +1,77 @@
-import { PdfAnnotationSubtype } from "@embedpdf/models"
 import type { EntityType } from "./entity-type"
 
-const initialEntityTypes: EntityType[] = [
+const initialEntityTypes0: Pick<EntityType, "name" | "subtype">[] = [
   {
-    name: "Highlight",
-    subtype: PdfAnnotationSubtype.HIGHLIGHT,
-    color: "#FF0000",
-    opacity: 0.8,
-    unique: true,
-    required: true,
+    name: "Register ID",
+    subtype: "highlight",
   },
   {
-    name: "Squiggly",
-    subtype: PdfAnnotationSubtype.SQUIGGLY,
-    color: "#00FF00",
-    opacity: 1,
-    unique: true,
-    required: true,
+    name: "Register Volume",
+    subtype: "underline",
   },
   {
-    name: "Underline",
-    subtype: PdfAnnotationSubtype.UNDERLINE,
-    color: "#0000FF",
-    opacity: 1,
-    unique: true,
-    required: true,
+    name: "Register Number",
+    subtype: "underline",
   },
   {
-    name: "StrikeOut",
-    subtype: PdfAnnotationSubtype.STRIKEOUT,
-    color: "#FF00FF",
-    opacity: 1,
-    unique: true,
-    required: true,
+    name: "Register Date",
+    subtype: "highlight",
+  },
+  {
+    name: "Effective Date",
+    subtype: "highlight",
+  },
+  {
+    name: "Title",
+    subtype: "highlight",
+  },
+  {
+    name: "Agency",
+    subtype: "highlight",
+  },
+  {
+    name: "Action",
+    subtype: "highlight",
+  },
+  {
+    name: "Summary",
+    subtype: "squiggly",
+  },
+  {
+    name: "Contact Name",
+    subtype: "highlight",
+  },
+  {
+    name: "Contact Position",
+    subtype: "highlight",
+  },
+  {
+    name: "Contact Email",
+    subtype: "highlight",
   },
 ]
 
+const initialColors = [
+  "#FFEB3B", // Bright Yellow
+  "#FF9800", // Orange
+  "#FF5722", // Deep Orange
+  "#FF4081", // Hot Pink
+  "#E040FB", // Purple
+  "#7C4DFF", // Electric Violet
+  "#536DFE", // Indigo
+  "#40C4FF", // Light Blue
+  "#00E5FF", // Cyan
+  "#69F0AE", // Mint Green
+]
+
+const initialEntityTypes: EntityType[] = []
+for (const initialEntityType of initialEntityTypes0) {
+  initialEntityTypes.push({
+    ...initialEntityType,
+    color: initialColors[Math.floor(Math.random() * initialColors.length)] || "#FFEB3B",
+    opacity: initialEntityType.subtype === "highlight" ? Math.random() * 0.2 + 0.6 : 1,
+    unique: true,
+    required: true,
+  })
+}
 export default initialEntityTypes

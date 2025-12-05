@@ -33,14 +33,14 @@ const Toolbar = ({ canRotate }: { canRotate: boolean }) => {
   const tools = [
     {
       id: "highlight",
-      subtype: PdfAnnotationSubtype.HIGHLIGHT,
+      subtype: "highlight",
       icon: Highlighter,
       opacity: 0.5,
       color: "#FBB338",
     },
     {
       id: "underline",
-      subtype: PdfAnnotationSubtype.UNDERLINE,
+      subtype: "underline",
       icon: Underline,
       opacity: 1,
       color: "#F51F1F",
