@@ -16,7 +16,7 @@ const manifest: PluginManifest<AnnotationPluginConfig> = {
   optional: [],
   defaultConfig: {
     annotationAuthor: "test",
-    deactivateToolAfterCreate: false,
+    deactivateSubtypeAfterCreate: true,
     selectAfterCreate: true,
   },
 }

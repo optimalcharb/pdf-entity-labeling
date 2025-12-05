@@ -45,7 +45,7 @@ function ignore() {}
 // ***PLUGIN CONFIG***
 export interface AnnotationPluginConfig extends BasePluginConfig {
   annotationAuthor?: string
-  deactivateToolAfterCreate?: boolean
+  deactivateSubtypeAfterCreate?: boolean
   selectAfterCreate?: boolean
 }
 
@@ -155,7 +155,7 @@ export class AnnotationPlugin extends BasePlugin<
             },
           } as PdfTextMarkupAnnotationObject)
 
-          if (this.config.deactivateToolAfterCreate) {
+          if (this.config.deactivateSubtypeAfterCreate) {
             this.dispatch(setCreateAnnotationDefaults({ subtype: null }))
           }
           if (this.config.selectAfterCreate) {
