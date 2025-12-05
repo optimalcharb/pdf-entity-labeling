@@ -1,8 +1,8 @@
-import { PdfAnnotationSubtype } from "@embedpdf/models"
+import { Subtype } from "../pdf-container/plugin-annotation-2"
 
 export interface EntityType {
   name: string
-  subtype: PdfAnnotationSubtype
+  subtype: Subtype
   color: string
   opacity: number
   unique: boolean

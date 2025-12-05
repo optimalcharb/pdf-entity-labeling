@@ -1,4 +1,12 @@
 import { useEffect } from "react"
+import { Subtype } from "@/components/pdf-container/plugin-annotation-2"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn-ui/select"
 import {
   Table,
   TableBody,
@@ -20,7 +28,7 @@ const EntityTable = () => {
   const { annoState, annoCapability } = usePluginStore()
 
   // entityTypesByName is a record of name -> EntityType
-  const { byName: entityTypesByName, setByName } = useEntityTypeStore()
+  const { byName: entityTypesByName, setByName, patchEntityType } = useEntityTypeStore()
 
   // set initial entity types
   useEffect(() => {
@@ -51,10 +59,9 @@ const EntityTable = () => {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
           <TableHead>Subtype</TableHead>
           <TableHead>Color</TableHead>
-          <TableHead>Opacity</TableHead>
+          <TableHead>Name</TableHead>
           <TableHead>EntityValue</TableHead>
         </TableRow>
       </TableHeader>
@@ -68,10 +75,28 @@ const EntityTable = () => {
 
           return (
             <TableRow key={name}>
-              <TableCell>{name}</TableCell>
-              <TableCell>{entityType.subtype}</TableCell>
+              <TableCell>
+                <Select
+                  value={entityType.subtype}
+                  onValueChange={(value) => {
+                    patchEntityType(name, {
+                      subtype: value as Subtype,
+                    })
+                  }}
+                >
+                  <SelectTrigger className="w-[130px]">
+                    <SelectValue placeholder="Select subtype" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="highlight">Highlight</SelectItem>
+                    <SelectItem value="underline">Underline</SelectItem>
+                    <SelectItem value="squiggly">Squiggly</SelectItem>
+                    <SelectItem value="strikeout">Strikeout</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TableCell>
               <TableCell>{entityType.color}</TableCell>
-              <TableCell>{entityType.opacity}</TableCell>
+              <TableCell>{name}</TableCell>
               <TableCell
                 className={!annotationText ? "cursor-pointer" : ""}
                 onClick={() => {

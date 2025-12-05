@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { blendModeToCss, PdfAnnotationSubtype, PdfBlendMode, Rect } from "@embedpdf/models"
 import { useSelectionCapability } from "../../../plugin-selection-2"
 import { useAnnotationCapability } from "../../hooks"
+import { Subtype, subtypeToEnum } from "../../lib/state"
 import { Highlight } from "./highlight"
 import { Squiggly } from "./squiggly"
 import { Strikeout } from "./strikeout"
@@ -17,7 +18,7 @@ export function TextMarkupPreview({ pageIndex, scale }: TextMarkupPreviewProps) 
   const { provides: annotationProvides } = useAnnotationCapability()
   const [rects, setRects] = useState<Array<Rect>>([])
   const [boundingRect, setBoundingRect] = useState<Rect | null>(null)
-  const [activeSubtype, setActiveSubtype] = useState<PdfAnnotationSubtype | null>(null)
+  const [activeSubtype, setActiveSubtype] = useState<Subtype | null>(null)
   const [activeColor, setActiveColor] = useState<string>("red")
   const [activeOpacity, setActiveOpacity] = useState<number>(0.5)
 
@@ -45,7 +46,7 @@ export function TextMarkupPreview({ pageIndex, scale }: TextMarkupPreviewProps) 
   if (!boundingRect) return null
   if (!activeSubtype) return null
 
-  switch (activeSubtype) {
+  switch (subtypeToEnum(activeSubtype)) {
     case PdfAnnotationSubtype.UNDERLINE:
       return (
         <div

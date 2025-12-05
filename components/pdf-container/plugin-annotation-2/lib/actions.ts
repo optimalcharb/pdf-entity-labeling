@@ -1,9 +1,10 @@
 import type { Action, Reducer } from "@embedpdf/core"
-import { PdfAnnotationSubtype } from "@embedpdf/models"
+// import { PdfAnnotationSubtype } from "@embedpdf/models"
 import type { TrackedAnnotation } from "./custom-types"
 import type { PdfTextMarkupAnnotationObject } from "./pdf-text-markup-annotation-object"
 import type { AnnotationState } from "./state"
-import { isValidActiveSubtype } from "./subtype-predicates"
+// import { isValidActiveSubtype } from "./subtype-predicates"
+import { Subtype } from "./state"
 
 // ***ACTION CONSTANTS***
 export const SET_ANNOTATIONS = "ANNOTATION/SET_ANNOTATIONS"
@@ -54,7 +55,7 @@ export interface SetCreateAnnotationDefaultsAction extends Action {
   payload: {
     color?: string
     opacity?: number
-    subtype?: PdfAnnotationSubtype | null
+    subtype?: Subtype | null
     entityType?: string
   }
 }
@@ -114,7 +115,7 @@ export const purgeAnnotation = (uid: string): PurgeAnnotationAction => ({
 export const setCreateAnnotationDefaults = (defaults: {
   color?: string
   opacity?: number
-  subtype?: PdfAnnotationSubtype | null
+  subtype?: Subtype | null
   entityType?: string
 }): SetCreateAnnotationDefaultsAction => ({
   type: SET_CREATE_ANNOTATION_DEFAULTS,
@@ -175,9 +176,7 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
         activeColor: action.payload.color ?? state.activeColor,
         activeOpacity: action.payload.opacity ?? state.activeOpacity,
         activeSubtype:
-          action.payload.subtype !== undefined && isValidActiveSubtype(action.payload.subtype)
-            ? action.payload.subtype
-            : state.activeSubtype,
+          action.payload.subtype !== undefined ? action.payload.subtype : state.activeSubtype,
         activeEntityType: action.payload.entityType ?? state.activeEntityType,
       }
 
