@@ -1,4 +1,12 @@
 import { useEffect } from "react"
+import { PdfAnnotationSubtype } from "@embedpdf/models"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/shadcn-ui/select"
 import {
   Table,
   TableBody,
@@ -20,7 +28,7 @@ const EntityTable = () => {
   const { annoState, annoCapability } = usePluginStore()
 
   // entityTypesByName is a record of name -> EntityType
-  const { byName: entityTypesByName, setByName } = useEntityTypeStore()
+  const { byName: entityTypesByName, setByName, patchEntityType } = useEntityTypeStore()
 
   // set initial entity types
   useEffect(() => {
@@ -68,10 +76,28 @@ const EntityTable = () => {
 
           return (
             <TableRow key={name}>
-              <TableCell>{name}</TableCell>
-              <TableCell>{entityType.subtype}</TableCell>
+              <TableCell>
+                <Select
+                  value={subtypeEnumToString(entityType.subtype)}
+                  onValueChange={(value) => {
+                    patchEntityType(name, {
+                      subtype: subtypeStringToEnum(value) || PdfAnnotationSubtype.HIGHLIGHT,
+                    })
+                  }}
+                >
+                  <SelectTrigger className="w-[130px]">
+                    <SelectValue placeholder="Select subtype" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="highlight">Highlight</SelectItem>
+                    <SelectItem value="underline">Underline</SelectItem>
+                    <SelectItem value="squiggly">Squiggly</SelectItem>
+                    <SelectItem value="strikeout">Strikeout</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TableCell>
               <TableCell>{entityType.color}</TableCell>
-              <TableCell>{entityType.opacity}</TableCell>
+              <TableCell>{name}</TableCell>
               <TableCell
                 className={!annotationText ? "cursor-pointer" : ""}
                 onClick={() => {
@@ -90,3 +116,33 @@ const EntityTable = () => {
   )
 }
 export default EntityTable
+
+function subtypeStringToEnum(subtype: string): PdfAnnotationSubtype | null {
+  switch (subtype) {
+    case "highlight":
+      return PdfAnnotationSubtype.HIGHLIGHT
+    case "underline":
+      return PdfAnnotationSubtype.UNDERLINE
+    case "squiggly":
+      return PdfAnnotationSubtype.SQUIGGLY
+    case "strikeout":
+      return PdfAnnotationSubtype.STRIKEOUT
+    default:
+      return null
+  }
+}
+
+function subtypeEnumToString(subtype: PdfAnnotationSubtype): string {
+  switch (subtype) {
+    case PdfAnnotationSubtype.HIGHLIGHT:
+      return "highlight"
+    case PdfAnnotationSubtype.UNDERLINE:
+      return "underline"
+    case PdfAnnotationSubtype.SQUIGGLY:
+      return "squiggly"
+    case PdfAnnotationSubtype.STRIKEOUT:
+      return "strikeout"
+    default:
+      return "highlight"
+  }
+}
