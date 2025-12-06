@@ -156,7 +156,7 @@ export class AnnotationPlugin extends BasePlugin<
           } as PdfTextMarkupAnnotationObject)
 
           if (this.config.deactivateSubtypeAfterCreate) {
-            this.dispatch(setCreateAnnotationDefaults({ subtype: null }))
+            this.dispatch(setCreateAnnotationDefaults({ subtype: null, entityType: "" }))
           }
           if (this.config.selectAfterCreate) {
             this.dispatch(selectAnnotation(annotationId))

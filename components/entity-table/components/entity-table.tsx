@@ -1,4 +1,5 @@
 import { useEffect } from "react"
+import { Highlighter, LineSquiggle, Strikethrough, Underline } from "lucide-react"
 import { Subtype } from "@/components/pdf-container/plugin-annotation-2"
 import {
   Select,
@@ -18,6 +19,7 @@ import {
 import usePluginStore from "../../plugin-store/hooks/use-plugin-store"
 import useEntityTypeStore from "../hooks/use-entity-type-store"
 import initialEntityTypes from "../initial-entity-types"
+import ColorPicker from "./color-picker"
 
 const EntityTable = () => {
   // **IMPORTANT**
@@ -55,7 +57,7 @@ const EntityTable = () => {
   // now you will need to make a table that allows the users to activate an entity type and have the table display the resulting contents of the annotation that the user creates
 
   return (
-    <Table>
+    <Table className="[&_th]:px-1.5 [&_td]:px-1.5 [&_th]:py-2.5 [&_td]:py-2">
       <TableHeader>
         <TableRow>
           <TableHead>Subtype</TableHead>
@@ -82,7 +84,7 @@ const EntityTable = () => {
                     patchEntityType(name, {
                       subtype: value as Subtype,
                     })
-                    // change PluginStore so activeSubtype matches the change
+                    // change PluginStore so activeSubtype matches the change if deactiveSubtypeAfterCreate is false
                     if (annoState?.activeEntityType === name) {
                       annoCapability?.setCreateAnnotationDefaults({
                         subtype: value as Subtype,
@@ -90,28 +92,50 @@ const EntityTable = () => {
                     }
                   }}
                 >
-                  <SelectTrigger className="w-[130px]">
+                  <SelectTrigger className="w-[70px]">
                     <SelectValue placeholder={entityType.subtype} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="highlight">Highlight</SelectItem>
-                    <SelectItem value="underline">Underline</SelectItem>
-                    <SelectItem value="squiggly">Squiggly</SelectItem>
-                    <SelectItem value="strikeout">Strikeout</SelectItem>
+                    <SelectItem value="highlight">
+                      <Highlighter className="w-[40px]" />
+                    </SelectItem>
+                    <SelectItem value="underline">
+                      <Underline className="h-4 w-4" />
+                    </SelectItem>
+                    <SelectItem value="squiggly">
+                      <LineSquiggle className="h-4 w-4" />
+                    </SelectItem>
+                    <SelectItem value="strikeout">
+                      <Strikethrough className="h-4 w-4" />
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </TableCell>
-              <TableCell>{entityType.color}</TableCell>
+              <TableCell>
+                <ColorPicker
+                  value={entityType.color}
+                  onChange={(color) => {
+                    // change EntityTypeStore so next ET activation will use new color
+                    patchEntityType(name, {
+                      color,
+                    })
+                    // change PluginStore so activeColor matches the change if deactiveSubtypeAfterCreate is false
+                    if (annoState?.activeEntityType === name) {
+                      annoCapability?.setCreateAnnotationDefaults({
+                        color,
+                      })
+                    }
+                  }}
+                />
+              </TableCell>
               <TableCell>{name}</TableCell>
               <TableCell
                 className={!annotationText ? "cursor-pointer" : ""}
                 onClick={() => {
-                  if (!annotationText) {
-                    activateEntityType(name)
-                  }
+                  activateEntityType(name)
                 }}
               >
-                {annotationText || (isActive ? "Active..." : "")}
+                {isActive ? "Select text..." : annotationText || "Press to assign..."}
               </TableCell>
             </TableRow>
           )

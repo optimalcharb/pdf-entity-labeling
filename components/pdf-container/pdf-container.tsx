@@ -29,10 +29,15 @@ const logger = new NoopLogger() // ConsoleLogger()
 
 interface PDFContainerProps {
   url: string
+  exportName?: string
   canRotate?: boolean
 }
 
-export default function PDFContainer({ url, canRotate = true }: PDFContainerProps) {
+export default function PDFContainer({
+  url,
+  exportName = "labeled.pdf",
+  canRotate = true,
+}: PDFContainerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const { engine, isLoading, error } = usePdfiumEngine({
     wasmUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/engines/pdfium.wasm`,
@@ -90,7 +95,7 @@ export default function PDFContainer({ url, canRotate = true }: PDFContainerProp
             // register Annotation after InteractionManager, Seletion
             createPluginRegistration(AnnotationPluginPackage),
             // register Export after Annotation
-            createPluginRegistration(ExportPluginPackage),
+            createPluginRegistration(ExportPluginPackage, { defaultFileName: exportName }),
             // register Zoom after InteractionManager, Viewport, Scroll
             createPluginRegistration(ZoomPluginPackage, {
               defaultZoomLevel: ZoomMode.Automatic,
