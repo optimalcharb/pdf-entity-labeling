@@ -30,9 +30,9 @@
 
 ### Icons
 
-- [Lucide Icons](https://lucide.dev/icons/)
-- [Ant Design Icons](https://ant.design/components/icon)
-- [React Icons](https://react-icons.github.io/react-icons/)
+- Currently: [Lucide Icons](https://lucide.dev/icons/)
+- Possibly: [Ant Design Icons](https://ant.design/components/icon)
+- Others: [React Icons](https://react-icons.github.io/react-icons/)
 
 ### Colors
 
@@ -46,18 +46,15 @@
 - [masroorejaz/react-simple-captcha](https://github.com/masroorejaz/react-simple-captcha)
 - [Home page scroll animation](https://www.builder.io/blog/3d-gsap)
 - [OmniSVG/OmniSVG](https://github.com/OmniSVG/OmniSVG)
-- [pyscript/pyscript](https://github.com/pyscript/pyscript)
+- [Python terminal inside browser](https://github.com/pyscript/pyscript)
 - [Kanaries/graphic-walker](https://github.com/Kanaries/graphic-walker)
 - [vercel/avatar](https://github.com/vercel/avatar)
 - [vercel/react-tweet](https://github.com/vercel/react-tweet)
 - [vercel/platforms](https://github.com/vercel/platforms)
 - [enszrlu/NextStep](https://github.com/enszrlu/NextStep/)
 - [chatbot assistant](https://ai-sdk.dev/elements/examples/chatbot)
-- [openstatusHQ/data-table-filters](https://github.com/openstatusHQ/data-table-filters)
-
-### LLMs to code JS
-
-- [firecrawl/open-lovable](https://github.com/firecrawl/open-lovable)
+- [data-table-filters](https://github.com/openstatusHQ/data-table-filters)
+- [AG Grid special table](https://www.ag-grid.com/react-data-grid/getting-started/)
 
 ### Boilerplates
 

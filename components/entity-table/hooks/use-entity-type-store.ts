@@ -1,4 +1,3 @@
-// import { PdfAnnotationSubtype } from "@embedpdf/models"
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 import type { EntityType } from "../entity-type"

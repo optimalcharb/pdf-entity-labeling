@@ -38,13 +38,14 @@ import {
 import type { AnnotationEvent, Command, TrackedAnnotation } from "./custom-types"
 import type { PdfTextMarkupAnnotationObject } from "./pdf-text-markup-annotation-object"
 import type { AnnotationState } from "./state"
+import { Subtype, subtypeToEnum } from "./state"
 
 function ignore() {}
 
 // ***PLUGIN CONFIG***
 export interface AnnotationPluginConfig extends BasePluginConfig {
-  annotationAuthor?: string
-  deactivateToolAfterCreate?: boolean
+  author?: string
+  deactivateSubtypeAfterCreate?: boolean
   selectAfterCreate?: boolean
 }
 
@@ -63,7 +64,7 @@ export interface AnnotationCapability {
   setCreateAnnotationDefaults: (defaults: {
     color?: string
     opacity?: number
-    subtype?: PdfAnnotationSubtype | null
+    subtype?: Subtype | null
     entityType?: string
   }) => void
 
@@ -141,7 +142,7 @@ export class AnnotationPlugin extends BasePlugin<
           const annotationId = uuidV4()
           // Create an annotation using the active state properties
           this.createAnnotation({
-            type: activeSubtype,
+            type: subtypeToEnum(activeSubtype),
             color: activeColor,
             opacity: activeOpacity,
             rect: selection.rect,
@@ -154,8 +155,8 @@ export class AnnotationPlugin extends BasePlugin<
             },
           } as PdfTextMarkupAnnotationObject)
 
-          if (this.config.deactivateToolAfterCreate) {
-            this.dispatch(setCreateAnnotationDefaults({ subtype: null }))
+          if (this.config.deactivateSubtypeAfterCreate) {
+            this.dispatch(setCreateAnnotationDefaults({ subtype: null, entityType: "" }))
           }
           if (this.config.selectAfterCreate) {
             this.dispatch(selectAnnotation(annotationId))
@@ -297,7 +298,7 @@ export class AnnotationPlugin extends BasePlugin<
   ) {
     for (const { id, patch } of items) {
       patch.modified = new Date()
-      patch.author = patch.author ?? this.config.annotationAuthor
+      patch.author = patch.author ?? this.config.author
       this.dispatch(patchAnnotation(id, patch))
     }
     this.commit()
@@ -323,7 +324,7 @@ export class AnnotationPlugin extends BasePlugin<
   private batchCreateAnnotations(items: PdfTextMarkupAnnotationObject[]) {
     for (const annotation of items) {
       annotation.created = new Date()
-      annotation.author = annotation.author ?? this.config.annotationAuthor
+      annotation.author = annotation.author ?? this.config.author
       this.dispatch(createAnnotation(annotation))
     }
     this.commit()
@@ -335,7 +336,7 @@ export class AnnotationPlugin extends BasePlugin<
     const annotationModified = {
       ...annotation,
       created: new Date(),
-      author: annotation.author ?? this.config.annotationAuthor,
+      author: annotation.author ?? this.config.author,
     }
     const execute = () => {
       this.dispatch(createAnnotation(annotationModified))
@@ -400,7 +401,7 @@ export class AnnotationPlugin extends BasePlugin<
     const patchModified = {
       ...patch,
       modified: new Date(),
-      author: patch.author ?? this.config.annotationAuthor,
+      author: patch.author ?? this.config.author,
     }
 
     const execute = () => {
@@ -567,7 +568,7 @@ export class AnnotationPlugin extends BasePlugin<
   private exportAnnotationsToJSON() {
     const annotations = Object.values(this.state.byUid).map((ta: TrackedAnnotation) => ta.object)
     const exportData = {
-      exportedBy: this.config.annotationAuthor,
+      exportedBy: this.config.author,
       timestamp: new Date().toISOString(),
       metadata: {
         totalAnnotations: annotations.length,

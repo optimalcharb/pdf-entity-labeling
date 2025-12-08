@@ -22,14 +22,13 @@ interface PdfAnnotationObjectBase {
   pageIndex: number;
   rect: Rect; // Rect is the bounding box of the annotation on the page
   author?: string;
-  // Date is the JavaScript Date object
-  modified?: Date;
-  created?: Date;
+  created?: Date; // Date is the JavaScript Date object
+  modified?: Date; 
   blendMode?: PdfBlendMode; // blendMode is used when mutliple highlights overlap
   intent?: string; // not using intent
   flags?: PdfAnnotationFlagName[]; // not using flags
   contents?: string; // for text markup annotations, contents is the text
-  custom?: any; // not using custom
+  custom?: any; // contains the entity type
 }
 ```
 
@@ -136,21 +135,21 @@ The `AnnotationCapability` interface exposes the plugin's public API. All capabi
 
 ### CRUD Operations - Batch
 
-- `createAnnotations(items)`: Batch create annotations (no undo/redo support)
-- `updateAnnotations(items)`: Batch update annotations (no undo/redo support)
-- `deleteAnnotations(ids)`: Batch delete annotations (no undo/redo support)
-- `clearAnnotations()`: Remove all annotations (with undo/redo support)
+- `createAnnotations(items)`: Batch create annotations
+- `updateAnnotations(items)`: Batch update annotations
+- `deleteAnnotations(ids)`: Batch delete annotations
+- `clearAnnotations()`: Remove all annotations
 
 ### Timeline Operations
 
 - `undo()`: Undo the last command in the timeline
 - `redo()`: Redo the next command in the timeline
 
+Reactivity to user PointerEvents are handled by the Single Items CRUD operations. User actions need support for undo/redo. Batch CRUD operations bypass the timeline system and should only be used by consumer programs.
+
 ### Utility
 
 - `exportAnnotationsToJSON()`: Export all annotations to a JSON file (dev/testing feature)
-
-Reactivity to user PointerEvents are handled by the Single Items CRUD operations. User actions need support for undo/redo. Batch CRUD operations bypass the timeline system and should only be used by consumer programs.
 
 ## Events (exposed to consumers inside pdf-container)
 
@@ -229,7 +228,7 @@ The `AnnotationPlugin` class maintains several private properties for internal s
 
 ### Configuration
 
-- `config: AnnotationPluginConfig`: Plugin configuration including `annotationAuthor`, `deactivateToolAfterCreate`, and `selectAfterCreate`
+- `config: AnnotationPluginConfig`: Plugin configuration including `author`, `deactivateToolAfterCreate`, and `selectAfterCreate`
 
 ### Behavior Emitters
 

@@ -15,7 +15,7 @@ import {
   ZoomOut,
 } from "lucide-react"
 import usePluginStore from "../plugin-store/hooks/use-plugin-store"
-import type { PdfTextMarkupAnnotationObject } from "./plugin-annotation-2"
+import type { PdfTextMarkupAnnotationObject, Subtype } from "./plugin-annotation-2"
 
 const Toolbar = ({ canRotate }: { canRotate: boolean }) => {
   const { provides: exportCapability } = useExportCapability()
@@ -33,14 +33,14 @@ const Toolbar = ({ canRotate }: { canRotate: boolean }) => {
   const tools = [
     {
       id: "highlight",
-      subtype: PdfAnnotationSubtype.HIGHLIGHT,
+      subtype: "highlight" as Subtype,
       icon: Highlighter,
       opacity: 0.5,
       color: "#FBB338",
     },
     {
       id: "underline",
-      subtype: PdfAnnotationSubtype.UNDERLINE,
+      subtype: "underline" as Subtype,
       icon: Underline,
       opacity: 1,
       color: "#F51F1F",

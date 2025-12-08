@@ -15,15 +15,24 @@ cpverageReporter = ["text"]
 coverageDir = "./coverage"
 coverageSkipTestFiles = true
 coveragePathIgnorePatterns = [
+  "bun-test-setup.ts",
   "**/*.d.ts",
+  "**/*.e2e.ts",
+  "**/*.stories.tsx",
   "env.mjs",
   "*.config.*",
   "**/shadcn-ui/*",
+  ".github/",
+  ".husky/",
   ".next/",
   ".storybook/",
+  ".vscode/",
   "amplify/",
   "e2e/",
-  "**/*.e2e.ts",
   "node_modules/",
-  "storybook-static/"
+  "pgdata/",
+  "playwright-report/",
+  "public/",
+  "storybook-static/",
+  "test-results/"
 ]

@@ -1,6 +1,23 @@
 import { PdfAnnotationSubtype } from "@embedpdf/models"
 import type { TrackedAnnotation } from "./custom-types"
 
+// so consumers can use string instead of PdfAnnotationSubtype enum
+export type Subtype = "highlight" | "underline" | "squiggly" | "strikeout"
+
+// so plugin code can use the enum
+export function subtypeToEnum(subtype: Subtype): PdfAnnotationSubtype {
+  switch (subtype) {
+    case "highlight":
+      return PdfAnnotationSubtype.HIGHLIGHT
+    case "underline":
+      return PdfAnnotationSubtype.UNDERLINE
+    case "squiggly":
+      return PdfAnnotationSubtype.SQUIGGLY
+    case "strikeout":
+      return PdfAnnotationSubtype.STRIKEOUT
+  }
+}
+
 // ***PLUGIN STATE***
 export interface AnnotationState {
   // page index -> annotation uids
@@ -13,7 +30,7 @@ export interface AnnotationState {
   hasPendingChanges: boolean
   activeColor: string
   activeOpacity: number
-  activeSubtype: PdfAnnotationSubtype | null
+  activeSubtype: Subtype | null
   activeEntityType: string
   canUndo: boolean
   canRedo: boolean
