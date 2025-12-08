@@ -44,7 +44,7 @@ function ignore() {}
 
 // ***PLUGIN CONFIG***
 export interface AnnotationPluginConfig extends BasePluginConfig {
-  annotationAuthor?: string
+  author?: string
   deactivateSubtypeAfterCreate?: boolean
   selectAfterCreate?: boolean
 }
@@ -298,7 +298,7 @@ export class AnnotationPlugin extends BasePlugin<
   ) {
     for (const { id, patch } of items) {
       patch.modified = new Date()
-      patch.author = patch.author ?? this.config.annotationAuthor
+      patch.author = patch.author ?? this.config.author
       this.dispatch(patchAnnotation(id, patch))
     }
     this.commit()
@@ -324,7 +324,7 @@ export class AnnotationPlugin extends BasePlugin<
   private batchCreateAnnotations(items: PdfTextMarkupAnnotationObject[]) {
     for (const annotation of items) {
       annotation.created = new Date()
-      annotation.author = annotation.author ?? this.config.annotationAuthor
+      annotation.author = annotation.author ?? this.config.author
       this.dispatch(createAnnotation(annotation))
     }
     this.commit()
@@ -336,7 +336,7 @@ export class AnnotationPlugin extends BasePlugin<
     const annotationModified = {
       ...annotation,
       created: new Date(),
-      author: annotation.author ?? this.config.annotationAuthor,
+      author: annotation.author ?? this.config.author,
     }
     const execute = () => {
       this.dispatch(createAnnotation(annotationModified))
@@ -401,7 +401,7 @@ export class AnnotationPlugin extends BasePlugin<
     const patchModified = {
       ...patch,
       modified: new Date(),
-      author: patch.author ?? this.config.annotationAuthor,
+      author: patch.author ?? this.config.author,
     }
 
     const execute = () => {
@@ -568,7 +568,7 @@ export class AnnotationPlugin extends BasePlugin<
   private exportAnnotationsToJSON() {
     const annotations = Object.values(this.state.byUid).map((ta: TrackedAnnotation) => ta.object)
     const exportData = {
-      exportedBy: this.config.annotationAuthor,
+      exportedBy: this.config.author,
       timestamp: new Date().toISOString(),
       metadata: {
         totalAnnotations: annotations.length,

@@ -29,12 +29,14 @@ const logger = new NoopLogger() // ConsoleLogger()
 
 interface PDFContainerProps {
   url: string
+  author?: string
   exportName?: string
   canRotate?: boolean
 }
 
 export default function PDFContainer({
   url,
+  author = "anonymous",
   exportName = "labeled.pdf",
   canRotate = true,
 }: PDFContainerProps) {
@@ -93,7 +95,7 @@ export default function PDFContainer({
             createPluginRegistration(ThumbnailPluginPackage, { width: 100 }),
             createPluginRegistration(SelectionPluginPackage),
             // register Annotation after InteractionManager, Seletion
-            createPluginRegistration(AnnotationPluginPackage),
+            createPluginRegistration(AnnotationPluginPackage, { author }),
             // register Export after Annotation
             createPluginRegistration(ExportPluginPackage, { defaultFileName: exportName }),
             // register Zoom after InteractionManager, Viewport, Scroll
