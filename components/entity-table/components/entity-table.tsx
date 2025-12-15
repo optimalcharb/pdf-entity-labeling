@@ -22,10 +22,6 @@ import initialEntityTypes from "../initial-entity-types"
 import ColorPicker from "./color-picker"
 
 const EntityTable = () => {
-  // **IMPORTANT**
-  // annoState contains the whole AnnotationState
-  // annoState?.byEntityType gives ET name -> array of UIDs of annotations
-  // annoState?.byUid[uid].object.contents - text of annotation
   const { annoState, annoCapability } = usePluginStore()
 
   // entityTypesByName is a record of name -> EntityType
@@ -38,10 +34,6 @@ const EntityTable = () => {
     )
   }, [setByName])
 
-  // example usage of entityTypesByName
-  // const entityTypeObject1 = entityTypesByName["Highlight"] as EntityType
-  // const entityTypeNames: string[] = Object.keys(entityTypesByName)
-
   // uses annoCapability to set the default attributes for an annotation that the user creates
   const activateEntityType = (entityTypeName: string) => {
     const entityType = entityTypesByName[entityTypeName]
@@ -53,9 +45,7 @@ const EntityTable = () => {
       opacity: entityType.opacity,
     })
   }
-
-  // now you will need to make a table that allows the users to activate an entity type and have the table display the resulting contents of the annotation that the user creates
-
+  
   return (
     <Table className="[&_th]:px-1.5 [&_td]:px-1.5 [&_th]:py-2.5 [&_td]:py-2">
       <TableHeader>

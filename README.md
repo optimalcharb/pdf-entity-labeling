@@ -1,20 +1,33 @@
 # PDF Entity Labeling
 
+## 1 Minute Demo (Click Below! ⬇️)
+
+[![Demo](./public/demo-thumbnail.png)](https://x.com/i/status/1998581605468918028)
+
 ## Idea
+
+### The Problem
+
+Every business is modernizing big data processes, but what about information that isn't stored in a database or transferred in EDI format? Most unstructured, confidential information is sent as PDFs. These PDFs are often read once and discarded, or a human has to spend valuable time recording the details. Even tech-forward businesses rely on analysts to read PDFs and manually enter fields or trigger actions in their software systems.
+
+### The Solution
+
+NER automates PDF reading. Extracting key features converts your PDFs into an SQL database. From there, you can easily finalize an automation workflow to execute your business logic or mine insights on data you didn't realize you had.
 
 ### Core functionality
 
-In-browser PDF labeling to enable NER (named entity recognition) model training. The page will display a PDF on the left and a two-column table of entities on the right. The list of entity types are defined by the user on a previous page (so for now, assume the entity type list is hardcoded). The values for the entities are dynamically filled based on what the user highlights. The user can choose the color and whether highlight/underline/squiggly for each entity type in the table, as well as delete annotations from the table and use search capability by typing in the table boxes.
+In-browser PDF labeling to enable NER (named entity recognition) model training. The page displays a PDF on the left and a table of entities on the right. The user can label the text in the PDF that corresponds to each entity type in the table. The annotation objecs, including the entity type, and text, are saved to JSON or could be passed to a database and backend to train models. The user can choose the color and whether highlight/underline/squiggly for each entity type in the table, as well as delete annotations from the table.
 
-### Enhancements
+### User Steps
 
-- Page 1: the user can decide whether each entity type is required (each PDF must have that entity), unique (each PDF has at most one of that entity), and single-word (whether the entity value can have spaces).
-- highlighting to only select full words
-- a search button and input field using plugin-search
+1. Describe entity types - give each variable a name, written definition, and constraints for data type, required, and unique
+1. Label Documents - use the intuitive web interface to label examples of finding the features in the documents
+1. Train Model - train a custom SLM/trasnformer using the labeled data or use the defintions and examples to craft a comprehensive prompt for an LLM to achieve high accuracy without training
+1. Check outputs - create annotations for the predicted labels and siaply the PDFs in the UI to verify each output visually and make corrections to the model or the output before it is used in prod
 
-## Quickstart
+## Preview site locally
 
-1. Install [Node.js v22](https://nodejs.org/en/download/), [Git](https://git-scm.com/downloads), and [VS Code](https://code.visualstudio.com/download)
+1. Install [Node.js v22](https://nodejs.org/en/download/) and [Git](https://git-scm.com/downloads)
 2. Clone repo and install dependencies:
 
 ```cmd
@@ -25,17 +38,10 @@ git clone https://github.com/optimalcharb/pdf-entity-labeling.git
 npm install
 ```
 
-3. Install the recommended VS Code Extensions
-4. To setup playwright:
+3. Run the server
 
 ```cmd
-npx playwright install
-```
-
-5. To setup Bun on Windows, open Command Prompt or Powershell with admin privileges and run:
-
-```cmd
-powershell -c "irm bun.sh/install.ps1 | iex"
+npm run dev
 ```
 
 ## Development Tools
@@ -45,7 +51,7 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 - Frontend framework: [Next.js 15](https://nextjs.org/) App Router + [React](https://react.dev/)
 - Language: [TypeScript](https://www.typescriptlang.org/) with [ts-reset](https://github.com/total-typescript/ts-reset), config by tsconfig.json
 - Environment variable management: no environment variables, for now all variables should be hard-coded, loaded from an annotations file, or user provided
-- Containerization: none, no Docker or Kubernetes allowed
+- Containerization: none, no Docker or Kubernetes
 - Styles: [Tailwind CSS v4](https://tailwindcss.com/) with [CVA](http://cva.style/) (Class Variance Authority) for CSS integration and [PostCSS](https://postcss.org/) for JavaScript integration
 - Linting: [ESlint 9](https://eslint.org/), config by eslint.config.mjs
 - Formatting: [Prettier](https://prettier.io/), config by .prettierignore, .prettierrc
@@ -55,7 +61,6 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 ### Backend for Frontend (BFF)
 
 - Storage: must get PDF from local storage or URL
-- Database and API: avoid creating database tables or API routes, except for plugin-annotation. don't rely heavily on some db or api framework, keep it simple. Try to do everything else with React and in-memory or possibly Zustand. Do not add authentication, authorization, Lambda functions, HTTP, caching, observability, security, etc.
 
 ### Core Backend
 
@@ -79,7 +84,6 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 | storybook    | view storybook workshop                                    |
 | test         | run tests using Bun Test Runner                            |
 | e2e          | run playwright end-to-end tests                            |
-| madge        | to be added to package.json to run madge                   |
 | others       | other scripts can be added to package.json                 |
 
 ### Version Control
@@ -104,7 +108,7 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 
 ### Dependency Control
 
-- Package manager: [npm](https://docs.npmjs.com/about-npm) to ensure compatability with all serverless hosting
+- Package manager: [npm](https://docs.npmjs.com/about-npm)
 - Package management: [Corepack](https://github.com/nodejs/corepack)
 - Package fixes: [Patch-package](https://www.npmjs.com/package/patch-package)
 - Bundle management: [Bundle analyzer](https://www.npmjs.com/package/@next/bundle-analyzer) - currently disabled
@@ -112,40 +116,20 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 
 ### Component Development
 
-- State management: currently React only
+- State management: React or local state and [zustand](https://github.com/pmndrs/zustand) for global state stores
 - Component workshop: [Storybook](https://storybook.js.org/) using .stories.tsx files
-- Component dependency grapher: [Madge](https://github.com/pahen/madge) - not yet setup, can fix later, here is my draft cmd: npx madge --extensions=js,jsx,ts,tsx ./ --exclude ".\*\.config\.(ts|js|mjs)|.next/|.storybook/|node_modules/|storybook-static/|reset\.d\.ts|next-env\.d\.ts" --image graph.svg (need to install gvpr graphviz)
 
 ## Features
-
-### UI Libraries
-
-- Current site uses [shadcn/ui](https://ui.shadcn.com/) stored in components/shadcn-ui and config by components.json
-- Avoid using other UI libraries as the PDF container functionality should be locally coded
 
 ### PDF Rendering
 
 - EmbedPDF: [GitHub](https://github.com/embedpdf/embed-pdf-viewer), [docs for @embedpdf/pdfium](https://www.embedpdf.com/docs/pdfium/introduction) the JS library to wrap the C++ engine, [docs for @embedpdf/core](https://www.embedpdf.com/docs/react/introduction) which I have modified
-- Currently PDFs are rendered by URL only, later I want to fix the BufferStrategy in plugin-loader to load PDFs from local storage
 - Plugins are built in consitent style defined by core (not using standard Redux style) and must have commented sections following plugin-template/
-- Refer to GitHub Issues for ideas
 
-### Forms
+### UI Libraries
 
-- Defer to .components/shadcn-ui/form.tsx based on react-hook-form
+- [shadcn/ui](https://ui.shadcn.com/) stored in components/shadcn-ui and config by components.json
 
 ### Icons
 
-- Try to stick to [Lucide Icons](https://lucide.dev/icons/), icons are not necessary at first since functionality needs to be built before appearance
-
-### Colors
-
-- You can pick TailwindCSS colors on [tailcolors](https://tailcolors.com/)
-
-### In-site tables
-
-- Maybe try [x-spreadsheet](https://github.com/myliang/x-spreadsheet) or other packages on npm
-
-### Other components
-
-- Check [billout](https://github.com/brillout/awesome-react-components?tab=readme-ov-file#ui-components) for a list of some praised React packages
+- [Lucide Icons](https://lucide.dev/icons/)
