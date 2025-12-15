@@ -3,7 +3,7 @@ name: Semantic Release
 on:
   push:
     branches:
-      - "**"
+      - "master"
 
 jobs:
   release:
@@ -12,10 +12,6 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
-
-    if: startsWith(github.event.head_commit.message, 'feat') ||
-      startsWith(github.event.head_commit.message, 'fix') ||
-      startsWith(github.event.head_commit.message, 'perf')
 
     steps:
       - name: Checkout code
