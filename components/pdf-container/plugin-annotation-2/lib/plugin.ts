@@ -18,9 +18,11 @@ import {
 import { uuidV4 } from "@/lib/misc/uuid"
 import {
   InteractionManagerCapability,
-  InteractionManagerPlugin,
-} from "../../plugin-interaction-manager-2"
-import { SelectionCapability, SelectionPlugin } from "../../plugin-selection-2"
+} from "@embedpdf/plugin-interaction-manager"
+import { 
+  SelectionCapability
+} from "@embedpdf/plugin-selection"
+import { ScrollCapability } from "@embedpdf/plugin-scroll"
 import type { AnnotationAction } from "./actions"
 import {
   clearAnnotations,
@@ -95,6 +97,7 @@ export class AnnotationPlugin extends BasePlugin<
   private readonly state$ = createBehaviorEmitter<AnnotationState>()
   private readonly interactionManager: InteractionManagerCapability | null
   private readonly selection: SelectionCapability | null
+  private readonly scroll: ScrollCapability | null
 
   private readonly events$ = createBehaviorEmitter<AnnotationEvent>()
 
@@ -108,9 +111,10 @@ export class AnnotationPlugin extends BasePlugin<
     super(id, registry)
     this.config = config
 
-    this.selection = registry.getPlugin<SelectionPlugin>("selection")?.provides() ?? null
+    this.selection = registry.getPlugin("selection")?.provides?.() ?? null
     this.interactionManager =
-      registry.getPlugin<InteractionManagerPlugin>("interaction-manager")?.provides() ?? null
+      registry.getPlugin("interaction-manager")?.provides?.() ?? null
+    this.scroll = registry.getPlugin("scroll")?.provides?.() ?? null
 
     this.coreStore.onAction(SET_DOCUMENT, (_, state) => {
       const doc = state.core.document
@@ -138,7 +142,7 @@ export class AnnotationPlugin extends BasePlugin<
       if (!formattedSelection || !selectionText) return
 
       for (const selection of formattedSelection) {
-        selectionText.wait((text) => {
+        selectionText.wait((text: string[]) => {
           const annotationId = uuidV4()
           // Create an annotation using the active state properties
           this.createAnnotation({
@@ -173,7 +177,10 @@ export class AnnotationPlugin extends BasePlugin<
       onStateChange: this.state$.on,
       onAnnotationEvent: this.events$.on,
       getPageAnnotations: (options) => this.getPageAnnotations(options),
-      selectAnnotation: (id) => this.dispatch(selectAnnotation(id)),
+      selectAnnotation: (id) => {
+        this.dispatch(selectAnnotation(id))
+        this.scrollToAnnotation(id)
+      },
       deselectAnnotation: () => this.dispatch(deselectAnnotation()),
       setCreateAnnotationDefaults: (defaults) =>
         this.dispatch(setCreateAnnotationDefaults(defaults)),
@@ -213,6 +220,10 @@ export class AnnotationPlugin extends BasePlugin<
       } else {
         this.interactionManager?.activateDefaultMode()
       }
+    }
+    // Scroll to selected annotation when selection changes
+    if (prev.selectedUid !== next.selectedUid && next.selectedUid) {
+      this.scrollToAnnotation(next.selectedUid)
     }
   }
 
@@ -586,6 +597,26 @@ export class AnnotationPlugin extends BasePlugin<
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  private scrollToAnnotation(annotationId: string) {
+    if (!this.scroll) return
+
+    const annotation = this.state.byUid[annotationId]?.object
+    if (!annotation) return
+
+    // Calculate the center of the annotation's rect
+    const rect = annotation.rect
+    const centerX = rect.origin.x + rect.size.width / 2
+    const centerY = rect.origin.y + rect.size.height / 2
+
+    // Use the scroll plugin to navigate to this position
+    this.scroll.scrollToPage({
+      pageNumber: annotation.pageIndex,
+      pageCoordinates: { x: centerX, y: centerY },
+      behavior: "smooth",
+      center: true,
+    })
   }
 
   async destroy(): Promise<void> {
