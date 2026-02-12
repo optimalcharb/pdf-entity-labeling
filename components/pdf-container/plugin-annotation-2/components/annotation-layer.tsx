@@ -3,22 +3,16 @@ import { Annotations } from "./annotations"
 import { TextMarkupPreview } from "./text-markup/preview"
 
 type AnnotationLayerProps = Omit<HTMLAttributes<HTMLDivElement>, "style"> & {
+  documentId: string
   pageIndex: number
-  scale: number
-  pageWidth: number
-  pageHeight: number
-  rotation: number
   style?: CSSProperties
   selectionOutlineColor?: string
 }
 
 export function AnnotationLayer({
-  style,
+  documentId,
   pageIndex,
-  scale,
-  pageWidth,
-  pageHeight,
-  rotation,
+  style,
   selectionOutlineColor,
   ...props
 }: AnnotationLayerProps) {
@@ -30,15 +24,12 @@ export function AnnotationLayer({
       {...props}
     >
       <Annotations
+        documentId={documentId}
         pageIndex={pageIndex}
-        scale={scale}
-        rotation={rotation}
-        pageWidth={pageWidth}
-        pageHeight={pageHeight}
         selectionOutlineColor={selectionOutlineColor}
         data-testid="annotations"
       />
-      <TextMarkupPreview pageIndex={pageIndex} scale={scale} data-testid="text-markup" />
+      <TextMarkupPreview documentId={documentId} pageIndex={pageIndex} data-testid="text-markup" />
     </div>
   )
 }

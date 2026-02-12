@@ -2,10 +2,10 @@ import { Rect } from "@embedpdf/models"
 import type { MenuWrapperProps } from "@embedpdf/utils/react"
 import { Trash2 } from "lucide-react"
 import { useAnnotationCapability } from "../../hooks"
-import type { TrackedAnnotation } from "../../lib"
+import type { PdfTextMarkupAnnotationObject } from "../../lib"
 
 interface SelectedMenuProps {
-  annotation: TrackedAnnotation
+  annotation: PdfTextMarkupAnnotationObject
   selected: boolean
   rect: Rect
   menuWrapperProps: MenuWrapperProps
@@ -20,7 +20,7 @@ export const AnnotationMenu = ({
   const { provides: annotationCapability } = useAnnotationCapability()
 
   const handleDeleteClick = () => {
-    annotationCapability?.deleteAnnotation(annotation.object.id)
+    annotationCapability?.deleteAnnotation(annotation.id)
   }
 
   if (!selected) return null

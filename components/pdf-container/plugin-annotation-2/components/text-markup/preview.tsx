@@ -1,6 +1,7 @@
-import { blendModeToCss, PdfAnnotationSubtype, PdfBlendMode, Rect } from "@embedpdf/models"
-import { useSelectionCapability } from "@embedpdf/plugin-selection/react"
 import { useEffect, useState } from "react"
+import { useDocumentState } from "@embedpdf/core/react"
+import { blendModeToCss, PdfAnnotationSubtype, PdfBlendMode, Rect } from "@embedpdf/models"
+import { useSelectionCapability } from "../../../plugin-selection-2"
 import { useAnnotationCapability } from "../../hooks"
 import { Subtype, subtypeToEnum } from "../../lib/state"
 import { Highlight } from "./highlight"
@@ -9,11 +10,13 @@ import { Strikeout } from "./strikeout"
 import { Underline } from "./underline"
 
 interface TextMarkupPreviewProps {
+  documentId: string
   pageIndex: number
-  scale: number
 }
 
-export function TextMarkupPreview({ pageIndex, scale }: TextMarkupPreviewProps) {
+export function TextMarkupPreview({ documentId, pageIndex }: TextMarkupPreviewProps) {
+  const documentState = useDocumentState(documentId)
+  const scale = documentState?.scale ?? 1
   const { provides: selectionProvides } = useSelectionCapability()
   const { provides: annotationProvides } = useAnnotationCapability()
   const [rects, setRects] = useState<Array<Rect>>([])

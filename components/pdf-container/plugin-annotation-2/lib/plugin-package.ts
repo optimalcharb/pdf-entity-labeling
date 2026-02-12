@@ -15,7 +15,7 @@ const manifest: PluginManifest<AnnotationPluginConfig> = {
   requires: ["interaction-manager", "selection"],
   optional: [],
   defaultConfig: {
-    annotationAuthor: "test",
+    author: "test",
     deactivateSubtypeAfterCreate: true,
     selectAfterCreate: true,
   },

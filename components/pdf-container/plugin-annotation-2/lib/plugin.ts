@@ -2,14 +2,11 @@ import {
   BasePlugin,
   BasePluginConfig,
   createBehaviorEmitter,
-  EventHook,
   PluginRegistry,
-  SET_DOCUMENT,
 } from "@embedpdf/core"
 import {
   PdfAnnotationObject,
   PdfAnnotationSubtype,
-  PdfDocumentObject,
   PdfErrorCode,
   PdfErrorReason,
   PdfTaskHelper,
@@ -23,22 +20,23 @@ import {
 import { SelectionCapability, SelectionPlugin } from "../../plugin-selection-2"
 import type { AnnotationAction } from "./actions"
 import {
+  cleanupAnnotationState,
   clearAnnotations,
-  commitPendingChanges,
   createAnnotation,
   deleteAnnotation,
   deselectAnnotation,
+  initAnnotationState,
   patchAnnotation,
-  purgeAnnotation,
   selectAnnotation,
+  setActiveDocument,
   setAnnotations,
   setCanUndoRedo,
   setCreateAnnotationDefaults,
 } from "./actions"
-import type { AnnotationEvent, Command, TrackedAnnotation } from "./custom-types"
+import type { Command } from "./custom-types"
 import type { PdfTextMarkupAnnotationObject } from "./pdf-text-markup-annotation-object"
-import type { AnnotationState } from "./state"
-import { Subtype, subtypeToEnum } from "./state"
+import type { AnnotationDocumentState, AnnotationState } from "./state"
+import { initialDocumentState, Subtype, subtypeToEnum } from "./state"
 
 function ignore() {}
 
@@ -51,8 +49,7 @@ export interface AnnotationPluginConfig extends BasePluginConfig {
 
 // ***PLUGIN CAPABILITY***
 export interface AnnotationCapability {
-  onStateChange: EventHook<AnnotationState>
-  onAnnotationEvent: EventHook<AnnotationEvent>
+  onStateChange: (listener: (state: AnnotationState) => void) => () => void
   // getPageAnnotations uses PDFium to get any annotations saved in the PDF, even those not made by this plugin
   getPageAnnotations: (options: {
     pageIndex: number
@@ -96,13 +93,11 @@ export class AnnotationPlugin extends BasePlugin<
   private readonly interactionManager: InteractionManagerCapability | null
   private readonly selection: SelectionCapability | null
 
-  private readonly events$ = createBehaviorEmitter<AnnotationEvent>()
+  private isInitialLoadComplete: Record<string, boolean> = {}
+  private loadingQueues: Record<string, PdfTextMarkupAnnotationObject[]> = {}
 
-  private isInitialLoadComplete: boolean = false
-  private loadingQueue: PdfTextMarkupAnnotationObject[] = []
-
-  private timeline: Command[] = []
-  private timelineIndex: number = -1
+  private timelines: Record<string, Command[]> = {}
+  private timelineIndices: Record<string, number> = {}
 
   constructor(id: string, registry: PluginRegistry, config: AnnotationPluginConfig) {
     super(id, registry)
@@ -111,12 +106,6 @@ export class AnnotationPlugin extends BasePlugin<
     this.selection = registry.getPlugin<SelectionPlugin>("selection")?.provides() ?? null
     this.interactionManager =
       registry.getPlugin<InteractionManagerPlugin>("interaction-manager")?.provides() ?? null
-
-    this.coreStore.onAction(SET_DOCUMENT, (_, state) => {
-      const doc = state.core.document
-      this.isInitialLoadComplete = false
-      if (doc) this.getAllAnnotations(doc)
-    })
   }
 
   async initialize(): Promise<void> {
@@ -168,10 +157,44 @@ export class AnnotationPlugin extends BasePlugin<
     })
   }
 
+  // ***DOCUMENT LIFECYCLE HOOKS***
+  protected override onDocumentLoadingStarted(documentId: string): void {
+    // Initialize annotation state for this document
+    const docState = { ...initialDocumentState }
+    this.dispatch(initAnnotationState(documentId, docState))
+
+    // Initialize document-specific tracking
+    this.isInitialLoadComplete[documentId] = false
+    this.loadingQueues[documentId] = []
+    this.timelines[documentId] = []
+    this.timelineIndices[documentId] = -1
+  }
+
+  protected override onDocumentLoaded(documentId: string): void {
+    // Set as active document and load existing annotations
+    this.dispatch(setActiveDocument(documentId))
+    this.getAllAnnotations(documentId)
+  }
+
+  protected override onDocumentClosed(documentId: string): void {
+    // Clean up document state
+    this.dispatch(cleanupAnnotationState(documentId))
+
+    // Clean up document-specific tracking
+    delete this.isInitialLoadComplete[documentId]
+    delete this.loadingQueues[documentId]
+    delete this.timelines[documentId]
+    delete this.timelineIndices[documentId]
+  }
+
+  private getDocumentState(documentId?: string): AnnotationDocumentState | null {
+    const id = documentId ?? this.getActiveDocumentId()
+    return this.state.documents[id] ?? null
+  }
+
   protected buildCapability(): AnnotationCapability {
     return {
       onStateChange: this.state$.on,
-      onAnnotationEvent: this.events$.on,
       getPageAnnotations: (options) => this.getPageAnnotations(options),
       selectAnnotation: (id) => this.dispatch(selectAnnotation(id)),
       deselectAnnotation: () => this.dispatch(deselectAnnotation()),
@@ -186,19 +209,31 @@ export class AnnotationPlugin extends BasePlugin<
       clearAnnotations: () => this.clearAllAnnotations(),
       exportAnnotationsToJSON: () => this.exportAnnotationsToJSON(),
       undo: () => {
-        if (this.timelineIndex > -1) {
-          const command = this.timeline[this.timelineIndex]
+        const documentId = this.getActiveDocumentId()
+        if (!documentId) return
+
+        const timelineIndex = this.timelineIndices[documentId] ?? -1
+        const timeline = this.timelines[documentId] ?? []
+
+        if (timelineIndex > -1) {
+          const command = timeline[timelineIndex]
           command?.undo()
-          this.timelineIndex--
-          this.dispatch(setCanUndoRedo(this.timelineIndex, this.timeline.length))
+          this.timelineIndices[documentId] = timelineIndex - 1
+          this.dispatch(setCanUndoRedo(this.timelineIndices[documentId], timeline.length))
         }
       },
       redo: () => {
-        if (this.timelineIndex < this.timeline.length - 1) {
-          this.timelineIndex++
-          const command = this.timeline[this.timelineIndex]
+        const documentId = this.getActiveDocumentId()
+        if (!documentId) return
+
+        const timelineIndex = this.timelineIndices[documentId] ?? -1
+        const timeline = this.timelines[documentId] ?? []
+
+        if (timelineIndex < timeline.length - 1) {
+          this.timelineIndices[documentId] = timelineIndex + 1
+          const command = timeline[this.timelineIndices[documentId]]
           command?.execute()
-          this.dispatch(setCanUndoRedo(this.timelineIndex, this.timeline.length))
+          this.dispatch(setCanUndoRedo(this.timelineIndices[documentId], timeline.length))
         }
       },
     }
@@ -206,6 +241,15 @@ export class AnnotationPlugin extends BasePlugin<
 
   override onStoreUpdated(prev: AnnotationState, next: AnnotationState): void {
     this.state$.emit(next)
+
+    // Update undo/redo state when active document changes
+    if (prev.activeDocumentId !== next.activeDocumentId && next.activeDocumentId) {
+      const documentId = next.activeDocumentId
+      const timelineIndex = this.timelineIndices[documentId] ?? -1
+      const timeline = this.timelines[documentId] ?? []
+      this.dispatch(setCanUndoRedo(timelineIndex, timeline.length))
+    }
+
     // Change interaction mode when activeSubtype changes between null and non-null
     if (!prev.activeSubtype || !next.activeSubtype) {
       if (next.activeSubtype) {
@@ -216,7 +260,10 @@ export class AnnotationPlugin extends BasePlugin<
     }
   }
 
-  private getAllAnnotations(doc: PdfDocumentObject) {
+  private getAllAnnotations(documentId: string) {
+    const doc = this.getDocumentState(documentId)
+    if (!doc) return
+
     const task = this.engine.getAllAnnotations(doc)
     task.wait((annotations) => {
       /**
@@ -246,21 +293,14 @@ export class AnnotationPlugin extends BasePlugin<
         textMarkupAnnotations[pageIndexNum] = textMarkupPageAnnotations
       }
 
-      this.dispatch(setAnnotations(textMarkupAnnotations))
+      this.dispatch(setAnnotations(documentId, textMarkupAnnotations))
 
-      if (this.loadingQueue.length > 0) {
-        this.createQueuedAnnotations()
+      const loadingQueue = this.loadingQueues[documentId] ?? []
+      if (loadingQueue.length > 0) {
+        this.createQueuedAnnotations(documentId)
       }
 
-      this.isInitialLoadComplete = true
-
-      this.events$.emit({
-        type: "loaded",
-        total: Object.values(annotations).reduce(
-          (sum, pageAnnotations) => sum + pageAnnotations.length,
-          0,
-        ),
-      })
+      this.isInitialLoadComplete[documentId] = true
     }, ignore)
   }
 
@@ -268,7 +308,13 @@ export class AnnotationPlugin extends BasePlugin<
     pageIndex: number
   }): Task<PdfAnnotationObject[], PdfErrorReason> {
     const { pageIndex } = options
-    const doc = this.coreState.core.document
+    const documentId = this.getActiveDocumentId()
+
+    if (!documentId) {
+      return PdfTaskHelper.reject({ code: PdfErrorCode.NotFound, message: "No active document" })
+    }
+
+    const doc = this.getDocumentState(documentId)
 
     if (!doc) {
       return PdfTaskHelper.reject({ code: PdfErrorCode.NotFound, message: "Document not found" })
@@ -285,52 +331,97 @@ export class AnnotationPlugin extends BasePlugin<
 
   // consumer capability to batch add annotations
   private createAnnotations(items: PdfTextMarkupAnnotationObject[]) {
-    if (!this.isInitialLoadComplete) {
-      this.loadingQueue.push(...items)
+    const documentId = this.getActiveDocumentId()
+    if (!documentId || !items.length) return
+
+    if (!this.isInitialLoadComplete[documentId]) {
+      const queue = this.loadingQueues[documentId] ?? []
+      queue.push(...items)
+      this.loadingQueues[documentId] = queue
       return
     }
-    this.batchCreateAnnotations(items)
+    this.batchCreateAnnotations(documentId, items)
   }
 
   // consumer capability to batch update annotations
   private updateAnnotations(
     items: { id: string; patch: Partial<PdfTextMarkupAnnotationObject> }[],
   ) {
+    const documentId = this.getActiveDocumentId()
+    if (!documentId || !items.length) return
+
+    const doc = this.getDocumentState(documentId)
+    const docState = this.state.documents[documentId]
+    if (!doc || !docState) return
+
     for (const { id, patch } of items) {
+      const annotation = docState.byUid[id]
+      if (!annotation) continue
+
       patch.modified = new Date()
       patch.author = patch.author ?? this.config.author
-      this.dispatch(patchAnnotation(id, patch))
+      this.dispatch(patchAnnotation(documentId, id, patch))
+
+      const updatedAnnotation = { ...annotation, ...patch }
+      const page = doc.pages.find((p) => p.index === annotation.pageIndex)
+      if (page) {
+        this.engine.updatePageAnnotation!(doc, page, updatedAnnotation)
+      }
     }
-    this.commit()
   }
 
   // consumer capability to batch delete annotations
   private deleteAnnotations(annotationIds: string[]) {
+    const documentId = this.getActiveDocumentId()
+    if (!documentId || !annotationIds.length) return
+
+    const doc = this.getDocumentState(documentId)
+    const docState = this.state.documents[documentId]
+    if (!doc || !docState) return
+
     for (const id of annotationIds) {
-      this.dispatch(deleteAnnotation(id))
+      const annotation = docState.byUid[id]
+      if (!annotation) continue
+
+      this.dispatch(deleteAnnotation(documentId, id))
+
+      const page = doc.pages.find((p) => p.index === annotation.pageIndex)
+      if (page) {
+        this.engine.removePageAnnotation!(doc, page, annotation)
+      }
     }
-    this.commit()
   }
 
   // internal process to load annotations existing in a PDF
-  private createQueuedAnnotations() {
-    if (this.loadingQueue.length === 0) return
-    const items = [...this.loadingQueue]
-    this.loadingQueue = []
-    this.batchCreateAnnotations(items)
+  private createQueuedAnnotations(documentId: string) {
+    const queue = this.loadingQueues[documentId] ?? []
+    if (queue.length === 0) return
+    const items = [...queue]
+    this.loadingQueues[documentId] = []
+    this.batchCreateAnnotations(documentId, items)
   }
 
   // batchCreate has no undo capability since it is used by consumer programs, not users
-  private batchCreateAnnotations(items: PdfTextMarkupAnnotationObject[]) {
+  private batchCreateAnnotations(documentId: string, items: PdfTextMarkupAnnotationObject[]) {
+    const doc = this.getDocumentState(documentId)
+    if (!doc) return
+
     for (const annotation of items) {
       annotation.created = new Date()
       annotation.author = annotation.author ?? this.config.author
-      this.dispatch(createAnnotation(annotation))
+      this.dispatch(createAnnotation(documentId, annotation))
+
+      const page = doc.pages.find((p) => p.index === annotation.pageIndex)
+      if (page) {
+        this.engine.createPageAnnotation!(doc, page, annotation)
+      }
     }
-    this.commit()
   }
 
   private createAnnotation(annotation: PdfTextMarkupAnnotationObject) {
+    const documentId = this.getActiveDocumentId()
+    if (!documentId) return
+
     const id = annotation.id
     const pageIndex = annotation.pageIndex
     const annotationModified = {
@@ -338,64 +429,89 @@ export class AnnotationPlugin extends BasePlugin<
       created: new Date(),
       author: annotation.author ?? this.config.author,
     }
+
     const execute = () => {
-      this.dispatch(createAnnotation(annotationModified))
-      this.events$.emit({
-        type: "create",
-        annotation: annotationModified,
-        pageIndex,
-        committed: false,
-      })
+      this.dispatch(createAnnotation(documentId, annotationModified))
+
+      // Execute PDFium operation immediately
+      const doc = this.getDocumentState(documentId)
+      if (doc) {
+        const page = doc.pages.find((p) => p.index === pageIndex)
+        if (page) {
+          this.engine.createPageAnnotation!(doc, page, annotationModified)
+        }
+      }
     }
 
     const command: Command = {
       execute,
       undo: () => {
         if (this.state.selectedUid === id) this.dispatch(deselectAnnotation())
-        this.dispatch(deleteAnnotation(id))
-        this.events$.emit({
-          type: "delete",
-          annotation: annotationModified,
-          pageIndex,
-          committed: false,
-        })
+        this.dispatch(deleteAnnotation(documentId, id))
+
+        // Execute PDFium delete operation immediately
+        const doc = this.getDocumentState(documentId)
+        if (doc) {
+          const page = doc.pages.find((p) => p.index === pageIndex)
+          if (page) {
+            this.engine.removePageAnnotation!(doc, page, annotationModified)
+          }
+        }
       },
     }
-    this.commitWithTimeline(command)
+    this.executeWithTimeline(documentId, command)
   }
 
   private deleteAnnotation(id: string) {
-    const originalAnnotation = this.state.byUid[id]?.object
+    const documentId = this.getActiveDocumentId()
+    if (!documentId) return
+
+    const docState = this.state.documents[documentId]
+    if (!docState) return
+
+    const originalAnnotation = docState.byUid[id]
     if (!originalAnnotation) return
 
     const execute = () => {
       if (this.state.selectedUid === id) this.dispatch(deselectAnnotation())
-      this.dispatch(deleteAnnotation(id))
-      this.events$.emit({
-        type: "delete",
-        annotation: originalAnnotation,
-        pageIndex: originalAnnotation.pageIndex,
-        committed: false,
-      })
+      this.dispatch(deleteAnnotation(documentId, id))
+
+      // Execute PDFium operation immediately
+      const doc = this.getDocumentState(documentId)
+      if (doc) {
+        const page = doc.pages.find((p) => p.index === originalAnnotation.pageIndex)
+        if (page) {
+          this.engine.removePageAnnotation!(doc, page, originalAnnotation)
+        }
+      }
     }
 
     const command: Command = {
       execute,
       undo: () => {
-        this.dispatch(createAnnotation(originalAnnotation))
-        this.events$.emit({
-          type: "create",
-          annotation: originalAnnotation,
-          pageIndex: originalAnnotation.pageIndex,
-          committed: false,
-        })
+        this.dispatch(createAnnotation(documentId, originalAnnotation))
+
+        // Execute PDFium create operation immediately for undo
+        const doc = this.getDocumentState(documentId)
+        if (doc) {
+          const page = doc.pages.find((p) => p.index === originalAnnotation.pageIndex)
+          if (page) {
+            this.engine.createPageAnnotation!(doc, page, originalAnnotation)
+          }
+        }
       },
     }
-    this.commitWithTimeline(command)
+    this.executeWithTimeline(documentId, command)
   }
 
   private updateAnnotation(id: string, patch: Partial<PdfTextMarkupAnnotationObject>) {
-    const originalAnnotation = this.state.byUid[id]?.object
+    const documentId = this.getActiveDocumentId()
+    if (!documentId) return
+
+    const docState = this.state.documents[documentId]
+    if (!docState) return
+
+    const originalAnnotation = docState.byUid[id]
     if (!originalAnnotation) return
     if (patch.id !== id) patch.id = id // id is immutable
     const patchModified = {
@@ -405,14 +521,17 @@ export class AnnotationPlugin extends BasePlugin<
     }
 
     const execute = () => {
-      this.dispatch(patchAnnotation(id, patchModified))
-      this.events$.emit({
-        type: "update",
-        annotation: originalAnnotation,
-        pageIndex: originalAnnotation.pageIndex,
-        patch: patchModified,
-        committed: false,
-      })
+      this.dispatch(patchAnnotation(documentId, id, patchModified))
+
+      // Execute PDFium operation immediately
+      const doc = this.getDocumentState(documentId)
+      if (doc) {
+        const updatedAnnotation = { ...originalAnnotation, ...patchModified }
+        const page = doc.pages.find((p) => p.index === originalAnnotation.pageIndex)
+        if (page) {
+          this.engine.updatePageAnnotation!(doc, page, updatedAnnotation)
+        }
+      }
     }
 
     const undoPatch = Object.fromEntries(
@@ -424,24 +543,32 @@ export class AnnotationPlugin extends BasePlugin<
     const command: Command = {
       execute,
       undo: () => {
-        this.dispatch(patchAnnotation(id, originalAnnotation))
-        this.events$.emit({
-          type: "update",
-          annotation: originalAnnotation,
-          pageIndex: originalAnnotation.pageIndex,
-          patch: undoPatch,
-          committed: false,
-        })
+        this.dispatch(patchAnnotation(documentId, id, undoPatch))
+
+        // Execute PDFium operation immediately for undo
+        const doc = this.getDocumentState(documentId)
+        if (doc) {
+          const page = doc.pages.find((p) => p.index === originalAnnotation.pageIndex)
+          if (page) {
+            this.engine.updatePageAnnotation!(doc, page, originalAnnotation)
+          }
+        }
       },
     }
-    this.commitWithTimeline(command)
+    this.executeWithTimeline(documentId, command)
   }
 
   private clearAllAnnotations() {
+    const documentId = this.getActiveDocumentId()
+    if (!documentId) return
+
+    const docState = this.state.documents[documentId]
+    if (!docState) return
+
     const previousAnnotations: Record<number, PdfTextMarkupAnnotationObject[]> = {}
-    Object.entries(this.state.byPage).forEach(([pageIndex, uids]) => {
+    Object.entries(docState.byPage).forEach(([pageIndex, uids]) => {
       const pageAnnos = uids
-        .map((uid) => this.state.byUid[uid]?.object)
+        .map((uid) => docState.byUid[uid])
         .filter((a): a is PdfTextMarkupAnnotationObject => !!a)
       if (pageAnnos.length > 0) {
         previousAnnotations[Number(pageIndex)] = pageAnnos
@@ -450,123 +577,65 @@ export class AnnotationPlugin extends BasePlugin<
 
     const command: Command = {
       execute: () => {
-        this.dispatch(clearAnnotations())
+        this.dispatch(clearAnnotations(documentId))
+
+        // Execute PDFium operations immediately
+        const doc = this.getDocumentState(documentId)
+        if (doc) {
+          Object.values(previousAnnotations)
+            .flat()
+            .forEach((annotation) => {
+              const page = doc.pages.find((p) => p.index === annotation.pageIndex)
+              if (page) {
+                this.engine.removePageAnnotation!(doc, page, annotation)
+              }
+            })
+        }
       },
       undo: () => {
-        this.dispatch(setAnnotations(previousAnnotations))
+        this.dispatch(setAnnotations(documentId, previousAnnotations))
+
+        // Execute PDFium operations immediately for undo
+        const doc = this.getDocumentState(documentId)
+        if (doc) {
+          Object.values(previousAnnotations)
+            .flat()
+            .forEach((annotation) => {
+              const page = doc.pages.find((p) => p.index === annotation.pageIndex)
+              if (page) {
+                this.engine.createPageAnnotation!(doc, page, annotation)
+              }
+            })
+        }
       },
     }
-    // use same logic to add to timeline but don't call commit
-    this.commitWithTimeline(command, false)
+    this.executeWithTimeline(documentId, command)
   }
 
-  private commitWithTimeline(command: Command, requiresCommit: boolean = true) {
-    // add to timeline
-    this.timeline.splice(this.timelineIndex + 1)
-    this.timeline.push(command)
-    this.timelineIndex++
+  private executeWithTimeline(documentId: string, command: Command) {
+    const timeline = this.timelines[documentId]
+    const timelineIndex = this.timelineIndices[documentId]
 
-    // emit event
+    // add to timeline
+    timeline.splice(timelineIndex + 1)
+    timeline.push(command)
+    this.timelineIndices[documentId]++
+
+    // execute command immediately
     command.execute()
 
-    // process all pending events
-    if (requiresCommit) this.commit()
-
-    // change state.canUndo, state.canRedo
-    this.dispatch(setCanUndoRedo(this.timelineIndex, this.timeline.length))
-  }
-
-  private commit(): Task<boolean, PdfErrorReason> {
-    const task = new Task<boolean, PdfErrorReason>()
-
-    if (!this.state.hasPendingChanges) return PdfTaskHelper.resolve(true)
-
-    const doc = this.coreState.core.document
-    if (!doc)
-      return PdfTaskHelper.reject({ code: PdfErrorCode.NotFound, message: "Document not found" })
-
-    const creations: Task<string, PdfErrorReason>[] = []
-    const updates: Task<boolean, PdfErrorReason>[] = []
-    const deletions: { ta: TrackedAnnotation; uid: string }[] = []
-
-    // 1. Group all pending changes by operation type
-    for (const [uid, ta] of Object.entries(this.state.byUid)) {
-      if (ta.commitState === "synced") continue
-
-      const page = doc.pages.find((p) => p.index === ta.object.pageIndex)
-      if (!page) continue
-
-      switch (ta.commitState) {
-        case "new":
-          const task = this.engine.createPageAnnotation!(doc, page, ta.object)
-          task.wait(() => {
-            this.events$.emit({
-              type: "create",
-              annotation: ta.object,
-              pageIndex: ta.object.pageIndex,
-              committed: true,
-            })
-          }, ignore)
-          creations.push(task)
-          break
-        case "dirty":
-          const updateTask = this.engine.updatePageAnnotation!(doc, page, ta.object)
-          updateTask.wait(() => {
-            this.events$.emit({
-              type: "update",
-              annotation: ta.object,
-              pageIndex: ta.object.pageIndex,
-              patch: ta.object,
-              committed: true,
-            })
-          }, ignore)
-          updates.push(updateTask)
-          break
-        case "deleted":
-          deletions.push({ ta, uid })
-          break
-      }
-    }
-
-    // 2. Create deletion tasks
-    const deletionTasks: Task<boolean, PdfErrorReason>[] = []
-    for (const { ta, uid } of deletions) {
-      const page = doc.pages.find((p) => p.index === ta.object.pageIndex)!
-      // Only delete if it was previously synced (i.e., exists in the PDF)
-      if (ta.commitState === "deleted" && ta.object.id) {
-        const task = new Task<boolean, PdfErrorReason>()
-        const removeTask = this.engine.removePageAnnotation!(doc, page, ta.object)
-        removeTask.wait(() => {
-          this.dispatch(purgeAnnotation(uid))
-          this.events$.emit({
-            type: "delete",
-            annotation: ta.object,
-            pageIndex: ta.object.pageIndex,
-            committed: true,
-          })
-          task.resolve(true)
-        }, task.fail)
-        deletionTasks.push(task)
-      } else {
-        // If it was never synced, just remove from state
-        this.dispatch(purgeAnnotation(uid))
-      }
-    }
-
-    // 3. Chain the operations: creations/updates -> deletions -> finalize
-    const allWriteTasks = [...creations, ...updates, ...deletionTasks]
-
-    Task.allSettled(allWriteTasks).wait(() => {
-      // 4. Finalize the commit by updating the commitState of all items.
-      this.dispatch(commitPendingChanges())
-      task.resolve(true)
-    }, task.fail)
-
-    return task
+    // update undo/redo state
+    this.dispatch(setCanUndoRedo(this.timelineIndices[documentId], timeline.length))
   }
 
   private exportAnnotationsToJSON() {
-    const annotations = Object.values(this.state.byUid).map((ta: TrackedAnnotation) => ta.object)
+    const documentId = this.getActiveDocumentId()
+    if (!documentId) return
+
+    const docState = this.state.documents[documentId]
+    if (!docState) return
+
+    const annotations = Object.values(docState.byUid)
     const exportData = {
       exportedBy: this.config.author,
       timestamp: new Date().toISOString(),
@@ -586,10 +655,5 @@ export class AnnotationPlugin extends BasePlugin<
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-  }
-
-  async destroy(): Promise<void> {
-    this.events$.clear()
-    super.destroy()
   }
 }

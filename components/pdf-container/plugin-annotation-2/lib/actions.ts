@@ -1,28 +1,40 @@
 import type { Action, Reducer } from "@embedpdf/core"
 // import { PdfAnnotationSubtype } from "@embedpdf/models"
-import type { TrackedAnnotation } from "./custom-types"
 import type { PdfTextMarkupAnnotationObject } from "./pdf-text-markup-annotation-object"
-import type { AnnotationState } from "./state"
+import type { AnnotationState, AnnotationDocumentState } from "./state"
 // import { isValidActiveSubtype } from "./subtype-predicates"
 import { Subtype } from "./state"
 
 // ***ACTION CONSTANTS***
+export const INIT_ANNOTATION_STATE = "ANNOTATION/INIT_STATE"
+export const CLEANUP_ANNOTATION_STATE = "ANNOTATION/CLEANUP_STATE"
+export const SET_ACTIVE_DOCUMENT = "ANNOTATION/SET_ACTIVE_DOCUMENT"
 export const SET_ANNOTATIONS = "ANNOTATION/SET_ANNOTATIONS"
 export const SELECT_ANNOTATION = "ANNOTATION/SELECT_ANNOTATION"
 export const DESELECT_ANNOTATION = "ANNOTATION/DESELECT_ANNOTATION"
 export const CREATE_ANNOTATION = "ANNOTATION/CREATE_ANNOTATION"
 export const PATCH_ANNOTATION = "ANNOTATION/PATCH_ANNOTATION"
 export const DELETE_ANNOTATION = "ANNOTATION/DELETE_ANNOTATION"
-export const COMMIT_PENDING_CHANGES = "ANNOTATION/COMMIT"
-export const PURGE_ANNOTATION = "ANNOTATION/PURGE_ANNOTATION"
 export const SET_CREATE_ANNOTATION_DEFAULTS = "ANNOTATION/SET_CREATE_ANNOTATION_DEFAULTS"
 export const SET_CAN_UNDO_REDO = "ANNOTATION/SET_CAN_UNDO_REDO"
 export const CLEAR_ANNOTATIONS = "ANNOTATION/CLEAR_ANNOTATIONS"
 
 // ***ACTION INTERFACES***
+export interface InitAnnotationStateAction extends Action {
+  type: typeof INIT_ANNOTATION_STATE
+  payload: { documentId: string; state: AnnotationDocumentState }
+}
+export interface CleanupAnnotationStateAction extends Action {
+  type: typeof CLEANUP_ANNOTATION_STATE
+  payload: { documentId: string }
+}
+export interface SetActiveDocumentAction extends Action {
+  type: typeof SET_ACTIVE_DOCUMENT
+  payload: { documentId: string }
+}
 export interface SetAnnotationsAction extends Action {
   type: typeof SET_ANNOTATIONS
-  payload: Record<number, PdfTextMarkupAnnotationObject[]>
+  payload: { documentId: string; annotations: Record<number, PdfTextMarkupAnnotationObject[]> }
 }
 export interface SelectAnnotationAction extends Action {
   type: typeof SELECT_ANNOTATION
@@ -33,22 +45,15 @@ export interface DeselectAnnotationAction extends Action {
 }
 export interface CreateAnnotationAction extends Action {
   type: typeof CREATE_ANNOTATION
-  payload: { annotation: PdfTextMarkupAnnotationObject }
+  payload: { documentId: string; annotation: PdfTextMarkupAnnotationObject }
 }
 export interface PatchAnnotationAction extends Action {
   type: typeof PATCH_ANNOTATION
-  payload: { id: string; patch: Partial<PdfTextMarkupAnnotationObject> }
+  payload: { documentId: string; id: string; patch: Partial<PdfTextMarkupAnnotationObject> }
 }
 export interface DeleteAnnotationAction extends Action {
   type: typeof DELETE_ANNOTATION
-  payload: { id: string }
-}
-export interface CommitAction extends Action {
-  type: typeof COMMIT_PENDING_CHANGES
-}
-export interface PurgeAnnotationAction extends Action {
-  type: typeof PURGE_ANNOTATION
-  payload: { uid: string }
+  payload: { documentId: string; id: string }
 }
 export interface SetCreateAnnotationDefaultsAction extends Action {
   type: typeof SET_CREATE_ANNOTATION_DEFAULTS
@@ -65,28 +70,46 @@ export interface SetCanUndoRedoAction extends Action {
 }
 export interface ClearAnnotationsAction extends Action {
   type: typeof CLEAR_ANNOTATIONS
+  payload: { documentId: string }
 }
 
 // ***ACTION UNION***
 export type AnnotationAction =
+  | InitAnnotationStateAction
+  | CleanupAnnotationStateAction
+  | SetActiveDocumentAction
   | SetAnnotationsAction
   | SelectAnnotationAction
   | DeselectAnnotationAction
   | CreateAnnotationAction
   | PatchAnnotationAction
   | DeleteAnnotationAction
-  | CommitAction
-  | PurgeAnnotationAction
   | SetCreateAnnotationDefaultsAction
   | SetCanUndoRedoAction
   | ClearAnnotationsAction
 
 // ***ACTION CREATORS***
+export const initAnnotationState = (
+  documentId: string,
+  state: AnnotationDocumentState,
+): InitAnnotationStateAction => ({
+  type: INIT_ANNOTATION_STATE,
+  payload: { documentId, state },
+})
+export const cleanupAnnotationState = (documentId: string): CleanupAnnotationStateAction => ({
+  type: CLEANUP_ANNOTATION_STATE,
+  payload: { documentId },
+})
+export const setActiveDocument = (documentId: string): SetActiveDocumentAction => ({
+  type: SET_ACTIVE_DOCUMENT,
+  payload: { documentId },
+})
 export const setAnnotations = (
-  p: Record<number, PdfTextMarkupAnnotationObject[]>,
+  documentId: string,
+  annotations: Record<number, PdfTextMarkupAnnotationObject[]>,
 ): SetAnnotationsAction => ({
   type: SET_ANNOTATIONS,
-  payload: p,
+  payload: { documentId, annotations },
 })
 export const selectAnnotation = (id: string): SelectAnnotationAction => ({
   type: SELECT_ANNOTATION,
@@ -94,23 +117,20 @@ export const selectAnnotation = (id: string): SelectAnnotationAction => ({
 })
 export const deselectAnnotation = (): DeselectAnnotationAction => ({ type: DESELECT_ANNOTATION })
 export const createAnnotation = (
+  documentId: string,
   annotation: PdfTextMarkupAnnotationObject,
 ): CreateAnnotationAction => ({
   type: CREATE_ANNOTATION,
-  payload: { annotation },
+  payload: { documentId, annotation },
 })
 export const patchAnnotation = (
+  documentId: string,
   id: string,
   patch: Partial<PdfTextMarkupAnnotationObject>,
-): PatchAnnotationAction => ({ type: PATCH_ANNOTATION, payload: { id, patch } })
-export const deleteAnnotation = (id: string): DeleteAnnotationAction => ({
+): PatchAnnotationAction => ({ type: PATCH_ANNOTATION, payload: { documentId, id, patch } })
+export const deleteAnnotation = (documentId: string, id: string): DeleteAnnotationAction => ({
   type: DELETE_ANNOTATION,
-  payload: { id },
-})
-export const commitPendingChanges = (): CommitAction => ({ type: COMMIT_PENDING_CHANGES })
-export const purgeAnnotation = (uid: string): PurgeAnnotationAction => ({
-  type: PURGE_ANNOTATION,
-  payload: { uid },
+  payload: { documentId, id },
 })
 export const setCreateAnnotationDefaults = (defaults: {
   color?: string
@@ -128,23 +148,59 @@ export const setCanUndoRedo = (
   type: SET_CAN_UNDO_REDO,
   payload: { timelineIndex, timelineLength },
 })
-export const clearAnnotations = (): ClearAnnotationsAction => ({ type: CLEAR_ANNOTATIONS })
+export const clearAnnotations = (documentId: string): ClearAnnotationsAction => ({
+  type: CLEAR_ANNOTATIONS,
+  payload: { documentId },
+})
 
 // ***ACTION REDUCER***
 export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, action) => {
   switch (action.type) {
+    case INIT_ANNOTATION_STATE: {
+      const { documentId, state: docState } = action.payload
+      return {
+        ...state,
+        documents: {
+          ...state.documents,
+          [documentId]: docState,
+        },
+      }
+    }
+
+    case CLEANUP_ANNOTATION_STATE: {
+      const { documentId } = action.payload
+      const { [documentId]: _removed, ...remainingDocs } = state.documents
+      return {
+        ...state,
+        documents: remainingDocs,
+        activeDocumentId: state.activeDocumentId === documentId ? null : state.activeDocumentId,
+      }
+    }
+
+    case SET_ACTIVE_DOCUMENT: {
+      const { documentId } = action.payload
+      return {
+        ...state,
+        activeDocumentId: documentId,
+      }
+    }
+
     case SET_ANNOTATIONS: {
-      const newByPage = { ...state.byPage }
-      const newByUid = { ...state.byUid }
-      for (const [pgStr, list] of Object.entries(action.payload)) {
+      const { documentId, annotations } = action.payload
+      const docState = state.documents[documentId]
+      if (!docState) return state
+
+      const newByPage = { ...docState.byPage }
+      const newByUid = { ...docState.byUid }
+      for (const [pgStr, list] of Object.entries(annotations)) {
         const pageIndex = Number(pgStr)
-        const oldUidsOnPage = state.byPage[pageIndex] || []
+        const oldUidsOnPage = docState.byPage[pageIndex] || []
         for (const uid of oldUidsOnPage) {
           delete newByUid[uid]
         }
         const newUidsOnPage = list.map((a) => {
           const uid = a.id
-          newByUid[uid] = { commitState: "synced", object: a }
+          newByUid[uid] = a
           return uid
         })
         newByPage[pageIndex] = newUidsOnPage
@@ -152,7 +208,7 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
 
       const newByEntityType: Record<string, string[]> = {}
       for (const uid in newByUid) {
-        const anno = newByUid[uid]?.object
+        const anno = newByUid[uid]
         const et = anno?.custom?.entityType
         if (et) {
           const list = newByEntityType[et] || []
@@ -163,10 +219,15 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
 
       return {
         ...state,
-        byPage: newByPage,
-        byUid: newByUid,
-        byEntityType: newByEntityType,
-        hasPendingChanges: false,
+        documents: {
+          ...state.documents,
+          [documentId]: {
+            ...docState,
+            byPage: newByPage,
+            byUid: newByUid,
+            byEntityType: newByEntityType,
+          },
+        },
       }
     }
 
@@ -187,67 +248,83 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
       return { ...state, selectedUid: null }
 
     case CREATE_ANNOTATION: {
-      const { annotation } = action.payload
+      const { documentId, annotation } = action.payload
+      const docState = state.documents[documentId]
+      if (!docState) return state
+
       const pageIndex = annotation.pageIndex
       const uid = annotation.id
       const entityType = annotation.custom?.entityType
-      const newByEntityType = { ...state.byEntityType }
+      const newByEntityType = { ...docState.byEntityType }
       if (entityType) {
         newByEntityType[entityType] = [...(newByEntityType[entityType] || []), uid]
       }
 
       return {
         ...state,
-        byPage: { ...state.byPage, [pageIndex]: [...(state.byPage[pageIndex] ?? []), uid] },
-        byUid: { ...state.byUid, [uid]: { commitState: "new", object: annotation } },
-        byEntityType: newByEntityType,
-        hasPendingChanges: true,
+        documents: {
+          ...state.documents,
+          [documentId]: {
+            ...docState,
+            byPage: { ...docState.byPage, [pageIndex]: [...(docState.byPage[pageIndex] ?? []), uid] },
+            byUid: { ...docState.byUid, [uid]: annotation },
+            byEntityType: newByEntityType,
+          },
+        },
       }
     }
 
     case DELETE_ANNOTATION: {
-      const { id: uid } = action.payload
-      const annotation = state.byUid[uid]?.object
+      const { documentId, id: uid } = action.payload
+      const docState = state.documents[documentId]
+      if (!docState) return state
+
+      const annotation = docState.byUid[uid]
       if (!annotation) return state
 
       const pageIndex = annotation.pageIndex
-
-      /* keep the object but mark it as deleted */
       const entityType = annotation.custom?.entityType
-      const newByEntityType = { ...state.byEntityType }
+      const newByEntityType = { ...docState.byEntityType }
       if (entityType && newByEntityType[entityType]) {
         newByEntityType[entityType] = newByEntityType[entityType]?.filter((u) => u !== uid) ?? []
         if (newByEntityType[entityType]?.length === 0) delete newByEntityType[entityType]
       }
 
+      const { [uid]: _removed, ...newByUid } = docState.byUid
+
       return {
         ...state,
-        byPage: {
-          ...state.byPage,
-          [pageIndex]: (state.byPage[pageIndex] ?? []).filter((u) => u !== uid),
+        documents: {
+          ...state.documents,
+          [documentId]: {
+            ...docState,
+            byPage: {
+              ...docState.byPage,
+              [pageIndex]: (docState.byPage[pageIndex] ?? []).filter((u) => u !== uid),
+            },
+            byUid: newByUid,
+            byEntityType: newByEntityType,
+          },
         },
-        byUid: {
-          ...state.byUid,
-          [uid]: { ...state.byUid[uid], commitState: "deleted" } as TrackedAnnotation,
-        },
-        byEntityType: newByEntityType,
-        hasPendingChanges: true,
       }
     }
 
     case PATCH_ANNOTATION: {
-      const { id, patch } = action.payload
-      const prev = state.byUid[id]
+      const { documentId, id, patch } = action.payload
+      const docState = state.documents[documentId]
+      if (!docState) return state
+
+      const prev = docState.byUid[id]
       if (!prev) return state
 
-      let newByEntityType = state.byEntityType
+      let newByEntityType = docState.byEntityType
 
       if ("custom" in patch) {
-        const oldEntityType = prev.object.custom?.entityType
+        const oldEntityType = prev.custom?.entityType
         const newEntityType = patch.custom?.entityType
 
         if (oldEntityType !== newEntityType) {
-          newByEntityType = { ...state.byEntityType }
+          newByEntityType = { ...docState.byEntityType }
           // Remove from old
           if (oldEntityType && newByEntityType[oldEntityType]) {
             newByEntityType[oldEntityType] =
@@ -263,36 +340,20 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
 
       return {
         ...state,
-        byUid: {
-          ...state.byUid,
-          [id]: {
-            ...prev,
-            commitState: prev.commitState === "synced" ? "dirty" : prev.commitState,
-            object: { ...prev.object, ...patch },
-          } as TrackedAnnotation,
+        documents: {
+          ...state.documents,
+          [documentId]: {
+            ...docState,
+            byUid: {
+              ...docState.byUid,
+              [id]: { ...prev, ...patch },
+            },
+            byEntityType: newByEntityType,
+          },
         },
-        byEntityType: newByEntityType,
-        hasPendingChanges: true,
       }
     }
 
-    case COMMIT_PENDING_CHANGES: {
-      const cleaned: AnnotationState["byUid"] = {}
-      for (const [uid, ta] of Object.entries(state.byUid)) {
-        cleaned[uid] = {
-          ...ta,
-          commitState:
-            ta.commitState === "dirty" || ta.commitState === "new" ? "synced" : ta.commitState,
-        }
-      }
-      return { ...state, byUid: cleaned, hasPendingChanges: false }
-    }
-
-    case PURGE_ANNOTATION: {
-      const { uid } = action.payload
-      const { [uid]: _gone, ...rest } = state.byUid
-      return { ...state, byUid: rest }
-    }
 
     case SET_CAN_UNDO_REDO:
       const { timelineIndex, timelineLength } = action.payload
@@ -300,15 +361,25 @@ export const reducer: Reducer<AnnotationState, AnnotationAction> = (state, actio
       const canRedo = timelineIndex < timelineLength - 1
       return { ...state, canUndo, canRedo }
 
-    case CLEAR_ANNOTATIONS:
+    case CLEAR_ANNOTATIONS: {
+      const { documentId } = action.payload
+      const docState = state.documents[documentId]
+      if (!docState) return state
+
       return {
         ...state,
         selectedUid: null,
-        byUid: {},
-        byPage: {},
-        byEntityType: {},
-        hasPendingChanges: false,
+        documents: {
+          ...state.documents,
+          [documentId]: {
+            ...docState,
+            byUid: {},
+            byPage: {},
+            byEntityType: {},
+          },
+        },
       }
+    }
 
     default:
       return state

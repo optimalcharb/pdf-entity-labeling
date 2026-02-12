@@ -1,6 +1,10 @@
 import { useEffect } from "react"
 import { Highlighter, LineSquiggle, Strikethrough, Underline } from "lucide-react"
-import { Subtype } from "@/components/pdf-container/plugin-annotation-2"
+import {
+  PdfTextMarkupAnnotationObject,
+  Subtype,
+  subtypeToEnum,
+} from "@/components/pdf-container/plugin-annotation-2"
 import {
   Select,
   SelectContent,
@@ -16,12 +20,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/shadcn-ui/table"
+import ColorPicker from "../../custom/color-picker"
 import usePluginStore from "../../plugin-store/hooks/use-plugin-store"
 import useEntityTypeStore from "../hooks/use-entity-type-store"
 import initialEntityTypes from "../initial-entity-types"
-import ColorPicker from "./color-picker"
 
 const EntityTable = () => {
+  // **IMPORTANT**
+  // annoState contains the whole AnnotationState
+  // annoState?.byEntityType gives ET name -> array of UIDs of annotations
+  // annoState?.byUid[uid].object.contents - text of annotation
   const { annoState, annoCapability } = usePluginStore()
 
   // entityTypesByName is a record of name -> EntityType
@@ -34,6 +42,10 @@ const EntityTable = () => {
     )
   }, [setByName])
 
+  // example usage of entityTypesByName
+  // const entityTypeObject1 = entityTypesByName["Highlight"] as EntityType
+  // const entityTypeNames: string[] = Object.keys(entityTypesByName)
+
   // uses annoCapability to set the default attributes for an annotation that the user creates
   const activateEntityType = (entityTypeName: string) => {
     const entityType = entityTypesByName[entityTypeName]
@@ -45,7 +57,7 @@ const EntityTable = () => {
       opacity: entityType.opacity,
     })
   }
-  
+
   return (
     <Table className="[&_th]:px-1.5 [&_td]:px-1.5 [&_th]:py-2.5 [&_td]:py-2">
       <TableHeader>
@@ -58,10 +70,11 @@ const EntityTable = () => {
       </TableHeader>
       <TableBody>
         {Object.entries(entityTypesByName).map(([name, entityType]) => {
-          const annotationUids = annoState?.byEntityType?.[name] || []
+          const activeDoc = annoState?.activeDocumentId ? annoState.documents[annoState.activeDocumentId] : null
+          const annotationUids = activeDoc?.byEntityType?.[name] || []
           const firstUid = annotationUids[0]
-          const annotation = firstUid ? annoState?.byUid?.[firstUid] : null
-          const annotationText = annotation?.object.contents || ""
+          const annotation = firstUid ? activeDoc?.byUid?.[firstUid] : null
+          const annotationText = annotation?.contents || ""
           const isActive = annoState?.activeEntityType === name
 
           return (
@@ -80,6 +93,17 @@ const EntityTable = () => {
                         subtype: value as Subtype,
                       })
                     }
+                    // use PluginStore to change existing annotations of this ET
+                    const activeDoc = annoState?.activeDocumentId ? annoState.documents[annoState.activeDocumentId] : null
+                    const annoIds = activeDoc?.byEntityType?.[name] || []
+                    annoCapability?.updateAnnotations(
+                      annoIds.map((id) => ({
+                        id,
+                        patch: {
+                          type: subtypeToEnum(value as Subtype),
+                        } as Partial<PdfTextMarkupAnnotationObject>,
+                      })),
+                    )
                   }}
                 >
                   <SelectTrigger className="w-[70px]">
@@ -109,12 +133,23 @@ const EntityTable = () => {
                     patchEntityType(name, {
                       color,
                     })
-                    // change PluginStore so activeColor matches the change if deactiveSubtypeAfterCreate is false
+                    // change PluginStore so activeColor matches the change
                     if (annoState?.activeEntityType === name) {
                       annoCapability?.setCreateAnnotationDefaults({
                         color,
                       })
                     }
+                    // use PluginStore to change existing annotations of this ET
+                    const activeDoc = annoState?.activeDocumentId ? annoState.documents[annoState.activeDocumentId] : null
+                    const annoIds = activeDoc?.byEntityType?.[name] || []
+                    annoCapability?.updateAnnotations(
+                      annoIds.map((id) => ({
+                        id,
+                        patch: {
+                          color,
+                        } as Partial<PdfTextMarkupAnnotationObject>,
+                      })),
+                    )
                   }}
                 />
               </TableCell>

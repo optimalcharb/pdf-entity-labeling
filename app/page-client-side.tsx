@@ -1,7 +1,8 @@
-"use client"
+"use client";
 
-import EntityTable from "../components/entity-table/components/entity-table"
-import PDFContainer from "../components/pdf-container/pdf-container-dynamic"
+import EntityTable from "../components/entity-table/components/entity-table";
+import PDFContainer from "../components/pdf-container/pdf-container-dynamic";
+
 
 // import PluginStoreTable from "../components/plugin-store/components/plugin-store-table"
 
@@ -11,7 +12,11 @@ export default function ClientSideHomePage() {
       {/* <PluginStoreTable /> */}
       <div className="flex-1 h-full">
         <PDFContainer
-          url="https://raw.githubusercontent.com/optimalcharb/pdf-entity-labeling/cdc90a5392c72982e80c9bf08e330d7b05d29c5d/public/example-pdfs/federal-register/2025-19982_first_page.pdf"
+          initalDocuments={[
+            {
+              url: "https://raw.githubusercontent.com/optimalcharb/pdf-entity-labeling/cdc90a5392c72982e80c9bf08e330d7b05d29c5d/public/example-pdfs/federal-register/2025-19982_first_page.pdf",
+            },
+          ]}
           exportName="labeled_2025-19982_first_page.pdf"
           author="anonymous"
         />

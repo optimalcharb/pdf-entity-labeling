@@ -1,5 +1,5 @@
 import { PdfAnnotationSubtype } from "@embedpdf/models"
-import type { TrackedAnnotation } from "./custom-types"
+import type { PdfTextMarkupAnnotationObject } from "./pdf-text-markup-annotation-object"
 
 // so consumers can use string instead of PdfAnnotationSubtype enum
 export type Subtype = "highlight" | "underline" | "squiggly" | "strikeout"
@@ -18,16 +18,21 @@ export function subtypeToEnum(subtype: Subtype): PdfAnnotationSubtype {
   }
 }
 
-// ***PLUGIN STATE***
-export interface AnnotationState {
+// ***PER-DOCUMENT STATE***
+export interface AnnotationDocumentState {
   // page index -> annotation uids
   byPage: Record<number, string[]>
-  // annotation uid -> tracked annotation object
-  byUid: Record<string, TrackedAnnotation>
+  // annotation uid -> annotation object
+  byUid: Record<string, PdfTextMarkupAnnotationObject>
   // entity type -> annotation uids
   byEntityType: Record<string, string[]>
+}
+
+// ***PLUGIN STATE***
+export interface AnnotationState {
+  documents: Record<string, AnnotationDocumentState>
+  activeDocumentId: string | null
   selectedUid: string | null
-  hasPendingChanges: boolean
   activeColor: string
   activeOpacity: number
   activeSubtype: Subtype | null
@@ -36,13 +41,17 @@ export interface AnnotationState {
   canRedo: boolean
 }
 
-// ***INITIAL STATE***
-export const initialState: AnnotationState = {
+// ***INITIAL STATES***
+export const initialDocumentState: AnnotationDocumentState = {
   byPage: {},
   byUid: {},
   byEntityType: {},
+}
+
+export const initialState: AnnotationState = {
+  documents: {},
+  activeDocumentId: null,
   selectedUid: null,
-  hasPendingChanges: false,
   activeColor: "#FFCD45",
   activeOpacity: 0.5,
   activeSubtype: null,

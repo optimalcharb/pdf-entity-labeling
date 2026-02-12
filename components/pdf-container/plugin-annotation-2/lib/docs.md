@@ -54,23 +54,14 @@ Using PdfTextMarkupAnnotationObject type allows consumers to write patches that 
 // Example patch
 import { PdfAnnotationSubtype } from "@embedpdf/models"
 import { PdfTextMarkupAnnotationObject } from "pdf-text-markup-annotation-object"
+import { subtypeToEnum } from "state"
 const patch: Partial<PdfTextMarkupAnnotationObject> = {
-  type: PdfAnnotationSubtype.UNDERLINE,
+  type: subtypeToEnum("highlight"),
   color: "#FF0000",
   opacity: 0.9
 }
 ```
 
-TrackedAnnotation is a type that extends PdfTextMarkupAnnotationObject and adds a commitState property to track whether the annotation has been rendered.
-
-```ts
-export interface TrackedAnnotation<
-  A extends PdfTextMarkupAnnotationObject = PdfTextMarkupAnnotationObject,
-> {
-  commitState: CommitState
-  object: A
-}
-```
 
 ## Text Markup Annotations and use of SelectionPlugin and InteractionManagerPlugin
 
@@ -121,12 +112,6 @@ The `AnnotationCapability` interface exposes the plugin's public API. All capabi
 - `selectAnnotation(id)`: Select an annotation by ID
 - `deselectAnnotation()`: Clear the current selection
 
-### Tool Management
-
-- `activateTool(toolId)`: Activate a tool by ID (null to deactivate)
-- `setToolDefaults(toolId, patch)`: Update default properties for a tool
-- `setActiveToolDefaults(patch)`: Update defaults for the currently active tool
-
 ### CRUD Operations - Single Items
 
 - `createAnnotation(anno)`: Create an annotation and add to timeline
@@ -168,30 +153,10 @@ Events are emitted at two key moments:
 
 This dual emission allows consumers to show optimistic UI updates immediately while tracking persistence status.
 
-## State (exposed to all consumers with plugin-store)
-
-The `AnnotationState` interface defines the plugin's centralized state structure:
-
-```ts
-interface AnnotationState {
-  byPage: Record<number, string[]>         // page index → annotation uids
-  byUid: Record<string, TrackedAnnotation> // annotation uid → tracked annotation
-  byEntityType: Record<string, string[]>   // entity type → annotation uids
-  selectedUid: string | null               // currently selected annotation uid
-  hasPendingChanges: boolean               // true if uncommitted changes exist
-  activeColor: string                      // default color for new annotations
-  activeOpacity: number                    // default opacity for new annotations
-  activeSubtype: PdfAnnotationSubtype | null // default subtype (tool) for new annotations
-  activeEntityType: string                 // default entity type for new annotations
-  canUndo: boolean                         // true if undo is possible
-  canRedo: boolean                         // true if redo is possible
-}
-```
-
 ### Annotations Storage
 
 - `byPage`: Maps page indices to arrays of annotation UIDs for fast page-based lookups
-- `byUid`: Maps annotation UIDs to `TrackedAnnotation` objects containing commit state and annotation data
+- `byUid`: Maps annotation UIDs to `PdfTextMarkupAnnotationObject` objects containing commit state and annotation data
 - `byEntityType`: Maps entity types to arrays of annotation UIDs for fast entity-based lookups
 
 ### Selection

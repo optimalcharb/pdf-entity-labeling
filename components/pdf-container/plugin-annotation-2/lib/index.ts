@@ -1,5 +1,5 @@
-export type { AnnotationEvent, TrackedAnnotation } from "./custom-types"
 export type { PdfTextMarkupAnnotationObject } from "./pdf-text-markup-annotation-object"
 export * from "./plugin"
 export * from "./plugin-package"
-export type { AnnotationState, Subtype } from "./state"
+export type { AnnotationDocumentState, AnnotationState, Subtype } from "./state"
+export { subtypeToEnum } from "./state"
